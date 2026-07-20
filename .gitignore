@@ -1,0 +1,18 @@
+node_modules/
+*.log
+.DS_Store
+.design-kit-test/
+.design-kit/
+.design-kit/reports/screenshots/
+
+# 로컬 전용 도구/세션 상태 (이 킷의 소스가 아님, 커밋 대상 아님)
+CHECKPOINT.md
+.omc/
+.plugin-config/
+.remember/
+.todos-report.md/
+.complexity-log.md
+.pair-programming-session.md
+
+# 대용량 서드파티 Figma 테스트용 샘플 파일 (저작권 무관 자산, 킷 배포물 아님)
+figma-test-file/

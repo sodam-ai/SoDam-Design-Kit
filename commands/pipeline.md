@@ -1,0 +1,28 @@
+---
+description: 디자인→코드 파이프라인 — Figma 읽기 → component-map 매핑 → shadcn/ui 코드 생성 → 검증 게이트
+---
+
+# /sodam-design-kit:pipeline
+
+> **재사용(매핑) 경로 — 2026-07-20 실측 완료**: component-map.json에 이미 매핑된 컴포넌트를 재사용하는 경로는 실제 Figma 데이터로 왕복 검증 완료(PASS, 판정서 기록됨). **신규 컴포넌트 생성(매핑 없는 노드)** 경로는 아직 구현 전 — 다음 증분.
+
+## 목적
+Figma 노드 1개를 컴포넌트 단위로 shadcn/ui 코드에 연결하고, 검증 게이트를 통과해야만 완료로 표시합니다.
+
+## 절차 — 재사용 경로 (에이전트가 수행)
+Figma MCP 도구(`get_metadata`/`get_design_context`)는 이 킷의 Node 스크립트가 아니라 **에이전트(Claude Code)만 호출 가능**합니다. 그래서 이 명령은 스크립트 1개가 아니라 에이전트가 아래 순서로 도구를 조합해 실행합니다.
+
+1. **[에이전트] Figma 읽기 — 반드시 페이지/노드 직접 링크로**: 사용자가 준 링크(node-id 포함)로 `get_metadata`(구조 확인)·`get_design_context`(코드+토큰) 호출. **파일 전체 열거(nodeId 생략) 금지** — 무료 Starter 플랜 3페이지 제한에 걸림(실측 확인, `.PRD/04_PROJECT_SPEC.md` 연결/동기화 스펙 5).
+2. **[에이전트] component-map.json에 매핑 기록**: 읽은 노드의 `figmaNodeId`·`figmaName`을 기존 항목에 채우거나(재사용) 신규 항목 추가.
+3. **[스크립트] 코드 생성**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-codegen.mjs" --project <경로> --figmaNodeId <ID>` — component-map에서 매핑된 컴포넌트를 찾아 `/design-kit-preview/{컴포넌트}` 라우트에 연결(`preview-route.mjs` 재사용). **Figma를 호출하지 않음** — 무료 6회 예산 보호.
+4. **[스크립트] 검증 + 판정서 기록 (한 명령)**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/verify-runner.mjs" --project <경로> --route /design-kit-preview/{컴포넌트} --screenshotDir <경로> --target "<대상 설명, 예: Figma node 421:3524 (Button) -> src/components/ui/button.tsx>" --generatedFiles <생성/수정 파일, 콤마 구분>` — dev server 자동 기동 → Playwright 렌더 → axe-core → 3뷰포트 → `.design-kit/runs/`·`reports/`에 판정서까지 자동 기록(`--target`을 주면 발동, 결과 JSON에 `runId`·`reportPath` 포함). **접착 스크립트를 직접 짜지 말 것** — 이 옵션이 추가되기 전엔 `report-writer.mjs`에 CLI가 없어 에이전트가 매번 임시 스크립트를 작성해야 했던 실측 결함이 있었음(2026-07-20 수정).
+5. **FAIL이면 3번부터 재시도** (최대 `maxAutoRetry`회, 2연속 FAIL만 확정) — **재시도도 3번(코드 생성)부터 시작하고 1번(Figma 읽기)로 돌아가지 않음.** component-map에 이미 매핑이 있으므로 재시도에 Figma 호출이 필요 없음(04 ALWAYS DO 캐시 우선 원칙을 구조로 강제).
+6. PASS 판정서 없이 "완료" 보고 금지 — `hooks/verify-gate.mjs`가 기계적으로 차단.
+
+## 실측 함정 (구현 중 확인된 것 — `.PRD/01_PRD.md` §11·04 참조)
+- Figma 이미지·SVG 자산 URL은 **7일 후 만료** — 코드에 그대로 박지 말고 즉시 로컬 다운로드(자산 다운로드 스크립트는 아직 미구현 — 이미지 포함 노드 매핑 시 다음 증분)
+- Windows/Git Bash에서 `--route /...` 같은 `/`로 시작하는 인자는 경로로 오염될 수 있음 — PowerShell 사용 권장
+
+## 아직 없는 것 (다음 증분)
+- component-map에 매핑이 없는 **신규 컴포넌트**를 Figma 원시 코드(Tailwind 임의값)로부터 생성하는 경로 — 04 규칙(하드코딩 hex 금지, 기존 토큰 우선)에 맞춰 별도 설계 필요
+- 실패 피드백을 실제로 다음 생성 시도에 주입하는 자동화(현재는 사유를 사람이 읽고 수동 반영)

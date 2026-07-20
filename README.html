@@ -112,15 +112,13 @@ details {
 summary { cursor: pointer; font-weight: 600; }
 summary:hover { color: var(--accent); }
 img { max-width: 100%; }
-.lang-nav { margin: 0.5rem 0 1.5rem; font-size: 0.95rem; color: var(--text-muted); }
-.lang-nav a { margin-right: 0.3rem; }
 </style>
 </head>
 <body>
 <div class="doc">
 <h1 id="sodam-design-kit">SoDam-Design-Kit</h1>
 <p>Figma 디자인을 shadcn/ui 코드로 만들고, <strong>실제 브라우저 검증(Playwright + axe-core + 3개 화면 크기)을 통과해야만 &quot;완료&quot;로 인정되는</strong> Claude Code 디자인 자동화 킷입니다.</p>
-<p><a href="./README.md">한국어(현재 문서)</a> | <a href="./README.en.md">English</a> | <a href="./GUIDE.md">왕초보 가이드</a> | <a href="./GUIDE.en.md">Beginner Guide (EN)</a></p>
+<p><a href="./README.md">한국어(현재 문서)</a> | <a href="./README.en.md">English</a></p>
 <blockquote>
 <p>⚠️ <strong>현재 상태</strong>: Phase 1(MVP) <strong>구현 대부분 완료</strong> 단계입니다 — 핵심 스크립트·검증 게이트·판정서 기록까지 구현되어 있고, 자동 테스트 50개가 전부 통과하며, 실제 Figma 파일로 왕복 성공(PASS)까지 확인됐습니다. 다만 &quot;이번에 고친 파이프라인을 완전히 새로운 대화(세션)에서 다시 재현하는 것&quot;과 &quot;문서 최종본&quot;이 아직 남아 있어, 이 문서는 최종 완성 발표가 아니라 <strong>지금까지의 진행 상황을 정직하게 기록한 문서</strong>입니다. 공식 완료 기준은 <a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9(성공 기준)를 참고하세요.</p>
 </blockquote>
@@ -382,7 +380,6 @@ img { max-width: 100%; }
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록
 ├── README.md / README.en.md          ← 지금 이 문서
-├── GUIDE.md / GUIDE.en.md            ← 왕초보용 가이드
 └── package.json
 </code></pre>
 <h3 id="대상-프로젝트코드를-옮겨-넣는-쪽-안에-생기는-것">대상 프로젝트(코드를 옮겨 넣는 쪽) 안에 생기는 것</h3>
@@ -479,7 +476,7 @@ img { max-width: 100%; }
 <hr>
 <h2 id="12-faq-자주-묻는-질문">12. FAQ (자주 묻는 질문)</h2>
 <p><strong>Q. 코딩을 전혀 몰라도 쓸 수 있나요?</strong>
-A. 명령을 실행하는 것 자체는 슬래시 명령 2개(<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>)만 알면 됩니다. 다만 &quot;대상 프로젝트&quot;(Next.js+Tailwind+shadcn/ui)는 누군가 미리 준비되어 있어야 합니다. 자연어로 진행하고 싶다면 <a href="./GUIDE.md"><code>GUIDE.md</code></a>(왕초보 가이드)를 먼저 읽어보세요.</p>
+A. 명령을 실행하는 것 자체는 슬래시 명령 2개(<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>)만 알면 됩니다. 다만 &quot;대상 프로젝트&quot;(Next.js+Tailwind+shadcn/ui)는 누군가 미리 준비되어 있어야 합니다. 나머지는 전부 자연어로 AI에게 요청하면 됩니다.</p>
 <p><strong>Q. Figma 유료 플랜이 꼭 필요한가요?</strong>
 A. 아니요, 무료(Starter) 플랜으로도 됩니다. 다만 한 달에 6회만 읽을 수 있는 제한이 있습니다(<a href="#10-%EB%B3%B4%EC%95%88--%EB%8D%B0%EC%9D%B4%ED%84%B0-%ED%9D%90%EB%A6%84">10장</a> 참고). 이 킷은 한 번 읽은 내용을 저장해두고 재사용하도록 만들어져 있어 이 한도 안에서도 여러 번 파이프라인을 돌릴 수 있습니다.</p>
 <p><strong>Q. 검증이 실패(FAIL)하면 제 코드가 잘못된 건가요?</strong>

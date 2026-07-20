@@ -2,7 +2,7 @@
 
 Figma 디자인을 shadcn/ui 코드로 만들고, **실제 브라우저 검증(Playwright + axe-core + 3개 화면 크기)을 통과해야만 "완료"로 인정되는** Claude Code 디자인 자동화 킷입니다.
 
-[한국어(현재 문서)](./README.md) | [English](./README.en.md) | [왕초보 가이드](./GUIDE.md) | [Beginner Guide (EN)](./GUIDE.en.md)
+[한국어(현재 문서)](./README.md) | [English](./README.en.md)
 
 > ⚠️ **현재 상태**: Phase 1(MVP) **구현 대부분 완료** 단계입니다 — 핵심 스크립트·검증 게이트·판정서 기록까지 구현되어 있고, 자동 테스트 50개가 전부 통과하며, 실제 Figma 파일로 왕복 성공(PASS)까지 확인됐습니다. 다만 "이번에 고친 파이프라인을 완전히 새로운 대화(세션)에서 다시 재현하는 것"과 "문서 최종본"이 아직 남아 있어, 이 문서는 최종 완성 발표가 아니라 **지금까지의 진행 상황을 정직하게 기록한 문서**입니다. 공식 완료 기준은 [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9(성공 기준)를 참고하세요.
 
@@ -235,7 +235,6 @@ SoDam-Design-Kit/                     ← 이 킷의 저장소(지금 이 README
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록
 ├── README.md / README.en.md          ← 지금 이 문서
-├── GUIDE.md / GUIDE.en.md            ← 왕초보용 가이드
 └── package.json
 ```
 
@@ -287,7 +286,7 @@ SoDam-Design-Kit/                     ← 이 킷의 저장소(지금 이 README
 ## 12. FAQ (자주 묻는 질문)
 
 **Q. 코딩을 전혀 몰라도 쓸 수 있나요?**
-A. 명령을 실행하는 것 자체는 슬래시 명령 2개(`/sodam-design-kit:setup`, `/sodam-design-kit:pipeline`)만 알면 됩니다. 다만 "대상 프로젝트"(Next.js+Tailwind+shadcn/ui)는 누군가 미리 준비되어 있어야 합니다. 자연어로 진행하고 싶다면 [`GUIDE.md`](./GUIDE.md)(왕초보 가이드)를 먼저 읽어보세요.
+A. 명령을 실행하는 것 자체는 슬래시 명령 2개(`/sodam-design-kit:setup`, `/sodam-design-kit:pipeline`)만 알면 됩니다. 다만 "대상 프로젝트"(Next.js+Tailwind+shadcn/ui)는 누군가 미리 준비되어 있어야 합니다. 나머지는 전부 자연어로 AI에게 요청하면 됩니다.
 
 **Q. Figma 유료 플랜이 꼭 필요한가요?**
 A. 아니요, 무료(Starter) 플랜으로도 됩니다. 다만 한 달에 6회만 읽을 수 있는 제한이 있습니다([10장](#10-보안--데이터-흐름) 참고). 이 킷은 한 번 읽은 내용을 저장해두고 재사용하도록 만들어져 있어 이 한도 안에서도 여러 번 파이프라인을 돌릴 수 있습니다.

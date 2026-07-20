@@ -112,15 +112,13 @@ details {
 summary { cursor: pointer; font-weight: 600; }
 summary:hover { color: var(--accent); }
 img { max-width: 100%; }
-.lang-nav { margin: 0.5rem 0 1.5rem; font-size: 0.95rem; color: var(--text-muted); }
-.lang-nav a { margin-right: 0.3rem; }
 </style>
 </head>
 <body>
 <div class="doc">
 <h1 id="sodam-design-kit">SoDam-Design-Kit</h1>
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work &quot;done&quot; unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
-<p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a> | <a href="./GUIDE.md">Beginner Guide (KO)</a> | <a href="./GUIDE.en.md">Beginner Guide (EN)</a></p>
+<p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
 <p>⚠️ <strong>Current status</strong>: Phase 1 (MVP) is <strong>mostly implemented</strong>. The core scripts, verification gate, and report-writing are all built, all 50 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What&#39;s still open: re-running the just-fixed pipeline from a <strong>brand-new session</strong>, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in <a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 (Success Criteria).</p>
 </blockquote>
@@ -386,7 +384,6 @@ img { max-width: 100%; }
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up
 ├── README.md / README.en.md          ← this document
-├── GUIDE.md / GUIDE.en.md            ← the beginner guide
 └── package.json
 </code></pre>
 <h3 id="what-appears-inside-the-target-project-where-code-gets-generated">What appears inside the target project (where code gets generated)</h3>
@@ -483,7 +480,7 @@ img { max-width: 100%; }
 <hr>
 <h2 id="12-faq">12. FAQ</h2>
 <p><strong>Q. Can I use this if I don&#39;t know how to code at all?</strong>
-A. Running the commands themselves only requires knowing two slash commands (<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>). That said, the &quot;target project&quot; (Next.js + Tailwind + shadcn/ui) needs to already exist. If you want to work entirely in plain language, start with <a href="./GUIDE.en.md"><code>GUIDE.en.md</code></a> (the beginner guide).</p>
+A. Running the commands themselves only requires knowing two slash commands (<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>). That said, the &quot;target project&quot; (Next.js + Tailwind + shadcn/ui) needs to already exist. Everything else can be requested from the AI in plain language.</p>
 <p><strong>Q. Do I need a paid Figma plan?</strong>
 A. No, the free (Starter) plan works. It&#39;s limited to 6 reads per month (see <a href="#10-security--data-flow">Section 10</a>). This kit is built to cache what it reads and reuse it, so you can still run the pipeline multiple times within that limit.</p>
 <p><strong>Q. If verification fails (FAIL), does that mean my code is broken?</strong>

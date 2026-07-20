@@ -2,7 +2,7 @@
 
 A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and **will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).**
 
-[한국어 (Korean)](./README.md) | [English (current document)](./README.en.md) | [Beginner Guide (KO)](./GUIDE.md) | [Beginner Guide (EN)](./GUIDE.en.md)
+[한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
 > ⚠️ **Current status**: Phase 1 (MVP) is **mostly implemented**. The core scripts, verification gate, and report-writing are all built, all 50 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What's still open: re-running the just-fixed pipeline from a **brand-new session**, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria).
 
@@ -239,7 +239,6 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up
 ├── README.md / README.en.md          ← this document
-├── GUIDE.md / GUIDE.en.md            ← the beginner guide
 └── package.json
 ```
 
@@ -291,7 +290,7 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 ## 12. FAQ
 
 **Q. Can I use this if I don't know how to code at all?**
-A. Running the commands themselves only requires knowing two slash commands (`/sodam-design-kit:setup`, `/sodam-design-kit:pipeline`). That said, the "target project" (Next.js + Tailwind + shadcn/ui) needs to already exist. If you want to work entirely in plain language, start with [`GUIDE.en.md`](./GUIDE.en.md) (the beginner guide).
+A. Running the commands themselves only requires knowing two slash commands (`/sodam-design-kit:setup`, `/sodam-design-kit:pipeline`). That said, the "target project" (Next.js + Tailwind + shadcn/ui) needs to already exist. Everything else can be requested from the AI in plain language.
 
 **Q. Do I need a paid Figma plan?**
 A. No, the free (Starter) plan works. It's limited to 6 reads per month (see [Section 10](#10-security--data-flow)). This kit is built to cache what it reads and reuse it, so you can still run the pipeline multiple times within that limit.

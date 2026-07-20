@@ -1,0 +1,7 @@
+# RESEARCH_SOURCES_LIST
+
+[D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit\.PRD\RESEARCH_SOURCES-01.md](D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit\.PRD\RESEARCH_SOURCES-01.md)
+
+[D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit\.PRD\RESEARCH_SOURCES-02.md](D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit\.PRD\RESEARCH_SOURCES-02.md)
+
+[D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit\.PRD\RESEARCH_SOURCES-03.md](D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit\.PRD\RESEARCH_SOURCES-03.md)

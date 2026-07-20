@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoDam-Design-Kit — Beginner Guide</title>
+<style>
+:root {
+  --bg: #fbf9f4;
+  --bg-elevated: #ffffff;
+  --text: #262220;
+  --text-muted: #6b6259;
+  --border: #e4ddd0;
+  --accent: #a8562f;
+  --accent-soft: #f3e6dc;
+  --code-bg: #f1ece2;
+  --link: #8a4426;
+  --table-stripe: #f6f1e8;
+}
+:root[data-theme="dark"] {
+  --bg: #1c1917;
+  --bg-elevated: #26221f;
+  --text: #ece6dd;
+  --text-muted: #a89d8f;
+  --border: #3a342e;
+  --accent: #e08a55;
+  --accent-soft: #3a2a1f;
+  --code-bg: #2c2723;
+  --link: #f0a878;
+  --table-stripe: #241f1b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1917;
+    --bg-elevated: #26221f;
+    --text: #ece6dd;
+    --text-muted: #a89d8f;
+    --border: #3a342e;
+    --accent: #e08a55;
+    --accent-soft: #3a2a1f;
+    --code-bg: #2c2723;
+    --link: #f0a878;
+    --table-stripe: #241f1b;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", Pretendard, sans-serif;
+  line-height: 1.7;
+  font-size: 16px;
+}
+.doc {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+h1, h2, h3, h4 { line-height: 1.35; text-wrap: balance; }
+h1 { font-size: 2rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.6rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 3rem; padding-top: 0.5rem; border-top: 1px solid var(--border); color: var(--accent); }
+h3 { font-size: 1.15rem; margin-top: 2rem; }
+p, li { color: var(--text); }
+a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+blockquote {
+  margin: 1.2rem 0;
+  padding: 0.8rem 1.2rem;
+  background: var(--accent-soft);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+}
+blockquote p { margin: 0.3rem 0; }
+code {
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+}
+pre code { background: none; padding: 0; font-size: 0.85em; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.2rem 0;
+  display: block;
+  overflow-x: auto;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: var(--accent-soft); font-weight: 600; }
+tr:nth-child(even) td { background: var(--table-stripe); }
+hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+details {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin: 1rem 0;
+}
+summary { cursor: pointer; font-weight: 600; }
+summary:hover { color: var(--accent); }
+img { max-width: 100%; }
+.lang-nav { margin: 0.5rem 0 1.5rem; font-size: 0.95rem; color: var(--text-muted); }
+.lang-nav a { margin-right: 0.3rem; }
+</style>
+</head>
+<body>
+<div class="doc">
+<h1 id="sodam-design-kit--beginners-guide">SoDam-Design-Kit — Beginner&#39;s Guide</h1>
+<blockquote>
+<p>This guide is written for people who are <strong>completely new</strong> to computers, AI, and apps. Whenever a technical term appears, it&#39;s explained right there on the spot. Just follow the steps in order, one at a time.</p>
+</blockquote>
+<p><a href="./GUIDE.md">한국어 (Korean)</a> | <a href="./GUIDE.en.md">Beginner Guide (English, current document)</a> | <a href="./README.en.md">Full README</a></p>
+<hr>
+<h2 id="terms-worth-knowing-before-you-start">Terms worth knowing before you start</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Plain explanation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>AI</strong></td>
+<td>A computer program that can talk like a person and do work for you. This guide uses an AI called &quot;Claude.&quot;</td>
+</tr>
+<tr>
+<td><strong>Claude Code</strong></td>
+<td>A program that lets you talk to Claude (the AI) and have it do computer tasks for you (creating files, writing code, etc.). Every step in this guide happens inside this program.</td>
+</tr>
+<tr>
+<td><strong>Terminal / command window</strong></td>
+<td>A screen where, instead of clicking with a mouse, you type commands as text to tell the computer what to do. Claude Code automatically opens a window like this — don&#39;t worry, you don&#39;t need to be afraid of it. Just type exactly what this guide tells you to.</td>
+</tr>
+<tr>
+<td><strong>Plugin</strong></td>
+<td>Something like an add-on part that gives Claude Code a new feature. &quot;SoDam-Design-Kit,&quot; which you&#39;ll install in this guide, is exactly that: a plugin.</td>
+</tr>
+<tr>
+<td><strong>Slash command (a command starting with <code>/</code>)</strong></td>
+<td>A special command you can type into the Claude Code chat that runs a pre-defined task. Example: <code>/plugin</code></td>
+</tr>
+<tr>
+<td><strong>Folder / directory</strong></td>
+<td>Something like an envelope that holds files inside your computer. The yellow icons you see in Windows Explorer are folders.</td>
+</tr>
+<tr>
+<td><strong>Path</strong></td>
+<td>The text &quot;address&quot; that describes exactly where a file or folder is located inside your computer. Example: <code>D:\MyFolder\SubFolder</code></td>
+</tr>
+<tr>
+<td><strong>Figma</strong></td>
+<td>A web service used to draw screen designs (buttons, layouts, etc.). Widely used by designers.</td>
+</tr>
+<tr>
+<td><strong>Code</strong></td>
+<td>Text written in a programming language that a computer can run. This kit automatically turns Figma designs into code.</td>
+</tr>
+<tr>
+<td><strong>Browser</strong></td>
+<td>A program that displays internet pages (Chrome, Edge, etc.). This kit automatically checks whether the code it generates actually looks right in a real browser.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="what-can-this-tool-do-one-line-summary">What can this tool do? (one-line summary)</h2>
+<p><strong>It automatically turns a screen you designed in Figma (say, a single button) into code — but only code that a computer has actually double-checked, for real.</strong> Instead of a person glancing at the result and guessing &quot;looks about right,&quot; this tool opens a real browser and checks: does the screen actually render correctly? Would it work well for people using accessibility tools (like screen readers)? Does it look right on a phone, a tablet, and a PC screen? Only once all of that passes is the tool allowed to say &quot;it&#39;s done.&quot;</p>
+<hr>
+<h2 id="4-things-to-prepare-before-you-start">4 things to prepare before you start</h2>
+<p>All 4 of the following need to be ready before you can move to the next step. Check them one by one.</p>
+<h3 id="①-is-claude-code-installed">① Is Claude Code installed?</h3>
+<ul>
+<li>If you&#39;re already reading this guide inside Claude Code, you&#39;re set. If not, follow the official instructions at <a href="https://claude.com/claude-code">claude.com/claude-code</a> to install it first.</li>
+</ul>
+<h3 id="②-is-nodejs-installed">② Is Node.js installed?</h3>
+<ul>
+<li>Node.js is a program-runner that this tool uses internally.</li>
+<li><strong>How to check</strong>: type the following exactly, into the Claude Code chat window:<pre><code>node -v
+</code></pre>
+</li>
+<li><strong>Success looks like</strong>: a number starting with <code>v</code> appears, like <code>v22.19.0</code>. If you instead see something like &quot;command not found,&quot; go to <a href="https://nodejs.org">nodejs.org</a>, download the version labeled &quot;LTS,&quot; install it, and check again.</li>
+</ul>
+<h3 id="③-is-a-target-project-ready">③ Is a &quot;target project&quot; ready?</h3>
+<ul>
+<li>This tool needs somewhere to put the code it generates — a project that already exists. It must be built with <strong>Next.js + Tailwind CSS + shadcn/ui</strong>.</li>
+<li>If you already have such a project, note down its folder path. If not, ask Claude Code in plain language: &quot;Please create a new project using Next.js, Tailwind, and shadcn/ui&quot; — and have it set that up first.</li>
+</ul>
+<h3 id="④-can-you-access-figma">④ Can you access Figma?</h3>
+<ul>
+<li>The design you want to turn into code needs to live in Figma. If Figma is already connected to your claude.ai account, you&#39;re good to go; if not, ask Claude Code &quot;please connect to Figma,&quot; and it will guide you through logging in.</li>
+<li>A free Figma account is fine. Just note it&#39;s limited to reading designs 6 times per month, so it&#39;s worth saving those reads for screens you actually need to check.</li>
+</ul>
+<blockquote>
+<p>Once all 4 are ready, move on to &quot;Installing&quot; below. If even one is missing, prepare that first.</p>
+</blockquote>
+<hr>
+<h2 id="installing-only-needs-to-be-done-once">Installing (only needs to be done once)</h2>
+<blockquote>
+<p>⚠️ These installation steps assume this tool <strong>is not yet published publicly, and is installed by pointing directly at a folder on your own computer.</strong> This method may change later.</p>
+</blockquote>
+<h3 id="step-1-register-the-marketplace">Step 1: Register the marketplace</h3>
+<p>Type this into the Claude Code chat window (replace the path with wherever this kit&#39;s folder actually is on your computer — for example, <code>D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit</code>):</p>
+<pre><code>/plugin marketplace add D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit
+</code></pre>
+<p>✅ <strong>Success looks like this</strong>: you see a confirmation message such as &quot;marketplace added.&quot;</p>
+<h3 id="step-2-install-the-plugin">Step 2: Install the plugin</h3>
+<pre><code>/plugin install sodam-design-kit@sodam
+</code></pre>
+<p>✅ <strong>Success looks like this</strong>: you see a message like &quot;Installed&quot; or &quot;installation complete.&quot;</p>
+<h3 id="step-3-fully-close-and-reopen-claude-code">Step 3: Fully close and reopen Claude Code</h3>
+<ul>
+<li>Not just a refresh — <strong>close the window completely</strong>, then start it again.</li>
+<li>Why is this needed? Claude Code needs a proper restart to fully recognize what was just installed (this is a common pitfall, so we&#39;re flagging it in advance).</li>
+</ul>
+<h3 id="step-4-download-the-required-parts-once-only">Step 4: Download the required parts (once only)</h3>
+<p>In the Claude Code chat window, move into <strong>this kit&#39;s own repository folder</strong> (the same path you typed in Step 1), and type:</p>
+<pre><code>npm install
+</code></pre>
+<ul>
+<li>This downloads the tools used to check the screen in a real browser and to check accessibility. It may take a little while.
+✅ <strong>Success looks like this</strong>: the command finishes without errors, and you can type something new again.</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Watch out for this pitfall</strong>: some programs, when installed, create a copy somewhere like <code>AppData\...</code>. <strong>This tool does not do that.</strong> It keeps using the exact original folder you pointed to in Step 1. So don&#39;t go looking for a separate &quot;installed folder&quot; — it doesn&#39;t exist.</p>
+</blockquote>
+<h3 id="step-5-confirm-the-install">Step 5: Confirm the install</h3>
+<p>Now move into your <strong>target project</strong> (prerequisite ③ — the project you&#39;ll be putting the code into), and type:</p>
+<pre><code>/sodam-design-kit:setup
+</code></pre>
+<p>✅ <strong>Success looks like this</strong>: when you type <code>/</code>, <code>sodam-design-kit:setup</code> appears in the autocomplete list, and running it finishes without any errors.</p>
+<p><strong>If you&#39;ve made it this far, the installation is done! 🎉</strong></p>
+<hr>
+<h2 id="trying-it-out-for-real-your-first-run-results-in-5-minutes">Trying it out for real (your first run, results in 5 minutes)</h2>
+<h3 id="step-1-initial-setup-only-once-per-project">Step 1: Initial setup (only once per project)</h3>
+<p>Inside your target project folder:</p>
+<pre><code>/sodam-design-kit:setup
+</code></pre>
+<p>✅ <strong>Success looks like this</strong>: you see a message like &quot;created,&quot; and a new folder called <code>.design-kit</code> appears inside that project folder.</p>
+<h3 id="step-2-get-your-figma-design-ready--copy-its-link">Step 2: Get your Figma design ready — copy its link</h3>
+<ol>
+<li>In Figma, click on the screen element you want turned into code (e.g., a single button) to select it.</li>
+<li>Copy its share link — but <strong>not the whole file&#39;s link, only the one for that specific selected element</strong> (right-click → &quot;Copy link&quot; or a similarly named menu item). The link&#39;s address needs to contain the text <code>node-id=</code> for it to be precise enough.<ul>
+<li>⚠️ <strong>A common mistake</strong>: don&#39;t just copy the whole-file link (the one in your address bar right when you first open the file). You must <strong>click to select the specific element first</strong>, then copy its link.</li>
+</ul>
+</li>
+</ol>
+<h3 id="step-3-run-the-pipeline">Step 3: Run the pipeline</h3>
+<p>In the Claude Code chat window:</p>
+<pre><code>/sodam-design-kit:pipeline
+</code></pre>
+<p>Then paste the Figma link you just copied, and ask in plain language, e.g., &quot;turn this button into code.&quot;</p>
+<ul>
+<li>The AI will automatically go through these steps in order: ① read the Figma design → ② generate code → ③ launch it in a real browser to check it → ④ run an accessibility check → ⑤ check it at phone/tablet/PC sizes → ⑥ record the result.</li>
+<li>This can take anywhere from tens of seconds to a few minutes. If you see a message like &quot;check failed, retrying,&quot; don&#39;t worry — that&#39;s a normal automatic retry (up to 3 times).</li>
+</ul>
+<h3 id="step-4-check-the-result">Step 4: Check the result</h3>
+<p>✅ <strong>The final marker of success</strong>: the AI&#39;s reply shows a <code>PASS</code> label, and a new file (ending in <code>.md</code>) appears in the <code>.design-kit/reports/</code> folder. Open that file — if you see:</p>
+<ul>
+<li>the text <code>**PASS**</code></li>
+<li>three screenshot paths for three screen sizes: 360px / 768px / 1440px</li>
+</ul>
+<p>...that means real-browser verification genuinely finished.</p>
+<p>❌ If you see <code>FAIL</code> instead? <strong>Nothing is broken.</strong> In fact, it&#39;s proof that this tool is checking things properly. Open the report file to see why it failed, and ask the AI: &quot;please look at this failure reason and fix it.&quot;</p>
+<hr>
+<h2 id="common-problems-and-how-to-fix-them-troubleshooting">Common problems and how to fix them (troubleshooting)</h2>
+<table>
+<thead>
+<tr>
+<th>You see this</th>
+<th>Why it happens</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Installed, but <code>/sodam-design-kit:setup</code> doesn&#39;t show up in autocomplete</td>
+<td>Claude Code hasn&#39;t noticed the new plugin yet</td>
+<td><strong>Fully close and reopen</strong> Claude Code (not a refresh)</td>
+</tr>
+<tr>
+<td>&quot;Completion has been blocked&quot;</td>
+<td><strong>This is normal.</strong> It&#39;s a safety feature that stops the AI from moving on and pretending everything&#39;s fine when a check actually failed</td>
+<td>Open the report to see the failure reason, then try again</td>
+</tr>
+<tr>
+<td><code>FAIL</code> keeps happening over and over</td>
+<td>The automatic 3-time retry may not be enough for this particular issue</td>
+<td>Open the report yourself and read the failure reason, or ask the AI: &quot;please look at this reason and fix it&quot;</td>
+</tr>
+<tr>
+<td>Figma won&#39;t connect</td>
+<td>Your login may have expired, or there might be a permissions issue</td>
+<td>Ask the AI: &quot;please check the Figma connection status&quot;</td>
+</tr>
+<tr>
+<td>A <code>.fig</code> file saved on my own computer won&#39;t open</td>
+<td>This tool can only read files that are <strong>saved to a Figma account</strong> — it can&#39;t read a file straight off your computer</td>
+<td>Open that file in the Figma app to save it to your account, then use that link instead</td>
+</tr>
+<tr>
+<td>A message about &quot;port conflict&quot; flashes by</td>
+<td>Another program is already using that same spot</td>
+<td><strong>You don&#39;t need to do anything.</strong> This tool automatically finds another spot and keeps going</td>
+</tr>
+<tr>
+<td>Korean or other non-English text looks like broken squares (□)</td>
+<td>Fonts aren&#39;t automatically handled yet (planned for a future update)</td>
+<td>For now, check the font setup of your target project directly</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="frequently-asked-questions-faq">Frequently Asked Questions (FAQ)</h2>
+<p><strong>Q1. I don&#39;t know how to code at all — can I still use this?</strong>
+A. Yes. Just type the two commands in this guide (<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>) exactly as shown, and ask for everything else in plain language. The one thing that needs to already exist is the &quot;target project&quot; itself (the Next.js code skeleton) — someone (or the AI, if you ask it) needs to set that up beforehand.</p>
+<p><strong>Q2. If the AI does everything anyway, why does &quot;checking&quot; even matter?</strong>
+A. AI can make mistakes too. This tool makes sure that before the AI says &quot;it&#39;s done,&quot; a computer actually opens a browser and looks at it — the way a human would. The goal is to make sure something is &quot;actually confirmed to work,&quot; not just &quot;claimed to work.&quot;</p>
+<p><strong>Q3. What if something stops partway through?</strong>
+A. Just describe what happened in the Claude Code chat window (for example: &quot;it stopped partway through, what should I do?&quot;). The AI can check the current state and guide you on what to do next.</p>
+<p><strong>Q4. Can I share this tool with someone else, or sell it?</strong>
+A. <strong>No, not currently.</strong> The permission terms (license) for this tool itself haven&#39;t been decided yet. Please make sure to read the <a href="./README.en.md#13-legal-copyright-license--commercial-use">Legal &amp; Copyright section of the README</a>.</p>
+<p><strong>Q5. Does any of my personal or company data get sent anywhere?</strong>
+A. No. This tool only reads the specific Figma design screens you point it to, and sends no other data to any outside server. All generated code and check records stay only on your own computer. That said, the rule is: never connect a real Figma file containing personal information to this tool (use practice/dummy data only).</p>
+<hr>
+<h2 id="need-more-detail">Need more detail?</h2>
+<ul>
+<li>For more technical explanations (the full command table, architecture, workflow diagrams, etc.), see <a href="./README.en.md"><code>README.en.md</code></a>.</li>
+<li>For why this tool was built this way, and what&#39;s planned for the future, the most detailed source is the design documentation in <a href="./.PRD"><code>.PRD/</code></a>.</li>
+<li>If you&#39;d prefer Korean, see <a href="./GUIDE.md"><code>GUIDE.md</code></a>.</li>
+</ul>
+
+</div>
+</body>
+</html>

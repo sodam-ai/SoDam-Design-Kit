@@ -29,6 +29,29 @@ test('findAvailablePort: 빈 포트면 시작값 그대로 반환', async () => 
   assert.equal(port, 38173);
 });
 
+// 2026-07-27 실측 발견 결함의 회귀 테스트. 예전엔 "바인드가 성공하면 비어있다"로 판정했는데,
+// Windows는 다른 프로세스가 0.0.0.0(모든 인터페이스)으로 이미 리슨 중이어도 127.0.0.1로의
+// 별도 바인드를 허용해버린다(SO_EXCLUSIVEADDRUSE 미설정 시 특성) — 그래서 실제로는 점유된
+// 포트를 findAvailablePort가 "비어있다"고 오판했다. 실사용에서 이 오판이 실제로 재현됨:
+// 전혀 무관한 다른 프로젝트(BizPick)의 Next.js dev 서버가 0.0.0.0:3000을 점유한 상태에서
+// verify-runner가 그 포트를 "가용"으로 판단해, 결과적으로 **우리 프로젝트가 아니라 그 다른
+// 프로젝트를 검증하고도 그럴듯한 판정서를 만들어냈다**(target·devServer.port는 우리 것,
+// 실제로 검사된 화면은 다른 앱). 01 §9 "판정 근거"를 통째로 무너뜨리는 이번 라운드 최대 결함.
+test('findAvailablePort: 다른 프로세스가 0.0.0.0으로 점유한 포트도 건너뛴다 (Windows 바인드 오판 회귀 방지 — 2026-07-27 실측 발견 결함)', async () => {
+  const blocker = createServer();
+  // 점유 주체를 0.0.0.0(전체 인터페이스)으로 만든다 — 옛 코드의 바인드 검사(127.0.0.1 특정 바인드)가
+  // "성공"해버리던 바로 그 조건을 재현. 연결 기반 검사는 호스트 표기와 무관하게 실제 연결
+  // 성공 여부만 보므로 이 케이스에서도 정확해야 한다.
+  await new Promise((resolve) => blocker.listen(3000, '0.0.0.0', resolve));
+  try {
+    const port = await findAvailablePort(3000, 3020);
+    assert.notEqual(port, 3000, '0.0.0.0으로 점유된 3000이 "비어있다"고 오판되면 안 됨 — 실제로 이렇게 오판되던 결함이 있었음');
+    assert.ok(port > 3000 && port <= 3020);
+  } finally {
+    await new Promise((resolve) => blocker.close(resolve));
+  }
+});
+
 const baseResult = () => ({
   renderOk: true,
   consoleErrors: [],

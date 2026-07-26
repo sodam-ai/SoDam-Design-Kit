@@ -1,10 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, copyFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { resolveAlias, scanComponents, runSetup } from '../scripts/setup-wizard.mjs';
+
+const execFileAsync = promisify(execFile);
+const SCRIPTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts');
 
 async function readGitignore(dir) {
   try {
@@ -211,5 +217,37 @@ test('runSetup: --force로 재실행해도 이미 확보한 Figma 매핑을 보�
     assert.equal(card.figmaNodeId, '', '매핑 없던 신규 컴포넌트는 기존과 동일하게 빈 값으로 시드');
   } finally {
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// 위 테스트들은 runSetup()을 import해서 직접 부른다 — 실사용 경로인 "명령이 스크립트를 프로세스로
+// 실행하는 구간"(commands/setup.md의 `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-wizard.mjs"`)은
+// 검증되지 않고 있었다. 그 구간의 진입점 판정이 틀리면 아무 일도 안 일어나고 exit 0이라
+// 사용자에겐 "성공한 것처럼" 보인다(가장 나쁜 실패 모드). hooks/verify-gate.mjs와 같은 결함이었다.
+test('CLI: 경로에 공백·한글이 있어도 setup 스크립트가 실제로 실행된다 (조용한 실패 방지 — 2026-07-27 실측 발견 결함)', async () => {
+  const base = await mkdtemp(path.join(tmpdir(), 'design-kit-setup-'));
+  try {
+    const weirdDir = path.join(base, 'My 한글 폴더');
+    await mkdir(weirdDir, { recursive: true });
+    const scriptCopy = path.join(weirdDir, 'setup-wizard.mjs');
+    await copyFile(path.join(SCRIPTS_DIR, 'setup-wizard.mjs'), scriptCopy);
+
+    const projectDir = path.join(weirdDir, 'project');
+    await mkdir(projectDir, { recursive: true });
+
+    // 04 DO NOT "셸 문자열 조합 금지" 준수 — 인자 배열로만 실행(shell:true 없음)
+    const { stdout } = await execFileAsync(process.execPath, [scriptCopy, '--project', projectDir]);
+
+    assert.match(
+      stdout,
+      /\[setup\]/,
+      '스크립트가 아무 출력도 없이 끝나면 main()이 안 돈 것 — 사용자에겐 성공으로 보이는 조용한 실패'
+    );
+    assert.ok(
+      existsSync(path.join(projectDir, '.design-kit', 'config.json')),
+      '공백·한글 경로에서도 config.json이 실제로 생성돼야 함'
+    );
+  } finally {
+    await rm(base, { recursive: true, force: true });
   }
 });

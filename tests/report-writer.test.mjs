@@ -66,6 +66,11 @@ test('writeReport: 중간 판정 기록이 삭제된 상태에서도 새 판정�
     const result = await writeReport({
       designKitDir: dir,
       target: '새 실행',
+      // FIXED_DATE를 반드시 writeReport에도 넘긴다 — 안 넘기면 writeReport()가 "실제 오늘 날짜"로
+      // runId를 만들어 위 2026-07-20 픽스처와 어긋나므로, 이 테스트는 작성한 날 하루만 통과하는
+      // 시한폭탄이 된다. 실제로 그렇게 깨져 있던 것을 2026-07-27에 실측으로 발견해 고쳤다
+      // (nextRunId만 주입구가 있고 writeReport에는 없던 비대칭이 원인).
+      date: FIXED_DATE,
       verifyRunnerOutput: {
         devServer: { port: 3000, autoStarted: true },
         renderOk: true,

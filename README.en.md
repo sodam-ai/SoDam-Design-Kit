@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ⚠️ **Current status**: Phase 1 (MVP) is **mostly implemented**. The core scripts, verification gate, and report-writing are all built, all 50 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What's still open: re-running the just-fixed pipeline from a **brand-new session**, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria).
+> ⚠️ **Current status**: Phase 1 (MVP) is **mostly implemented**. The core scripts, verification gate, and report-writing are all built, all 53 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What's still open: re-running the just-fixed pipeline from a **brand-new session**, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria).
 
 ---
 
@@ -147,12 +147,35 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (50 tests) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (53 tests) | this kit's own repository folder |
 | `node scripts/e2e-selftest.mjs --fixture <path>` | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
 
 ## 7. Update Summary
+
+<details>
+<summary><b>▶ 2026-07-27 — Fixed: verification could end up checking the wrong app entirely if another program was already using the same port (click to expand)</b></summary>
+
+- **The most serious problem found — what got checked might not have been your project at all**: this kit automatically avoids a busy port (e.g. 3000) and moves to the next one when starting its verification browser. However, **it could mistakenly think a port was "free" even when another program (e.g. a dev server from a completely different project) was already using it.** When that happened, the verification browser opened and checked **that other program's screen instead of yours**, yet still produced a report that looked exactly like it had checked your project.
+  - This was caught happening for real: an unrelated project's dev server was using port 3000, and the kit mistakenly treated that port as "free" and ended up checking that other program's screen.
+  - Fixed by switching to a more accurate way of checking whether a port is actually in use. With the other program still running on that port, a re-check confirmed the kit now correctly moves to the next port and **checks only your own project**.
+  - One new automated test was added so this can never quietly come back.
+- Thanks to this fix, the automated test count is now **53**, with **all 53 passing** (verified by an actual run on 2026-07-27).
+
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Fixed: verification silently switched itself off when the folder path contained a space or non-English characters (click to expand)</b></summary>
+
+- **The most important fix — "completion blocking" was disappearing silently**: if the folder this kit is installed in contained a **space** (e.g. `My Projects`) or **non-English characters** (e.g. a Korean Windows account name, `C:\Users\홍길동\...`), the verification scripts **did nothing at all and exited quietly**. No error message appeared, so from the user's point of view it looked like everything had worked. When this happened in the completion-blocking hook (`hooks/verify-gate.mjs`), it meant **a failing check could be reported as "done" with nothing to stop it** — which removes the entire reason this kit exists. That is why it was fixed first.
+  - Reproduced across three paths: folder with a space → off / folder with Korean characters → off / plain-English folder → working. After the fix, all three work.
+  - The pre-fix version was run directly from a Korean + space path and confirmed to print **literally nothing**; the fixed version prints a proper "block" verdict from the same location.
+  - To make sure this can never quietly return, **two new automated tests** now run the real scripts from a folder that deliberately contains a space and Korean characters.
+- **One automated test was actually failing**: the docs claimed "all 50 pass", but an actual run showed **only 49 passing**. The cause: one test was pinned to the date "2026-07-20", so it passed **only on the day it was written and broke the next day**. Fixed by allowing the date to be injected (no impact on real-world usage).
+- Together these bring the automated test count from **50 to 53**, with **all 53 passing** (verified by an actual run on 2026-07-27).
+
+</details>
 
 <details>
 <summary><b>▶ 2026-07-20 — Unified verify+report command; fixed a data-loss bug (click to expand)</b></summary>
@@ -235,7 +258,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
 │   └── report-writer.mjs
-├── tests/                            ← automated tests (50)
+├── tests/                            ← automated tests (53)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up
 ├── README.md / README.en.md          ← this document

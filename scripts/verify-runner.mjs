@@ -4,9 +4,10 @@
 // PASS 조건 4가지(단일 출처: .PRD/02_DATA_MODEL.md) — 여기서 재구현하지 않고 그대로 판정에 사용
 
 import { spawn } from 'node:child_process';
-import { createServer } from 'node:net';
+import { Socket } from 'node:net';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import http from 'node:http';
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
@@ -23,23 +24,58 @@ const PORT_RANGE_END = 3020;
 const READY_TIMEOUT_MS = 30000;
 const READY_POLL_INTERVAL_MS = 500;
 
-/** 포트가 비어 있는지 확인 후 첫 가용 포트를 돌려줌 (PowerShell로 점유 프로세스를 죽이지 않고, 코드가 자동으로 다음 포트로 우회) */
-export function findAvailablePort(start = PORT_RANGE_START, end = PORT_RANGE_END) {
-  return new Promise((resolve, reject) => {
-    if (start > end) {
-      reject(new Error(`포트 ${PORT_RANGE_START}~${PORT_RANGE_END}이 모두 사용 중입니다.`));
-      return;
-    }
-    const server = createServer();
-    server.unref();
-    server.on('error', () => {
-      findAvailablePort(start + 1, end).then(resolve, reject);
-    });
-    server.listen(start, '127.0.0.1', () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
-    });
+/**
+ * 포트가 점유돼 있는지 "실제로 연결해서" 확인한다 (2026-07-27 실측 발견·수정 — 결정 기록).
+ *
+ * 예전엔 `server.listen(port, '127.0.0.1')`이 성공하는지로 점유 여부를 판정했는데,
+ * Windows는 다른 프로세스가 이미 `0.0.0.0:<port>`(모든 인터페이스)로 리슨 중이어도
+ * `127.0.0.1:<port>`에 대한 별도 바인드를 별문제 없이 허용해버린다(SO_EXCLUSIVEADDRUSE
+ * 미설정 시의 Windows 소켓 특성). 그래서 findAvailablePort()는 실제로는 점유된 포트를
+ * "비어있다"고 오판했고, 그 뒤 verify-runner가 실제로 통신하는 상대는 우리가 막 띄운
+ * next dev가 아니라 그 자리를 먼저 차지하고 있던 **전혀 다른 프로젝트의 서버**였다.
+ *
+ * 실측 재현(격리 테스트, 이 킷 코드와 무관하게 순수 node:net으로 확인):
+ *   이미 0.0.0.0:3000을 점유 중인 별도 프로세스(다른 프로젝트의 Next.js dev 서버, 실제
+ *   BizPick 프로젝트로 확인됨)가 떠 있는 상태에서, `listen(3000, '127.0.0.1')`이 **성공**을
+ *   반환했다 — 바인드 기반 점검이 Windows에서 근본적으로 신뢰할 수 없음을 증명.
+ *   그 결과 실제 재현된 사고: verify-runner가 우리 픽스처가 아니라 그 다른 프로젝트를
+ *   대상으로 검증을 수행하고도(포트만 같았을 뿐) 그럴듯한 PASS/FAIL 판정서를 만들어냈다
+ *   (판정서의 target·devServer.port는 우리 것인데 실제로 검사된 화면은 다른 앱의 화면).
+ *   이건 01_PRD.md §9 성공 기준의 "판정 근거"를 통째로 무너뜨리는, 이번 라운드에서 발견된
+ *   것 중 가장 심각한 결함이다 — 게이트가 차단/통과를 잘못하는 정도가 아니라 **엉뚱한
+ *   대상을 검사하고도 진짜인 것처럼 보고**할 수 있었다.
+ *
+ * 수정: "바인드해서 성공하면 비어있다"가 아니라 "연결해서 성공하면 이미 누가 쓰고 있다"로
+ * 뒤집었다. 이건 실제 클라이언트(Playwright·http.get)가 그 포트에 접속할 때 실제로 겪는
+ * 것과 정확히 같은 경로라서, Windows의 바인드 허용 특이사항과 무관하게 항상 정확하다.
+ * **이 판정 방식을 다시 바인드 기반으로 되돌리지 말 것** — 되돌리면 이 사고가 그대로 재현된다.
+ */
+function isPortInUse(port, host = '127.0.0.1', timeoutMs = 400) {
+  return new Promise((resolve) => {
+    const socket = new Socket();
+    let settled = false;
+    const finish = (inUse) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(inUse);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => finish(true)); // 연결이 성립됨 = 누군가 이미 듣고 있음
+    socket.once('timeout', () => finish(false)); // 응답 없음 = 로컬 루프백에서는 사실상 비어있다고 봄
+    socket.once('error', () => finish(false)); // ECONNREFUSED 등 = 듣는 프로세스 없음 = 비어있음
+    socket.connect(port, host);
   });
+}
+
+/** 포트가 비어 있는지 확인 후 첫 가용 포트를 돌려줌 (PowerShell로 점유 프로세스를 죽이지 않고, 코드가 자동으로 다음 포트로 우회) */
+export async function findAvailablePort(start = PORT_RANGE_START, end = PORT_RANGE_END) {
+  for (let port = start; port <= end; port += 1) {
+    // eslint-disable-next-line no-await-in-loop -- 순차 스캔이 의도(포트 낮은 순 우선 배정)
+    const inUse = await isPortInUse(port);
+    if (!inUse) return port;
+  }
+  throw new Error(`포트 ${PORT_RANGE_START}~${PORT_RANGE_END}이 모두 사용 중입니다.`);
 }
 
 function waitForReady(url, timeoutMs = READY_TIMEOUT_MS) {
@@ -237,7 +273,10 @@ async function main() {
   }
 }
 
-const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+// 진입점 판정은 fileURLToPath로 (2026-07-27 실측 발견·수정 — 사유 정본은 hooks/verify-gate.mjs 주석).
+// 요약: pathname 기반 비교는 경로에 공백·한글이 있으면 퍼센트 인코딩 때문에 항상 어긋나
+// main()이 실행되지 않고 exit 0으로 조용히 끝난다. 되돌리지 말 것.
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMainModule) {
   main().catch((err) => {
     console.error('[verify-runner] 실패:', err.message);

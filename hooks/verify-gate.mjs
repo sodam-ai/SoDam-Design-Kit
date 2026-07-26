@@ -5,6 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** 순수 판정 함수 — cwd 기준 .design-kit/runs/의 최신 실행 상태를 읽어 차단 여부 결정. 테스트 용이성을 위해 분리. */
 export function decide(cwd) {
@@ -67,7 +68,18 @@ function main() {
 
 // import만 해서 decide()를 재사용할 때(e2e-selftest.mjs, tests/)는 실행되면 안 되고,
 // Claude Code가 hooks.json을 통해 `node verify-gate.mjs`로 직접 실행할 때만 동작해야 함.
-const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+//
+// 경로 비교는 반드시 fileURLToPath로 한다 (2026-07-27 실측 발견·수정 — 결정 기록).
+// 예전엔 `new URL(import.meta.url).pathname`을 썼는데, 이 값은 퍼센트 인코딩이 남아 있고
+// (공백 -> %20, 한글 -> %ED%95%9C...) process.argv[1]은 디코딩된 실경로라 비교가 항상 어긋났다.
+// 그러면 isMainModule=false -> main() 미실행 -> stdout이 비어 있고 exit 0 (조용한 실패).
+// 실측 재현(3케이스): "My Projects"(공백) false / "한글경로" false / ASCII true.
+// 이 훅에서 그 일이 벌어지면 판정 출력 자체가 사라져 **완료 차단이 통째로 무력화**된다 —
+// 아래 decide()가 fail-closed로 고쳐진 의미(01 §9 성공 기준 2번 "게이트가 장식이 아님")가
+// 바깥 진입점에서 뒤집히는 지점이라 이 킷에서 가장 위험한 한 줄이다.
+// CLAUDE_PLUGIN_ROOT는 사용자 PC마다 다르고(예: C:\Users\<한글 계정명>\...) 공백도 흔하다.
+// **이 판정식을 다시 pathname 기반으로 되돌리지 말 것.**
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMainModule) {
   main();
 }

@@ -6,6 +6,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * .design-kit/reports/screenshots/를 프로젝트 .gitignore에 등록 (최초 1회만, 멱등).
@@ -174,7 +175,10 @@ async function main() {
   console.log(`  - ${result.mapPath}`);
 }
 
-const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+// 진입점 판정은 fileURLToPath로 (2026-07-27 실측 발견·수정 — 사유 정본은 hooks/verify-gate.mjs 주석).
+// 요약: pathname 기반 비교는 경로에 공백·한글이 있으면 퍼센트 인코딩 때문에 항상 어긋나
+// main()이 실행되지 않고 exit 0으로 조용히 끝난다. 되돌리지 말 것.
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMainModule) {
   main().catch((err) => {
     console.error('[setup-wizard] 실패:', err.message);

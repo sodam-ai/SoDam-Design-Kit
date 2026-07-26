@@ -120,10 +120,16 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
  * @param {string[]} [opts.generatedFiles] - 생성/수정된 파일 목록
  * @param {number} [opts.retryCount] - 자동 재시도 횟수
  * @param {string} [opts.recheck] - FAIL 재검 결과 문구 (2연속 FAIL 확정 로직은 호출자 책임)
+ * @param {Date} [opts.date] - runId의 날짜 부분을 계산할 기준 시각 (기본값 = 실행 시각).
+ *   nextRunId()가 이미 갖고 있던 것과 같은 주입 패턴을 writeReport()에도 연 것이다.
+ *   용도는 테스트뿐 — "특정 날짜에 순번이 충돌하는 상황"을 결정적으로 재현하려면 이 주입구가
+ *   있어야 한다. 없을 때는 테스트가 픽스처 날짜를 하드코딩할 수밖에 없어서 그 날 하루만
+ *   통과하는 시한폭탄이 됐다(2026-07-27 실측 발견 — 실제로 깨져 있었음).
+ *   실사용 호출부(verify-runner.mjs·e2e-selftest.mjs)는 이 값을 넘기지 않는다.
  * @param {object} opts.verifyRunnerOutput - verify-runner.mjs의 JSON 출력 전체
  */
 export async function writeReport(opts) {
-  const { designKitDir, target, generatedFiles = [], retryCount = 0, recheck = null, verifyRunnerOutput } = opts;
+  const { designKitDir, target, generatedFiles = [], retryCount = 0, recheck = null, date = new Date(), verifyRunnerOutput } = opts;
   const { devServer: devServerInfo, verdict, reasons, ...rawVerifyResult } = verifyRunnerOutput;
   const judgement = { verdict, reasons };
 
@@ -147,7 +153,9 @@ export async function writeReport(opts) {
   await mkdir(runsDir, { recursive: true });
   await mkdir(reportsDir, { recursive: true });
 
-  const runId = await nextRunId(designKitDir);
+  const runId = await nextRunId(designKitDir, date);
+  // startedAt은 의도적으로 date를 쓰지 않는다 — runId는 "파일명의 날짜 구간"이고
+  // startedAt은 "실제 실행 시각"이라 의미가 다르다. 테스트가 날짜를 주입해도 실행 시각은 진짜여야 한다.
   const startedAt = new Date().toISOString();
 
   const runRecord = {

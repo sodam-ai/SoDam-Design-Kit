@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work &quot;done&quot; unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>⚠️ <strong>Current status</strong>: Phase 1 (MVP) is <strong>mostly implemented</strong>. The core scripts, verification gate, and report-writing are all built, all 50 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What&#39;s still open: re-running the just-fixed pipeline from a <strong>brand-new session</strong>, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in <a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 (Success Criteria).</p>
+<p>⚠️ <strong>Current status</strong>: Phase 1 (MVP) is <strong>mostly implemented</strong>. The core scripts, verification gate, and report-writing are all built, all 53 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What&#39;s still open: re-running the just-fixed pipeline from a <strong>brand-new session</strong>, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in <a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 (Success Criteria).</p>
 </blockquote>
 <hr>
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -301,7 +301,7 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit&#39;s own automated tests (50 tests)</td>
+<td>Runs the kit&#39;s own automated tests (53 tests)</td>
 <td>this kit&#39;s own repository folder</td>
 </tr>
 <tr>
@@ -313,6 +313,27 @@ img { max-width: 100%; }
 <hr>
 <h2 id="7-update-summary">7. Update Summary</h2>
 <details>
+<summary><b>▶ 2026-07-27 — Fixed: verification could end up checking the wrong app entirely if another program was already using the same port (click to expand)</b></summary><ul>
+<li><strong>The most serious problem found — what got checked might not have been your project at all</strong>: this kit automatically avoids a busy port (e.g. 3000) and moves to the next one when starting its verification browser. However, <strong>it could mistakenly think a port was &quot;free&quot; even when another program (e.g. a dev server from a completely different project) was already using it.</strong> When that happened, the verification browser opened and checked <strong>that other program&#39;s screen instead of yours</strong>, yet still produced a report that looked exactly like it had checked your project.
+<ul>
+<li>This was caught happening for real: an unrelated project&#39;s dev server was using port 3000, and the kit mistakenly treated that port as &quot;free&quot; and ended up checking that other program&#39;s screen.</li>
+<li>Fixed by switching to a more accurate way of checking whether a port is actually in use. With the other program still running on that port, a re-check confirmed the kit now correctly moves to the next port and <strong>checks only your own project</strong>.</li>
+<li>One new automated test was added so this can never quietly come back.</li>
+</ul></li>
+<li>Thanks to this fix, the automated test count is now <strong>53</strong>, with <strong>all 53 passing</strong> (verified by an actual run on 2026-07-27).</li>
+</ul>
+</details><details>
+<summary><b>▶ 2026-07-27 — Fixed: verification silently switched itself off when the folder path contained a space or non-English characters (click to expand)</b></summary><ul>
+<li><strong>The most important fix — &quot;completion blocking&quot; was disappearing silently</strong>: if the folder this kit is installed in contained a <strong>space</strong> (e.g. <code>My Projects</code>) or <strong>non-English characters</strong> (e.g. a Korean Windows account name, <code>C:\Users\홍길동\...</code>), the verification scripts <strong>did nothing at all and exited quietly</strong>. No error message appeared, so from the user&#39;s point of view it looked like everything had worked. When this happened in the completion-blocking hook (<code>hooks/verify-gate.mjs</code>), it meant <strong>a failing check could be reported as &quot;done&quot; with nothing to stop it</strong> — which removes the entire reason this kit exists. That is why it was fixed first.
+<ul>
+<li>Reproduced across three paths: folder with a space → off / folder with Korean characters → off / plain-English folder → working. After the fix, all three work.</li>
+<li>The pre-fix version was run directly from a Korean + space path and confirmed to print <strong>literally nothing</strong>; the fixed version prints a proper &quot;block&quot; verdict from the same location.</li>
+<li>To make sure this can never quietly return, <strong>two new automated tests</strong> now run the real scripts from a folder that deliberately contains a space and Korean characters.</li>
+</ul></li>
+<li><strong>One automated test was actually failing</strong>: the docs claimed &quot;all 50 pass&quot;, but an actual run showed <strong>only 49 passing</strong>. The cause: one test was pinned to the date &quot;2026-07-20&quot;, so it passed <strong>only on the day it was written and broke the next day</strong>. Fixed by allowing the date to be injected (no impact on real-world usage).</li>
+<li>Together these bring the automated test count from <strong>50 to 53</strong>, with <strong>all 53 passing</strong> (verified by an actual run on 2026-07-27).</li>
+</ul>
+</details><details>
 <summary><b>▶ 2026-07-20 — Unified verify+report command; fixed a data-loss bug (click to expand)</b></summary><ul>
 <li><strong>Unified verification and report-writing into a single command</strong>: Previously, the docs described &quot;run the real-browser check&quot; and &quot;record the result&quot; as separate steps, but the report-writing script had no command-line interface at all — so an AI agent had to write a throwaway glue script by hand every time. <code>verify-runner.mjs</code> now has a <code>--target</code> option so verification and report-writing complete in a single command.</li>
 <li><strong>Fixed a bug where recorded results could silently vanish</strong>: The sequence number used in report filenames was calculated as &quot;how many files currently exist,&quot; so deleting any one file in the middle of the sequence caused the next number to collide with an already-existing file — silently overwriting and destroying a different run&#39;s results (confirmed via real reproduction). It&#39;s now calculated as &quot;the actual highest existing number + 1,&quot; and two new automated tests reproduce this exact scenario to guard against regression.</li>
@@ -380,7 +401,7 @@ img { max-width: 100%; }
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
 │   └── report-writer.mjs
-├── tests/                            ← automated tests (50)
+├── tests/                            ← automated tests (53)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up
 ├── README.md / README.en.md          ← this document

@@ -148,6 +148,30 @@ export async function startDevServer(projectDir) {
   };
 }
 
+/**
+ * axe-core의 원시 violations 배열을 판정용 카운트 + 사람이 읽을 상세 목록으로 요약한다
+ * (2026-07-27 신설 — M5, pipeline.md "아직 없는 것" 마지막 항목 해소). 예전엔 개수만 세고
+ * v.id·v.nodes(어떤 규칙·어느 요소가 위반인지)를 그 자리에서 버렸다 — 판정서엔 "critical
+ * 1건"만 남아 사람도 AI도 "무엇을 고쳐야 하는지" 알 수 없었다. pipeline.md의 재시도 절차
+ * ("FAIL 사유를 다음 생성 시도에 주입")가 애초에 주입할 재료 자체가 기록되지 않아 성립할 수
+ * 없던 상태였다. **judge()의 PASS/FAIL 판정 기준(카운트 기반)은 이 함수와 무관하게 그대로다**
+ * — 상세 목록은 판정서에 곁들이는 참고 정보일 뿐, 게이트 판정 로직을 건드리지 않는다.
+ */
+export function summarizeAxeViolations(violations) {
+  const counts = { critical: 0, serious: 0, moderate: 0, minor: 0 };
+  const details = [];
+  for (const v of violations) {
+    if (counts[v.impact] !== undefined) counts[v.impact] += 1;
+    details.push({
+      id: v.id,
+      impact: v.impact,
+      description: v.description,
+      targets: (v.nodes || []).map((n) => (n.target || []).join(' ')).filter(Boolean).slice(0, 5),
+    });
+  }
+  return { counts, details };
+}
+
 /** 렌더+콘솔+axe+3뷰포트 스크린샷 검사. dev server는 이미 떠 있다고 가정(수동 --url 모드와 자동 모드 공용). */
 export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
   const targetUrl = new URL(route, baseUrl).toString();
@@ -155,6 +179,7 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
   const consoleErrors = [];
   let renderOk = false;
   const axeCounts = { critical: 0, serious: 0, moderate: 0, minor: 0 };
+  const axeViolations = [];
   const screenshots = [];
 
   try {
@@ -174,9 +199,9 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
     renderOk = !!response && response.ok();
 
     const axeResults = await new AxeBuilder({ page }).analyze();
-    for (const v of axeResults.violations) {
-      if (axeCounts[v.impact] !== undefined) axeCounts[v.impact] += 1;
-    }
+    const axeSummary = summarizeAxeViolations(axeResults.violations);
+    for (const impact of Object.keys(axeCounts)) axeCounts[impact] = axeSummary.counts[impact];
+    axeViolations.push(...axeSummary.details);
 
     if (screenshotDir) {
       await mkdir(screenshotDir, { recursive: true });
@@ -192,7 +217,7 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
     await browser.close();
   }
 
-  return { targetUrl, renderOk, consoleErrors, axeCounts, screenshots };
+  return { targetUrl, renderOk, consoleErrors, axeCounts, axeViolations, screenshots };
 }
 
 /** PASS 조건 4가지 (단일 출처: .PRD/02_DATA_MODEL.md VerifyReport 섹션) */

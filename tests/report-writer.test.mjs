@@ -192,6 +192,57 @@ test('writeReport: 절대경로 스크린샷 경로를 판정서에는 상대경
   }
 });
 
+test('writeReport: axe 위반 상세가 있으면 판정서에 규칙 id·설명·대상까지 기록 (2026-07-27 신설 — M5, 재시도 피드백 재료)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
+  try {
+    const result = await writeReport({
+      designKitDir: dir,
+      target: '/broken',
+      verifyRunnerOutput: {
+        devServer: { port: 3000, autoStarted: true },
+        renderOk: true,
+        consoleErrors: [],
+        axeCounts: { critical: 1, serious: 0, moderate: 0, minor: 0 },
+        axeViolations: [
+          { id: 'image-alt', impact: 'critical', description: '이미지에 대체 텍스트가 없습니다', targets: ['img'] },
+        ],
+        screenshots: [],
+        verdict: 'FAIL',
+        reasons: ['axe critical/serious 위반 1건'],
+      },
+    });
+
+    const reportMd = await readFile(result.reportPath, 'utf-8');
+    assert.match(reportMd, /\[critical\] image-alt: 이미지에 대체 텍스트가 없습니다 — 대상: img/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeReport: axe 위반 상세가 없으면(빈 배열/미제공) 상세 섹션 자체를 생략 (하위 호환)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
+  try {
+    const result = await writeReport({
+      designKitDir: dir,
+      target: 'test',
+      verifyRunnerOutput: {
+        devServer: { port: 3000, autoStarted: true },
+        renderOk: true,
+        consoleErrors: [],
+        axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+        screenshots: [],
+        verdict: 'PASS',
+        reasons: [],
+      },
+    });
+
+    const reportMd = await readFile(result.reportPath, 'utf-8');
+    assert.doesNotMatch(reportMd, /위반 상세/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('writeReport: 스크린샷 폴더가 10개를 넘으면 오래된 것부터 정리한다 (02 문서화됐지만 미구현이던 결함 방지)', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
   try {

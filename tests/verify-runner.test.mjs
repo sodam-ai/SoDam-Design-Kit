@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdtemp, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { findAvailablePort, judge, VIEWPORTS } from '../scripts/verify-runner.mjs';
+import { findAvailablePort, judge, summarizeAxeViolations, VIEWPORTS } from '../scripts/verify-runner.mjs';
 
 const CLI_PATH = fileURLToPath(new URL('../scripts/verify-runner.mjs', import.meta.url));
 
@@ -87,6 +87,36 @@ test('judge: axe critical/serious가 있으면 FAIL, moderate/minor는 통과 �
 test('judge: 뷰포트 스크린샷이 3개 미만이면 FAIL', () => {
   const result = judge({ ...baseResult(), screenshots: baseResult().screenshots.slice(0, 2) });
   assert.equal(result.verdict, 'FAIL');
+});
+
+// summarizeAxeViolations: 2026-07-27 신설(M5) — axe-core 원시 violations를 카운트(기존과 동일)
+// + 상세 목록(신규)으로 요약. 실제 axe-core가 돌려주는 violation 객체 모양(id/impact/description/
+// nodes[].target)을 그대로 합성 입력으로 사용 — 브라우저 없이도 변환 로직만 정직하게 검증 가능.
+
+test('summarizeAxeViolations: 카운트는 기존 로직과 동일하게 집계', () => {
+  const violations = [
+    { id: 'image-alt', impact: 'critical', description: 'x', nodes: [{ target: ['img'] }] },
+    { id: 'label', impact: 'serious', description: 'y', nodes: [{ target: ['input'] }] },
+    { id: 'color-contrast', impact: 'moderate', description: 'z', nodes: [{ target: ['p'] }] },
+  ];
+  const { counts } = summarizeAxeViolations(violations);
+  assert.deepEqual(counts, { critical: 1, serious: 1, moderate: 1, minor: 0 });
+});
+
+test('summarizeAxeViolations: 상세 목록에 규칙 id·설명·대상 선택자가 담김 (다음 생성 시도에 주입할 재료)', () => {
+  const violations = [
+    { id: 'image-alt', impact: 'critical', description: '이미지에 대체 텍스트가 없습니다', nodes: [{ target: ['img.hero'] }] },
+  ];
+  const { details } = summarizeAxeViolations(violations);
+  assert.deepEqual(details, [
+    { id: 'image-alt', impact: 'critical', description: '이미지에 대체 텍스트가 없습니다', targets: ['img.hero'] },
+  ]);
+});
+
+test('summarizeAxeViolations: 위반이 없으면 상세도 빈 배열', () => {
+  const { counts, details } = summarizeAxeViolations([]);
+  assert.deepEqual(counts, { critical: 0, serious: 0, moderate: 0, minor: 0 });
+  assert.deepEqual(details, []);
 });
 
 // --target CLI 옵션: commands/pipeline.md가 "검증"과 "판정서 기록"을 별개 스크립트 단계처럼

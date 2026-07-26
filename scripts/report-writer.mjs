@@ -77,7 +77,7 @@ export async function nextRunId(designKitDir, date = new Date()) {
 }
 
 function renderReportMarkdown({ runId, target, verifyResult, judgement, devServerInfo, recheck }) {
-  const { renderOk, consoleErrors, axeCounts, screenshots } = verifyResult;
+  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots } = verifyResult;
   const lines = [];
   lines.push(`# 판정서 — ${runId}`);
   lines.push('');
@@ -93,6 +93,18 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
   lines.push('');
   lines.push('## axe (접근성)');
   lines.push(`- critical: ${axeCounts.critical} / serious: ${axeCounts.serious} / moderate: ${axeCounts.moderate} / minor: ${axeCounts.minor}`);
+  // 위반 상세(규칙 id·설명·대상 선택자) — 2026-07-27 신설(M5). 예전엔 개수만 기록해
+  // 사람도 AI도 "무엇을 고쳐야 하는지" 알 수 없었다. FAIL 재시도 시 이 상세를 다음 생성
+  // 시도에 그대로 넘기면 된다(pipeline.md 재시도 절차 참조) — judge()의 판정 기준(카운트
+  // 기반)은 이 상세와 무관하게 그대로다.
+  if (axeViolations && axeViolations.length > 0) {
+    lines.push('');
+    lines.push('### 위반 상세 (다음 생성 시도에 참고)');
+    for (const v of axeViolations) {
+      const targetsText = v.targets && v.targets.length ? ` — 대상: ${v.targets.join(', ')}` : '';
+      lines.push(`- [${v.impact}] ${v.id}: ${v.description}${targetsText}`);
+    }
+  }
   lines.push('');
   lines.push('## devServer');
   lines.push(devServerInfo.autoStarted ? `- 포트 ${devServerInfo.port} (자동 기동)` : `- 외부 제공 URL: ${devServerInfo.url}`);

@@ -4,7 +4,7 @@ description: 디자인→코드 파이프라인 — Figma 읽기 → component-m
 
 # /sodam-design-kit:pipeline
 
-> **재사용(매핑) 경로 — 2026-07-20 실측 완료**: component-map.json에 이미 매핑된 컴포넌트를 재사용하는 경로는 실제 Figma 데이터로 왕복 검증 완료(PASS, 판정서 기록됨). **신규 컴포넌트 생성(매핑 없는 노드)** 경로는 아직 구현 전 — 다음 증분.
+> **재사용(매핑) 경로 — 2026-07-20 실측 완료**: component-map.json에 이미 매핑된 컴포넌트를 재사용하는 경로는 실제 Figma 데이터로 왕복 검증 완료(PASS, 판정서 기록됨). **신규 컴포넌트 생성(매핑 없는 노드)** 경로도 2026-07-27 구현 완료 — 합성 컴포넌트로 등록→프리뷰→검증 전체 왕복 PASS 실측 확인(아래 절차 참조).
 
 ## 목적
 Figma 노드 1개를 컴포넌트 단위로 shadcn/ui 코드에 연결하고, 검증 게이트를 통과해야만 완료로 표시합니다.
@@ -23,6 +23,15 @@ Figma MCP 도구(`get_metadata`/`get_design_context`)는 이 킷의 Node 스크�
 - Figma 이미지·SVG 자산 URL은 **7일 후 만료** — 코드에 그대로 박지 말고 즉시 로컬 다운로드(자산 다운로드 스크립트는 아직 미구현 — 이미지 포함 노드 매핑 시 다음 증분)
 - Windows/Git Bash에서 `--route /...` 같은 `/`로 시작하는 인자는 경로로 오염될 수 있음 — PowerShell 사용 권장
 
+## 절차 — 신규 컴포넌트 경로 (2026-07-27 구현 — component-map에 매핑이 없을 때)
+
+`matchComponent`가 아무것도 못 찾으면(신규 Figma 노드), 재사용 경로 3번 대신 아래를 따른다.
+Figma 원시 코드를 실제 코드로 옮기는 판단은 **에이전트의 몫**이다 — 스크립트는 결과물을 검사·배치·등록만 한다(Figma 호출 없음, 04 ALWAYS DO 원칙 유지).
+
+1. **[에이전트] 코드 생성**: `get_design_context`로 받은 원시 코드(Tailwind 임의값 포함)를 프로젝트의 **기존 Tailwind/shadcn 토큰**으로 옮겨 쓴다(04 DO NOT: 하드코딩 hex·px 금지). 결과를 스크래치 파일(예: `<scratchpad>/badge.tsx`)에 저장.
+2. **[스크립트] 검사+배치+등록 (한 명령)**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-codegen.mjs" --project <경로> --newComponentFile <스크래치 파일 경로> --codePath <배치할 상대경로, 예: src/components/ui/badge.tsx> --figmaNodeId <ID> --figmaName <이름>` — **하드코딩 hex·px 값이 남아있으면 여기서 자동 거부**(파일 미배치·component-map 미변경, 04 DO NOT 규칙을 코드로 강제하는 첫 지점). 통과하면 배치+component-map 등록+프리뷰 라우트 생성까지 한 번에 끝난다.
+3. **[스크립트] 검증 + 판정서 기록**: 재사용 경로 4번과 동일 — `verify-runner.mjs --target ...`.
+4. 이후 FAIL 처리·재시도 규칙은 재사용 경로와 동일.
+
 ## 아직 없는 것 (다음 증분)
-- component-map에 매핑이 없는 **신규 컴포넌트**를 Figma 원시 코드(Tailwind 임의값)로부터 생성하는 경로 — 04 규칙(하드코딩 hex 금지, 기존 토큰 우선)에 맞춰 별도 설계 필요
 - 실패 피드백을 실제로 다음 생성 시도에 주입하는 자동화(현재는 사유를 사람이 읽고 수동 반영)

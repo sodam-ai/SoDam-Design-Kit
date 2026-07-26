@@ -15,7 +15,7 @@
 - [x] **[첫 작업] Figma 읽기 깊이 스파이크 — 2026-07-20 PASS(실측 완료)**: 실제 Figma Community 파일(Coffee Shop Mobile App, 10페이지)의 Wireframe 페이지로 `get_metadata`(레이어 트리)+`get_design_context`(코드+토큰) 실행 성공. **결과: 매핑·생성에 충분한 깊이 확인됨** — 시맨틱 레이어명(Button/Icon/Category/Product/Rating 등 반복 패턴), 명명된 디자인 토큰(예: "Color Foundation/Brown/Normal: #C67C4E"), 정확한 좌표·색상·radius가 담긴 React+Tailwind 코드, 노드ID가 data-node-id로 임베드(Code Connect/component-map 매핑에 재사용 가능), 스크린샷 동봉. 총 4회 호출 소모(무료 월 6회 중) — 01 §11에 상세 기록.
 - [x] 핵심 도구 6개(Figma MCP·Playwright·axe·Lighthouse·shadcn·Storybook) 공식 문서 링크 실측 확인(10분 — 원천 자료 링크 미검증 보완) — **2026-07-20 실사용으로 리스크 해소 완료 처리**: 원래 목적(문서 링크가 틀려 구현 중 헛수고하는 것 방지)은 21~22차의 실제 E2E 왕복(Playwright 렌더·axe-core 검사·shadcn init/add 전부 실측 성공, 43/43 테스트)으로 이미 달성됨. Figma MCP는 01 §11에 별도 상세 실측 기록 있음. Storybook·Lighthouse는 P1 범위 밖(P2/참고 지표)이라 링크 재검증이 지금 리스크를 낮추지 않음 — 뒤늦게 문서 링크만 다시 찾는 건 이미 닫힌 리스크에 시간을 쓰는 것이라 생략.
 - [x] `/design-kit` 설정 마법사: config.json 생성 + shadcn/ui 컴포넌트 스캔으로 component-map 초기 시드 (shadcn 미설치 감지 시 init을 확인 후 실행) — **실측 완료**: `setup-wizard.mjs` components.json 기반 실제 스캔·멱등성 확인, test11 새 세션에서 button.tsx 시드 성공(2026-07-20)
-- [x] 파이프라인 명령: Figma 읽기 → component-map 매핑 → shadcn/ui 코드 생성 (컴포넌트 1개 단위부터) — **재사용(매핑) 경로 실측 PASS**(2026-07-20, 실제 Coffee Shop 파일 왕복). ⚠️ **매핑 없는 신규 컴포넌트 생성 경로는 아직 미구현**(pipeline.md §"아직 없는 것" — 다음 증분)
+- [x] 파이프라인 명령: Figma 읽기 → component-map 매핑 → shadcn/ui 코드 생성 (컴포넌트 1개 단위부터) — **재사용(매핑) 경로 실측 PASS**(2026-07-20, 실제 Coffee Shop 파일 왕복). **매핑 없는 신규 컴포넌트 생성 경로도 구현 완료**(2026-07-27 — `registerNewComponent()`+하드코딩 값 가드, 픽스처에서 CLI 실제 등록→검증 PASS 왕복 실측 확인)
 - [x] 프리뷰 라우트 자동 생성: 컴포넌트 단위 검증용 dev 전용 `/design-kit-preview/{컴포넌트}` (gitignore) — **실측 완료**: `preview-route.mjs` 라우트 생성 + 충돌 방지 + gitignore 등록
 - [x] 검증 게이트: dev server 자동 기동(포트 충돌 시 다음 포트 우회) + Playwright 실브라우저 + axe-core(판정 기준) + 360/768/1440px 자동 검사 (Lighthouse는 참고 지표) — **실측 완료**: `verify-runner.mjs` PASS/FAIL 4조건·포트 우회 확인
 - [x] 판정서: runs/*.json + reports/*.md 생성, FAIL이면 완료 차단 (훅) — **실측 완료**: `report-writer.mjs` + `hooks/verify-gate.mjs`(FAIL 차단·PASS 무차단·재검증 재개방)
@@ -133,6 +133,6 @@ Phase 1 범위:
 
 | Phase | 핵심 기능 | 상태 |
 |-------|----------|------|
-| Phase 1 (MVP) | 파이프라인 명령 + 검증 게이트 + 판정서 | **거의 완료** — 구현·단위테스트(53/53, 2026-07-27)·같은-세션 E2E·test11 새 세션 재사용 경로 실측 PASS. 남음: ①고친 통합 파이프라인의 새 세션 재현 1건(공식 종료 관문) ②신규 컴포넌트 생성 경로 ③FAIL 피드백 자동 주입 |
+| Phase 1 (MVP) | 파이프라인 명령 + 검증 게이트 + 판정서 | **거의 완료** — 구현·단위테스트(61/61, 2026-07-27)·같은-세션 E2E·신규 컴포넌트 생성 경로까지 실측 PASS. 남음: ①고친 통합 파이프라인의 새 세션 재현 1건(공식 종료 관문 — M1, 사용자 전용) ②FAIL 피드백 자동 주입 |
 | Phase 2 | Storybook + 토큰 동기화 + 시각 회귀 + 폰트 파이프라인 + open 대시보드 | Phase 1 완료 후 |
 | Phase 3 | 마케팅 소재 + 상세페이지 + MCP 래퍼(멀티 클라이언트) + 베타/구독 검토(사용자 결정) | Phase 2 완료 후 |

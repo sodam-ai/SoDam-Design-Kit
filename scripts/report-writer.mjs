@@ -3,10 +3,35 @@
 // verify-runner.mjs의 결과를 .design-kit/runs/*.json (기계용) + reports/*.md (사람용)로 기록
 // 스키마 정본: .PRD/02_DATA_MODEL.md (PipelineRun, VerifyReport)
 
-import { mkdir, readdir, writeFile, rm, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, readdir, readFile, writeFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 const SCREENSHOT_RETENTION_COUNT = 10;
+
+/**
+ * .design-kit/reports/screenshots/를 .gitignore에 등록 (setup-wizard.mjs의
+ * ensureScreenshotsGitignored와 같은 패턴 — 2026-07-27 실측 발견·수정).
+ *
+ * writeReport()는 setup을 거치지 않고도 .design-kit를 새로 만들 수 있는 유일한 경로다
+ * (verify-runner.mjs를 --target만으로 직접 실행 — tests/verify-runner.test.mjs가 이
+ * 사용법을 의도적으로 테스트하며 정상 동작으로 취급한다, 막아서는 안 됨). 문제는 이
+ * 경로로 생긴 .design-kit는 gitignore 등록이 setup-wizard.mjs 쪽에만 있어서, setup 없이
+ * 바로 --target을 실행하면 스크린샷이 git에 그대로 커밋될 수 있는 상태로 남는다는 것 —
+ * 22차에서 고친 것과 같은 결함이 이 경로로는 여전히 재현됨을 실측으로 확인했다(스크래치
+ * 프로젝트에 setup 없이 --target+--screenshotDir로 직접 실행 → .design-kit/runs·reports는
+ * 생겼지만 .gitignore는 끝내 생기지 않는 것을 확인). **이 호출을 제거하지 말 것.**
+ */
+async function ensureScreenshotsGitignored(projectDir) {
+  const gitignorePath = path.join(projectDir, '.gitignore');
+  const pattern = '.design-kit/reports/screenshots/';
+  const content = existsSync(gitignorePath) ? await readFile(gitignorePath, 'utf-8') : '';
+  if (content.includes(pattern)) return false;
+
+  const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+  await writeFile(gitignorePath, `${content}${separator}${pattern}\n`, 'utf-8');
+  return true;
+}
 
 /**
  * reports/screenshots/의 실행별 폴더가 최근 N개(기본 10)를 넘으면 오래된 것부터 삭제.
@@ -164,6 +189,7 @@ export async function writeReport(opts) {
   const reportsDir = path.join(designKitDir, 'reports');
   await mkdir(runsDir, { recursive: true });
   await mkdir(reportsDir, { recursive: true });
+  await ensureScreenshotsGitignored(path.dirname(designKitDir));
 
   const runId = await nextRunId(designKitDir, date);
   // startedAt은 의도적으로 date를 쓰지 않는다 — runId는 "파일명의 날짜 구간"이고

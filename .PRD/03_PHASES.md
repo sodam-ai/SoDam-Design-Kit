@@ -71,7 +71,7 @@ Phase 1 범위:
 ### 기능
 - [ ] Storybook 스토리 자동 생성 (상태별 Story) — P1 프리뷰 라우트를 Storybook으로 승격, 유사 오픈소스(storybook-assistant, 공식 storybook 플러그인) 참고 구현
 - [ ] 디자인 토큰 동기화: Figma Variables → Style Dictionary → Tailwind/shadcn 테마
-- [ ] shadcn Registry MCP 스파이크: `npx shadcn@canary registry:mcp`로 브랜드 토큰·컴포넌트 문맥 주입 검토 (component-map과 상호보완 — 자료 -02 §17)
+- [ ] shadcn Registry MCP 스파이크: **(2026-07-27 사전 리서치로 정정)** 당초 계획한 `npx shadcn@canary registry:mcp`는 낡은 정보 — 공식 문서(ui.shadcn.com/docs/mcp) 확인 결과 이미 정식 `shadcn@latest mcp`로 전환됨(Claude Code 전용 설치: `pnpm dlx shadcn@latest mcp init --client claude`). 단 기대했던 "브랜드 토큰·컴포넌트 문맥 주입" 기능은 공식 문서에 명시 안 됨(컴포넌트 검색·설치 중심으로 보임 — 가능성, 착수 시 재확인 필요). component-map과 상호보완 검토(자료 -02 §17)는 유효
 - [ ] 폰트 파이프라인 A(전자동): OFL 화이트리스트 폰트(Pretendard·Noto Sans KR) 자동 다운로드 → OFL.txt 라이선스 파일 동반 보존(`.design-kit/fonts/`) → **ASSET-LEDGER.csv 최초 생성·기록**(대장은 첫 자산인 폰트부터 시작) → `next/font/local` 주입 + Tailwind 타이포 토큰 연결 (자료 -03 §12 "패키지 안의 라이선스 파일 보존"의 기계화)
 - [ ] 폰트 선택 B(반자동): OFL 후보 3종의 실제 렌더 샘플(스펙시트) 자동 생성 → 사용자 1회 선택 → 이후 A 경로 전자동 (취향 판단만 사람에게 남기고 손은 전부 제거)
 - [ ] 로컬 스크린샷 비교 시각 회귀 감지 (Chromatic 무료 대안, 기준본은 `reports/baseline/`에 보관 — 자동 삭제 정책에서 제외)

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "selftest": "node scripts/verify-runner.mjs --selftest"
+    "selftest": "node scripts/e2e-selftest.mjs"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.12.1",

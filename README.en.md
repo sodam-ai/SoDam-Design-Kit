@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ⚠️ **Current status**: Phase 1 (MVP) is **mostly implemented**. The core scripts, verification gate, and report-writing are all built, all 53 automated tests pass, and a real Figma file has round-tripped successfully (PASS). What's still open: re-running the just-fixed pipeline from a **brand-new session**, and finalizing the documentation. This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria).
+> ⚠️ **Current status**: Phase 1 (MVP) has its **core features fully implemented**. The core scripts, verification gate, and report-writing are all built, all 66 automated tests pass, and **both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch (no mapping)" path** have round-tripped successfully against real Figma data (PASS). The one thing still open: re-running the just-fixed pipeline from a **brand-new session, from scratch** (a step only a human can do — see [`CHECKPOINT.md`](./CHECKPOINT.md)). This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria).
 
 ---
 
@@ -131,7 +131,7 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 ### `/sodam-design-kit:pipeline` — design → code → verification
 - **Input**: a Figma share link (a direct page/node link, not a whole-file link — see [Section 10](#10-security--data-flow))
 - **What it does**: reads Figma → records the mapping in `component-map.json` → generates shadcn/ui code → auto-creates a preview route (`/design-kit-preview/{component}`) → auto-starts a dev server → runs real-browser verification (Playwright + axe-core + 3 viewports) → writes the report.
-- **How it behaves**: on `FAIL`, it retries automatically up to 3 times (two consecutive failures are required to finalize a `FAIL`). **The "reuse an already-mapped component" path has been verified end-to-end (PASS).** Generating a brand-new component from scratch (no existing mapping) is planned for a future update and is not yet implemented (see [Section 7](#7-update-summary)).
+- **How it behaves**: on `FAIL`, it retries automatically up to 3 times (two consecutive failures are required to finalize a `FAIL`). **Both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch" path have been verified end-to-end (PASS).** Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. `#ff0000`) and refuses to place the file if it finds any (see [Section 7](#7-update-summary)).
 - **Success looks like**: a report file in `.design-kit/reports/` containing `**PASS**`.
 
 ---
@@ -141,18 +141,45 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 | Command | Description | Input | Run from | Current status |
 |---|---|---|---|---|
 | `/sodam-design-kit:setup` | Generates config.json and seeds component-map by scanning shadcn components | none (optional: Figma file link) | inside the target (Next.js) project | ✅ verified working |
-| `/sodam-design-kit:pipeline` | Figma read → mapping → shadcn/ui code generation → verification gate | Figma page/node link | inside the target (Next.js) project | ✅ reuse (mapped-component) path verified PASS · ⚠️ new-component generation path planned for a future update |
+| `/sodam-design-kit:pipeline` | Figma read → mapping → shadcn/ui code generation → verification gate | Figma page/node link | inside the target (Next.js) project | ✅ both the reuse (mapped-component) path and the new-component generation path verified PASS |
 
 Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (53 tests) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (66 tests) | this kit's own repository folder |
 | `node scripts/e2e-selftest.mjs --fixture <path>` | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
 
 ## 7. Update Summary
+
+<details>
+<summary><b>▶ 2026-07-27 — Fixed two minor issues found during a test/verification pass (click to expand)</b></summary>
+
+- **The self-check command was silently pointing at the wrong thing**: the kit maintainers' `npm run selftest` command referenced an option that doesn't actually exist, so instead of running the real self-check (`scripts/e2e-selftest.mjs`) it just printed a usage message and stopped. **End users never run this command themselves** — this document has always instructed running `node scripts/e2e-selftest.mjs --fixture <path>` directly — so anyone following this document was never affected. It was still fixed immediately upon discovery, to point at the correct script.
+- **A gap where screenshots could end up exposed to git if verification was run standalone, skipping the normal setup → pipeline order**: following the documented order, the screenshot folder is automatically registered in `.gitignore`. But an alternate, exceptional path — running the verification step directly without ever running `setup` first (mainly used by the kit's own developers for testing) — was found, by direct reproduction, to skip that registration. The same registration logic was added to the report-writing code (`report-writer.mjs`) to close this gap. **This path, too, never affected anyone following the documented order.**
+- Both fixes leave the existing 66 automated tests unaffected — all 66 still pass.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Added: more specific reasons when verification fails (click to expand)</b></summary>
+
+- Previously, even when an accessibility check (axe-core) failed, the report only showed a count like "1 critical violation" — a person had to go dig up exactly what was wrong and why.
+- Reports now include a "violation details" section with the specific rule name, description, and the exact screen element involved. This detail is also passed into the next automatic retry attempt, reducing repeated failures for the same underlying reason.
+- 5 new automated tests were added, and all pass (61 → 66).
+
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Added: generating a brand-new component from scratch (click to expand)</b></summary>
+
+- Until now, only the path that "reuses" a component already mapped from Figma had actually been verified — generating a brand-new component with no existing mapping was planned but not yet implemented.
+- This path is now implemented and verified end-to-end. Before placing newly generated code into the project, it now **automatically refuses to place it** if color or spacing values are hardcoded as raw numbers (e.g. `#ff0000`, `12px`) — closing off any way for code that bypasses the project's own design tokens to sneak in.
+- 8 new automated tests were added, and all pass (53 → 61).
+
+</details>
 
 <details>
 <summary><b>▶ 2026-07-27 — Fixed: verification could end up checking the wrong app entirely if another program was already using the same port (click to expand)</b></summary>
@@ -258,7 +285,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
 │   └── report-writer.mjs
-├── tests/                            ← automated tests (53)
+├── tests/                            ← automated tests (66)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up
 ├── README.md / README.en.md          ← this document

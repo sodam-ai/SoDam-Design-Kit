@@ -258,6 +258,29 @@ img { max-width: 100%; }
 <li><strong>How it behaves</strong>: on <code>FAIL</code>, it retries automatically up to 3 times (two consecutive failures are required to finalize a <code>FAIL</code>). <strong>Both the &quot;reuse an already-mapped component&quot; path and the &quot;generate a brand-new component from scratch&quot; path have been verified end-to-end (PASS).</strong> Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. <code>#ff0000</code>) and refuses to place the file if it finds any (see <a href="#7-update-summary">Section 7</a>).</li>
 <li><strong>Success looks like</strong>: a report file in <code>.design-kit/reports/</code> containing <code>**PASS**</code>.</li>
 </ul>
+<h3 id="p1-completion-verification-procedure-for-the-project-maintainer">P1 Completion Verification Procedure (for the project maintainer)</h3>
+<blockquote>
+<p>This is not something you do on every regular use — it&#39;s the <strong>final check that the kit actually works the same way from a brand-new session, from scratch</strong> (<a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9, Success Criteria 5 and 6). Follow these steps in a new Claude Code session, and this document alone is enough to reproduce it.</p>
+</blockquote>
+<ol>
+<li><p><strong>Pick a target project</strong> — ideally one that has already run <code>/sodam-design-kit:setup</code> and already has a Figma mapping (so no fresh Figma call is needed, and the free 6-calls-per-month limit isn&#39;t touched).</p></li>
+<li><p><strong>Before running anything, check the current state of the reports folder</strong> and keep it as your baseline (PowerShell):</p>
+<pre><code>Get-ChildItem &quot;&lt;target project path&gt;\.design-kit\runs&quot; | Sort-Object Name | Select-Object -Last 3
+</code></pre>
+<p>Remember this file list — you&#39;ll compare against it afterward to confirm nothing was deleted.</p></li>
+<li><p>In Claude Code, run:</p>
+<pre><code>/sodam-design-kit:pipeline
+</code></pre>
+<p>Provide the target project&#39;s path and the Figma node (or let it use the existing mapping).</p></li>
+<li><p><strong>Success looks like this (all of the following must be true)</strong>:</p>
+<ul>
+<li>The result includes <code>&quot;verdict&quot;: &quot;PASS&quot;</code></li>
+<li><strong>One new report file</strong> appeared in <code>.design-kit\reports\</code></li>
+<li><strong>None of the existing files</strong> you noted in step 2 were removed (no overwrites)</li>
+<li>The agent did <strong>not</strong> write a throwaway script on the fly — verification and report-writing must complete together via a single <code>verify-runner.mjs --target ...</code> command (if it doesn&#39;t, the &quot;verification and report-writing merged into one command&quot; item in <a href="#7-update-summary">Section 7</a> isn&#39;t actually working)</li>
+</ul></li>
+<li><p><strong>Always run this from PowerShell</strong> — in Git Bash, values starting with <code>/</code> (like <code>/design-kit-preview/...</code>) can get misinterpreted as a path. See <a href="#11-troubleshooting">Section 11, Troubleshooting</a>.</p></li>
+</ol>
 <hr>
 <h2 id="6-command-reference">6. Command Reference</h2>
 <table>

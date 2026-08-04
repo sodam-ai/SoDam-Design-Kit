@@ -134,6 +134,28 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 - **How it behaves**: on `FAIL`, it retries automatically up to 3 times (two consecutive failures are required to finalize a `FAIL`). **Both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch" path have been verified end-to-end (PASS).** Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. `#ff0000`) and refuses to place the file if it finds any (see [Section 7](#7-update-summary)).
 - **Success looks like**: a report file in `.design-kit/reports/` containing `**PASS**`.
 
+### P1 Completion Verification Procedure (for the project maintainer)
+
+> This is not something you do on every regular use — it's the **final check that the kit actually works the same way from a brand-new session, from scratch** ([`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9, Success Criteria 5 and 6). Follow these steps in a new Claude Code session, and this document alone is enough to reproduce it.
+
+1. **Pick a target project** — ideally one that has already run `/sodam-design-kit:setup` and already has a Figma mapping (so no fresh Figma call is needed, and the free 6-calls-per-month limit isn't touched).
+2. **Before running anything, check the current state of the reports folder** and keep it as your baseline (PowerShell):
+   ```powershell
+   Get-ChildItem "<target project path>\.design-kit\runs" | Sort-Object Name | Select-Object -Last 3
+   ```
+   Remember this file list — you'll compare against it afterward to confirm nothing was deleted.
+3. In Claude Code, run:
+   ```
+   /sodam-design-kit:pipeline
+   ```
+   Provide the target project's path and the Figma node (or let it use the existing mapping).
+4. **Success looks like this (all of the following must be true)**:
+   - The result includes `"verdict": "PASS"`
+   - **One new report file** appeared in `.design-kit\reports\`
+   - **None of the existing files** you noted in step 2 were removed (no overwrites)
+   - The agent did **not** write a throwaway script on the fly — verification and report-writing must complete together via a single `verify-runner.mjs --target ...` command (if it doesn't, the "verification and report-writing merged into one command" item in [Section 7](#7-update-summary) isn't actually working)
+5. **Always run this from PowerShell** — in Git Bash, values starting with `/` (like `/design-kit-preview/...`) can get misinterpreted as a path. See [Section 11, Troubleshooting](#11-troubleshooting).
+
 ---
 
 ## 6. Command Reference

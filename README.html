@@ -258,6 +258,29 @@ img { max-width: 100%; }
 <li><strong>작동 방법</strong>: 실패(FAIL)하면 최대 3회까지 자동으로 다시 시도합니다(연속 2회 실패해야 최종 FAIL로 확정). <strong>이미 매핑된 컴포넌트를 재사용하는 경로와, 매핑이 없는 완전히 새로운 컴포넌트를 처음부터 만드는 경로 둘 다 실제로 검증 완료(PASS)</strong>되었습니다. 신규 컴포넌트를 배치하기 전에는 색상·간격 같은 값이 하드코딩(예: <code>#ff0000</code>)되어 있지 않은지 자동으로 검사해서, 걸리면 배치 자체를 거부합니다(<a href="#7-%EC%97%85%EB%8D%B0%EC%9D%B4%ED%8A%B8-%EB%82%B4%EC%9A%A9-%EC%9A%94%EC%95%BD">7장</a> 참고).</li>
 <li><strong>성공 기준</strong>: <code>.design-kit/reports/</code>에 <code>**PASS**</code>가 적힌 판정서 파일 생성.</li>
 </ul>
+<h3 id="p1-완료-확인-절차-프로젝트-관리자용">P1 완료 확인 절차 (프로젝트 관리자용)</h3>
+<blockquote>
+<p>이건 일반 사용마다 할 일이 아니라, <strong>이 킷이 &quot;새 대화(세션)에서도 처음부터 똑같이 작동하는지&quot;를 최종 확인하는 절차</strong>입니다(<a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 성공 기준 5·6번). 새 Claude Code 세션에서 아래 순서대로 하면 이 문서만 보고도 그대로 재현할 수 있습니다.</p>
+</blockquote>
+<ol>
+<li><p><strong>대상 프로젝트를 정합니다</strong> — 이미 <code>/sodam-design-kit:setup</code>을 마치고 Figma 매핑도 있는 프로젝트가 이상적입니다(Figma를 다시 호출하지 않아도 되어 무료 월 6회 한도를 쓰지 않습니다).</p></li>
+<li><p><strong>실행 직전, 판정서 폴더의 현재 상태를 먼저 확인해 기준으로 삼습니다</strong> (PowerShell):</p>
+<pre><code>Get-ChildItem &quot;&lt;대상 프로젝트 경로&gt;\.design-kit\runs&quot; | Sort-Object Name | Select-Object -Last 3
+</code></pre>
+<p>여기 나온 파일 목록을 잠깐 기억해둡니다 — 나중에 &quot;기존 파일이 안 지워졌는지&quot; 비교할 기준입니다.</p></li>
+<li><p>Claude Code에서 아래를 실행합니다.</p>
+<pre><code>/sodam-design-kit:pipeline
+</code></pre>
+<p>대상 프로젝트 경로와 Figma 노드(또는 이미 있는 매핑)를 알려주면 됩니다.</p></li>
+<li><p><strong>성공 기준 (이게 전부 보이면 성공)</strong>:</p>
+<ul>
+<li>결과에 <code>&quot;verdict&quot;: &quot;PASS&quot;</code>가 나온다</li>
+<li><code>.design-kit\reports\</code> 폴더에 <strong>새 판정서 파일 1개</strong>가 생겼다</li>
+<li>2번에서 확인해둔 <strong>기존 파일들이 하나도 사라지지 않았다</strong>(덮어쓰기 없음)</li>
+<li>에이전트가 임시 스크립트를 즉석에서 따로 만들지 않았다 — <code>verify-runner.mjs --target ...</code> 명령 하나로 검증과 판정서 기록이 동시에 끝나야 합니다(안 그러면 <a href="#7-업데이트-내용-요약">7장</a>의 &quot;검증과 판정서 기록을 명령 하나로 통합&quot; 항목이 실제로는 작동하지 않는다는 뜻입니다)</li>
+</ul></li>
+<li><p><strong>꼭 PowerShell로 실행하세요</strong> — Git Bash에서는 <code>/design-kit-preview/...</code>처럼 <code>/</code>로 시작하는 값이 경로로 잘못 해석되는 함정이 있습니다(<a href="#11-문제오류-대처-트러블슈팅">11장 트러블슈팅</a> 참고).</p></li>
+</ol>
 <hr>
 <h2 id="6-명령어-표">6. 명령어 표</h2>
 <table>

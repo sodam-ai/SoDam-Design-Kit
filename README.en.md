@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ⚠️ **Current status**: Phase 1 (MVP) has its **core features fully implemented**. The core scripts, verification gate, and report-writing are all built, all 66 automated tests pass, and **both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch (no mapping)" path** have round-tripped successfully against real Figma data (PASS). The one thing still open: re-running the just-fixed pipeline from a **brand-new session, from scratch** (a step only a human can do — see [`CHECKPOINT.md`](./CHECKPOINT.md)). This document is an honest record of progress, not an announcement of final completion. The official completion criteria live in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria).
+> ✅ **Current status**: **Phase 1 (MVP) is officially complete** (2026-08-04). The core scripts, verification gate, and report-writing are all built, all 68 automated tests pass, and **both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch (no mapping)" path** have round-tripped successfully against real Figma data (PASS). The final and most important gate — **reproducing the whole thing from a brand-new session, from scratch — was actually attempted 4 times and confirmed successful**; 3 real defects found along the way were fixed and re-verified (see the 2026-08-04 entry in [Section 7](#7-update-summary)). All 6 items in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria) are now backed by real evidence.
 
 ---
 
@@ -175,6 +175,19 @@ Commands for kit developers only (end users don't need these):
 ---
 
 ## 7. Update Summary
+
+<details open>
+<summary><b>▶ 2026-08-04 — Fixed 3 real defects found during live new-session testing + Phase 1 (MVP) officially complete (click to collapse)</b></summary>
+
+- **Before declaring completion, the final gate (reproducing everything from a brand-new session) was actually attempted 4 times.** In the process, 3 real defects that had never surfaced before were found and fixed during genuine live use:
+  1. **Screenshots being saved outside the project folder entirely (in an unrelated folder on the user's computer)**: when the screenshot save path was given as a relative path, it could resolve to the wrong location depending on "which folder the process happened to be running from." The report correctly said "success," but the actual file wasn't inside the project at all. This is now always recalculated relative to the project folder.
+  2. **Screenshots being saved inside the project, but outside the `.design-kit/` folder this kit manages**: a subtler issue found right after fixing #1 — the files landed inside the project folder, but outside the `.design-kit/` folder this kit officially manages, so they were skipped by automatic cleanup and left somewhere that could accidentally get committed to git. Fixed by anchoring the save location to the `.design-kit/` folder itself.
+  3. **Being asked for a Figma file link again even for an already-mapped component**: the "reuse" path (reusing a component that's already linked) was designed to never need to call Figma again — but one step in the run procedure asked for a Figma link unconditionally, without checking whether a mapping already existed, so execution would stall even for components that were already fully connected. Fixed by adding a check at the very start of the procedure: "if it's already mapped, skip straight past this."
+- **After fixing all three, the fourth attempt finally succeeded completely** — no throwaway glue code, no existing report deleted, and screenshots landed in exactly the right place, start to finish.
+- With this, all 6 items in [`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9 (Success Criteria) are now backed by real evidence, and **Phase 1 (MVP) has been officially marked complete.**
+- The automated test count remains 68 (this round was mostly documentation and procedure fixes), and all 68 pass.
+
+</details>
 
 <details>
 <summary><b>▶ 2026-07-27 — Fixed two minor issues found during a test/verification pass (click to expand)</b></summary>

@@ -204,7 +204,7 @@ test('CLI: --target을 주면 검증과 동시에 runs/reports에 판정서를 �
 // 등 실행 중 cwd가 프로젝트 폴더와 달라지면, 스크린샷이 프로젝트 밖(실제로는 사용자 홈 폴더 밑)에
 // 저장됐다. 판정서는 "PASS, 스크린샷 3장 존재"라고 정확히 적었지만 그 스크린샷이 프로젝트
 // 어디에도 없었던 것 — 01 §9 "판정 근거" 자체가 프로젝트 밖으로 새어나가는 결함이었다.
-test('CLI: 상대경로 --screenshotDir는 process.cwd()가 아니라 --project 루트 기준으로 저장된다 (2026-08-04 실측 발견 결함 회귀 방지)', async () => {
+test('CLI: 상대경로 --screenshotDir는 process.cwd()가 아니라 .design-kit/ 기준으로 저장된다 (2026-08-04 실측 발견 결함 회귀 방지)', async () => {
   await withStaticServer(async (port) => {
     const dir = await mkdtemp(path.join(tmpdir(), 'verify-runner-screenshotdir-'));
     const relativeScreenshotDir = '__test_screenshotdir_regression__/x';
@@ -218,8 +218,16 @@ test('CLI: 상대경로 --screenshotDir는 process.cwd()가 아니라 --project 
       const output = JSON.parse(proc.stdout);
       assert.equal(output.verdict, 'PASS');
 
-      const expectedFiles = await readdir(path.join(dir, relativeScreenshotDir));
-      assert.equal(expectedFiles.length, 3, '360/768/1440 스크린샷 3개가 --project 폴더 안에 저장돼야 함');
+      const expectedFiles = await readdir(path.join(dir, '.design-kit', relativeScreenshotDir));
+      assert.equal(expectedFiles.length, 3, '360/768/1440 스크린샷 3개가 --project/.design-kit/ 안에 저장돼야 함');
+
+      let siblingDirExists = true;
+      try {
+        await readdir(path.join(dir, relativeScreenshotDir));
+      } catch {
+        siblingDirExists = false;
+      }
+      assert.equal(siblingDirExists, false, '.design-kit/ 밖(프로젝트 루트 형제 폴더)에는 생기면 안 됨 — 2차 실측에서 재현된 결함 조건');
 
       let wrongDirExists = true;
       try {
@@ -227,10 +235,41 @@ test('CLI: 상대경로 --screenshotDir는 process.cwd()가 아니라 --project 
       } catch {
         wrongDirExists = false;
       }
-      assert.equal(wrongDirExists, false, 'process.cwd() 기준 엉뚱한 위치에는 생기면 안 됨 — 이게 바로 실사용에서 재현된 결함 조건');
+      assert.equal(wrongDirExists, false, 'process.cwd() 기준 엉뚱한 위치에는 생기면 안 됨 — 1차 실사용에서 재현된 결함 조건');
     } finally {
       await rm(dir, { recursive: true, force: true });
       await rm(wrongDir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+});
+
+// screenshotDir이 이미 ".design-kit"로 시작하는 상대경로일 때 중복 접두("designKit + designKit")가
+// 생기지 않는지 확인 (위 수정의 방어 로직 검증).
+test('CLI: --screenshotDir이 이미 .design-kit로 시작하면 중복 접두 없이 그대로 그 자리에 저장된다', async () => {
+  await withStaticServer(async (port) => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'verify-runner-screenshotdir-dedup-'));
+    const relativeScreenshotDir = '.design-kit/reports/screenshots/manual';
+    try {
+      const proc = await runCli([
+        '--url', `http://127.0.0.1:${port}`,
+        '--project', dir,
+        '--screenshotDir', relativeScreenshotDir,
+      ]);
+      const output = JSON.parse(proc.stdout);
+      assert.equal(output.verdict, 'PASS');
+
+      const expectedFiles = await readdir(path.join(dir, relativeScreenshotDir));
+      assert.equal(expectedFiles.length, 3, '중복 접두(.design-kit/.design-kit/...) 없이 그대로 저장돼야 함');
+
+      let duplicatedDirExists = true;
+      try {
+        await readdir(path.join(dir, '.design-kit', relativeScreenshotDir));
+      } catch {
+        duplicatedDirExists = false;
+      }
+      assert.equal(duplicatedDirExists, false, '.design-kit/.design-kit/... 중복 접두 폴더가 생기면 안 됨');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   });
 });

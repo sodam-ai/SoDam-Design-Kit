@@ -243,16 +243,22 @@ async function main() {
   const projectDir = getArg('project');
   const route = getArg('route') || '/';
   let screenshotDir = getArg('screenshotDir');
-  // 스크린샷 저장 경로는 프로젝트 루트 기준으로 정규화한다 (2026-08-04 실측 발견·수정 — 결정 기록).
-  // 예전엔 --screenshotDir을 받은 그대로(상대경로도 그대로) 썼는데, 상대경로는 Node 프로세스의
-  // 실제 cwd에 풀린다 — 에이전트가 어느 셸/도구로 이 명령을 실행했는지에 따라 cwd가 달라질 수 있어
-  // (Git Bash→PowerShell로 도구를 바꾼 경우 등, 실사용 세션에서 실측 재현), 상대경로를 넘기면
-  // 스크린샷이 프로젝트 밖 엉뚱한 위치(예: 사용자 홈 폴더)에 저장될 수 있었다. 04_PROJECT_SPEC.md
-  // DO NOT "경로는 프로젝트 루트 하위로 정규화 검증"이 이미 있던 원칙인데 이 인자에는 적용이
-  // 빠져 있었던 공백. --project가 있고 screenshotDir이 상대경로면 그 프로젝트 루트 기준으로
-  // 절대경로화한다(이미 절대경로면 그대로 — 하위 호환). **이 정규화를 제거하지 말 것.**
+  // 스크린샷 저장 경로는 .design-kit/ 기준으로 정규화한다 (2026-08-04 실측 발견·수정 — 결정 기록,
+  // 같은 날 두 번째 라운드). 1차 수정(프로젝트 루트 기준 정규화)으로 "프로젝트 밖(사용자 홈 폴더)으로
+  // 탈출"하는 치명적 사고는 막았지만, 그 직후 진행한 실제 새 세션 M1 재시도에서 **같은 회차 안에
+  // 두 번째 결함**이 실측 발견됐다: 에이전트가 넘긴 상대경로(예: "reports/screenshots")에 `.design-kit`가
+  // 안 들어 있어서, 정규화 결과가 `<프로젝트 루트>/reports/screenshots/`(= `.design-kit/` 밖, 형제 폴더)에
+  // 저장됐다. 이 위치는 02_DATA_MODEL.md가 정의한 유일한 정본 위치(`.design-kit/reports/screenshots/`)가
+  // 아니라서 ①10회 보관 정리(`pruneScreenshots`) 대상이 아니고 ②`.gitignore`가 `.design-kit/reports/
+  // screenshots/`만 등록해뒀으므로 **git에 그대로 추적되는 상태**로 남았다(실측: `git status`에
+  // `?? reports/`로 확인). 에이전트가 상대경로를 만들 때 `.design-kit`를 붙이지 않는 경향이 실제
+  // 두 차례 라이브 세션에서 전부 재현됐으므로(우연 아님), `.design-kit/` 자체를 기준점으로 못박는다 —
+  // 이미 `.design-kit`로 시작하는 상대경로를 주는 경우(중복 접두)만 방어적으로 한 겹 벗겨낸다.
+  // **이 정규화를 다시 프로젝트 루트 기준으로 낮추지 말 것** — 그 순간 이 결함이 그대로 재현된다.
   if (screenshotDir && projectDir && !path.isAbsolute(screenshotDir)) {
-    screenshotDir = path.join(path.resolve(projectDir), screenshotDir);
+    const designKitDir = path.join(path.resolve(projectDir), '.design-kit');
+    const dedupedRel = screenshotDir.replace(/^[./\\]*\.design-kit[/\\]+/, '');
+    screenshotDir = path.join(designKitDir, dedupedRel);
   }
   // --target이 주어지면 검증 후 판정서(runs/*.json + reports/*.md)까지 이 명령 하나로 기록한다.
   // commands/pipeline.md 4~5단계("검증"과 "판정서 기록")가 문서상 별개 스크립트처럼 서술돼 있었지만

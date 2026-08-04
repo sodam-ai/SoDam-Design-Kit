@@ -169,7 +169,7 @@ Figma 디자인 ──▶ 코드 생성 ──▶ 실제 브라우저에서 검�
 | 명령 | 설명 | 실행 위치 |
 |---|---|---|
 | `npm install` | 검증용 브라우저·접근성 도구 설치(최초 1회) | 이 킷 저장소 폴더 |
-| `npm test` | 킷 자체의 자동 테스트 실행(66개) | 이 킷 저장소 폴더 |
+| `npm test` | 킷 자체의 자동 테스트 실행(68개) | 이 킷 저장소 폴더 |
 | `node scripts/e2e-selftest.mjs --fixture <경로>` | 전체 파이프라인 왕복(PASS/FAIL/재검증) 자체 점검 | 이 킷 저장소 폴더 |
 
 ---
@@ -303,7 +303,7 @@ SoDam-Design-Kit/                     ← 이 킷의 저장소(지금 이 README
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
 │   └── report-writer.mjs
-├── tests/                            ← 자동 테스트(66개)
+├── tests/                            ← 자동 테스트(68개)
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록
 ├── README.md / README.en.md          ← 지금 이 문서

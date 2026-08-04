@@ -242,7 +242,18 @@ async function main() {
   const explicitUrl = getArg('url');
   const projectDir = getArg('project');
   const route = getArg('route') || '/';
-  const screenshotDir = getArg('screenshotDir');
+  let screenshotDir = getArg('screenshotDir');
+  // 스크린샷 저장 경로는 프로젝트 루트 기준으로 정규화한다 (2026-08-04 실측 발견·수정 — 결정 기록).
+  // 예전엔 --screenshotDir을 받은 그대로(상대경로도 그대로) 썼는데, 상대경로는 Node 프로세스의
+  // 실제 cwd에 풀린다 — 에이전트가 어느 셸/도구로 이 명령을 실행했는지에 따라 cwd가 달라질 수 있어
+  // (Git Bash→PowerShell로 도구를 바꾼 경우 등, 실사용 세션에서 실측 재현), 상대경로를 넘기면
+  // 스크린샷이 프로젝트 밖 엉뚱한 위치(예: 사용자 홈 폴더)에 저장될 수 있었다. 04_PROJECT_SPEC.md
+  // DO NOT "경로는 프로젝트 루트 하위로 정규화 검증"이 이미 있던 원칙인데 이 인자에는 적용이
+  // 빠져 있었던 공백. --project가 있고 screenshotDir이 상대경로면 그 프로젝트 루트 기준으로
+  // 절대경로화한다(이미 절대경로면 그대로 — 하위 호환). **이 정규화를 제거하지 말 것.**
+  if (screenshotDir && projectDir && !path.isAbsolute(screenshotDir)) {
+    screenshotDir = path.join(path.resolve(projectDir), screenshotDir);
+  }
   // --target이 주어지면 검증 후 판정서(runs/*.json + reports/*.md)까지 이 명령 하나로 기록한다.
   // commands/pipeline.md 4~5단계("검증"과 "판정서 기록")가 문서상 별개 스크립트처럼 서술돼 있었지만
   // report-writer.mjs엔 CLI 진입점이 없어 실제로는 에이전트가 매번 접착 스크립트를 직접 짜야 했다

@@ -197,3 +197,40 @@ test('CLI: --target을 주면 검증과 동시에 runs/reports에 판정서를 �
     }
   });
 });
+
+// 상대경로 --screenshotDir 정규화: 2026-08-04 실사용(M1 라이브 재현) 세션에서 실측 발견된 결함의
+// 회귀 테스트. 예전엔 --screenshotDir을 받은 그대로(상대경로 포함) 썼는데, 상대경로는 Node
+// 프로세스의 실제 cwd에 풀린다 — 에이전트가 Git Bash에서 시작했다가 PowerShell로 도구를 바꾸는
+// 등 실행 중 cwd가 프로젝트 폴더와 달라지면, 스크린샷이 프로젝트 밖(실제로는 사용자 홈 폴더 밑)에
+// 저장됐다. 판정서는 "PASS, 스크린샷 3장 존재"라고 정확히 적었지만 그 스크린샷이 프로젝트
+// 어디에도 없었던 것 — 01 §9 "판정 근거" 자체가 프로젝트 밖으로 새어나가는 결함이었다.
+test('CLI: 상대경로 --screenshotDir는 process.cwd()가 아니라 --project 루트 기준으로 저장된다 (2026-08-04 실측 발견 결함 회귀 방지)', async () => {
+  await withStaticServer(async (port) => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'verify-runner-screenshotdir-'));
+    const relativeScreenshotDir = '__test_screenshotdir_regression__/x';
+    const wrongDir = path.join(process.cwd(), relativeScreenshotDir);
+    try {
+      const proc = await runCli([
+        '--url', `http://127.0.0.1:${port}`,
+        '--project', dir,
+        '--screenshotDir', relativeScreenshotDir,
+      ]);
+      const output = JSON.parse(proc.stdout);
+      assert.equal(output.verdict, 'PASS');
+
+      const expectedFiles = await readdir(path.join(dir, relativeScreenshotDir));
+      assert.equal(expectedFiles.length, 3, '360/768/1440 스크린샷 3개가 --project 폴더 안에 저장돼야 함');
+
+      let wrongDirExists = true;
+      try {
+        await readdir(wrongDir);
+      } catch {
+        wrongDirExists = false;
+      }
+      assert.equal(wrongDirExists, false, 'process.cwd() 기준 엉뚱한 위치에는 생기면 안 됨 — 이게 바로 실사용에서 재현된 결함 조건');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+      await rm(wrongDir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+});

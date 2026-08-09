@@ -47,12 +47,22 @@ export async function generatePreviewRoute({ projectDir, componentName, importPa
     previewChildren === null
       ? `<${namedExport} />`
       : `<${namedExport}>${previewChildren}</${namedExport}>`;
+  // axe-core moderate 위반(page-has-heading-one) 해소 — 2026-08-09. 검증을 표방하는 킷 자신의
+  // 산출물이 접근성 지적을 남기는 건 이 킷의 정체성과 어긋난다(critical/serious만 게이트 기준이라
+  // PASS 자체는 항상 정상이었지만, moderate도 판정서에 그대로 남아 방치되고 있었음).
+  // 시각적으로는 숨기되(position:absolute+clip — 표준 sr-only 기법, display:none이 아니므로
+  // 접근성 트리·axe 둘 다에서 "존재함"으로 인식됨) 화면엔 안 보이게 해서, 01_PRD.md §5가 요구하는
+  // "프리뷰 라우트는 장식 없는 중립 배경 + 대상 컴포넌트만(스크린샷 노이즈 제거가 목적)" 요건과
+  // 충돌하지 않는다 — 화면에 텍스트를 추가하는 게 아니라 접근성 트리에만 h1을 채운다.
   const content = `${GENERATED_MARKER}
 import { ${namedExport} } from '${importPath}';
 
 export default function DesignKitPreview() {
   return (
     <main style={{ background: '#ffffff', minHeight: '100vh', padding: '2rem' }}>
+      <h1 style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
+        ${namedExport} 프리뷰
+      </h1>
       ${rendered}
     </main>
   );

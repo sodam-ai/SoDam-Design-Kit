@@ -81,6 +81,25 @@ test('generatePreviewRoute: 우리가 안 만든 기존 파일이 있으면 충�
   }
 });
 
+test('generatePreviewRoute: h1이 포함된다 (axe moderate page-has-heading-one 회귀 방지, 2026-08-09) — 화면엔 안 보이게 시각적으로만 숨김(display:none 아님)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-preview-'));
+  try {
+    await mkdir(path.join(dir, 'src', 'app'), { recursive: true });
+    const result = await generatePreviewRoute({
+      projectDir: dir,
+      componentName: 'Button',
+      importPath: '@/components/ui/button',
+    });
+    const content = await readFile(result.filePath, 'utf-8');
+    assert.match(content, /<h1[^>]*>/);
+    assert.match(content, /Button 프리뷰/);
+    // display:none이면 axe·스크린리더 둘 다 h1을 "없음" 취급한다 — sr-only 기법(clip)인지 확인
+    assert.doesNotMatch(content, /display:\s*['"]?none/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('ensureGitignored: 최초 1회만 패턴을 추가한다', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-preview-'));
   try {

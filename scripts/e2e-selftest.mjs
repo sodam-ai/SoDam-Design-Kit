@@ -30,6 +30,14 @@ async function runCase({ label, devServer, route, designKitDir }) {
   const { runId, status } = await writeReport({
     designKitDir,
     target: `e2e-selftest / ${label}`,
+    // 2026-08-10 실측 발견·수정: route를 verifyPage()엔 넘기면서 writeReport()엔 빠뜨리고 있었다
+    // (report-writer.mjs의 route는 기본값 null). 그 결과 e2e-selftest.mjs가 만든 모든 판정서는
+    // 대시보드 재검증 버튼을 누르면 "이 실행 기록엔 route 정보가 없어 재검증할 수 없습니다(오래된
+    // 판정서)"라는, 방금 막 생성된 기록인데도 "오래된 판정서"로 오인시키는 문구를 항상 띄웠다
+    // (2c 재검증 트리거 결정 기록의 의도적 거부 자체는 정상 — 이 자기점검 도구만 그 전제를
+    // 채워주지 않고 있었을 뿐). 실사용 세션에서 실제로 이 문구를 만나 발견됨. route는 이미 위에서
+    // verifyPage()에 넘기는 값 그대로라 추가 계산 없이 재사용한다.
+    route,
     verifyRunnerOutput: { devServer: { port: devServer.port, autoStarted: true }, ...result, ...judgement },
   });
   const gateResult = decide(path.dirname(designKitDir));

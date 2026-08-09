@@ -321,7 +321,18 @@ export async function checkFontGate({ projectDir, designKitDir }) {
     scanProjectFontFiles(projectDir),
     loadAssetLedgerFilenames(designKitDir),
   ]);
-  const violations = scanned.filter((f) => !registered.has(f)).map((file) => ({ file }));
+  // 2026-08-10 실측 발견·수정: 대소문자만 다르고 실제로는 같은 파일을 다른 파일로 오판하던 결함.
+  // Windows·macOS 기본 파일시스템은 대소문자를 구분하지 않는다(생성 시 표기는 보존하지만 조회는
+  // 대소문자 무관) — 그런데 원래는 문자열을 그대로 비교해서, 대장에 "Brand.ttf"로 적혀 있고
+  // 실제 파일이 "BRAND.TTF"면(같은 파일, 대소문자 표기만 다름) "미등록"으로 잘못 판정했다. 특히
+  // 04_PROJECT_SPEC.md가 명시한 "화이트리스트 밖 폰트는 대장에 직접 기록해 통과"라는 사람 개입
+  // 경로에서 실제로 터지기 쉽다 — 사용자가 대장에 파일명을 손으로 적을 때 대소문자를 실제 파일과
+  // 다르게 적기 쉬운데(Windows 탐색기는 대소문자를 사실상 무시해서 보여줌), 그러면 대장을 정확히
+  // 채웠는데도 게이트가 계속 FAIL을 내는 혼란스러운 상황이 된다. 비교만 대소문자 무관으로 하고,
+  // 위반 목록에 보여주는 파일명은 실제 스캔된 원본 표기를 그대로 쓴다(사용자가 실제 파일을 찾을 수
+  // 있어야 하므로 소문자로 뭉개지 않음). **이 비교를 다시 대소문자 구분으로 되돌리지 말 것.**
+  const registeredLower = new Set([...registered].map((f) => f.toLowerCase()));
+  const violations = scanned.filter((f) => !registeredLower.has(f.toLowerCase())).map((file) => ({ file }));
   return { scannedCount: scanned.length, registeredCount: registered.size, violations };
 }
 

@@ -300,6 +300,46 @@ test('checkFontGate: 등록된 폰트와 미등록 폰트가 섞여 있으면 �
   }
 });
 
+test('checkFontGate: 대장과 실제 파일명이 대소문자만 다르면(같은 파일) 위반으로 오판하지 않는다 (2026-08-10 실측 발견 결함 회귀 방지)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    // 사용자가 화이트리스트 밖 폰트를 대장에 직접 등록하는 시나리오(04_PROJECT_SPEC.md 명시 경로) —
+    // 대장에는 "Brand.ttf"로 적었는데 실제 파일은 "BRAND.TTF"로 존재(Windows/macOS는 둘을 같은
+    // 파일로 취급). 대소문자만 다르다고 미등록으로 오판하면 사용자가 대장을 정확히 채웠는데도
+    // 계속 FAIL이 나는 혼란스러운 상황이 된다.
+    await mkdir(path.join(designKitDir, 'fonts', 'x'), { recursive: true });
+    await writeFile(path.join(designKitDir, 'fonts', 'x', 'BRAND.TTF'), Buffer.from('fake'));
+    await appendAssetLedger(designKitDir, [
+      { filename: 'fonts/x/Brand.ttf', kind: '폰트', sourceUrl: 'https://x', license: 'Custom', commercialUse: 'O', attribution: '-', aiGenerated: 'N' },
+    ]);
+
+    const result = await checkFontGate({ projectDir: dir, designKitDir });
+    assert.equal(result.scannedCount, 1);
+    assert.deepEqual(result.violations, [], '대소문자만 다른 등록 항목은 위반이 아니어야 함');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('scanProjectFontFiles: 존재하지 않는 프로젝트 경로는 크래시 없이 빈 배열을 반환한다', async () => {
+  const result = await scanProjectFontFiles(path.join(tmpdir(), 'design-kit-does-not-exist-xyz-123'));
+  assert.deepEqual(result, []);
+});
+
+test('loadAssetLedgerFilenames: 손상된(CSV가 아닌) 파일도 크래시 없이 처리한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(path.join(designKitDir, 'ASSET-LEDGER.csv'), Buffer.from([0x00, 0x01, 0xff, 0xfe, 0x00]));
+    const registered = await loadAssetLedgerFilenames(designKitDir);
+    assert.ok(registered instanceof Set, '크래시 없이 Set을 반환해야 함');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('checkFontGate: 폰트 파일이 전혀 없으면(대부분의 프로젝트) 대장 유무와 무관하게 위반 0건', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
   try {

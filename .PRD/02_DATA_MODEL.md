@@ -79,6 +79,7 @@ Figma 컴포넌트 ↔ 코드 컴포넌트 연결. **재사용 매핑의 핵심*
 | generatedFiles | 생성/수정된 파일 목록 | ["src/app/login/page.tsx"] | O |
 | status | 상태 | generated → verifying → pass / fail | O |
 | retryCount | 자동 재시도 횟수 | 1 | O |
+| route | 검증에 실제로 쓰인 URL 경로 (2026-08-09 2c 신설 — 대시보드 재검증 트리거의 필수 전제) | "/design-kit-preview/button" | O(2026-08-09 이후 기록) / X(그 이전 기록은 없음 — 재검증 불가) |
 
 ### VerifyReport (reports/*.md)
 검증 게이트 판정서. 사람이 읽는 문서.
@@ -141,6 +142,10 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 ---
 
 **대시보드 실제 화면(2b-2)이 구현됐다 (2026-08-09, 2b-1 다음 증분 — XSS 방어 독립 증명)**: `scripts/dashboard-web/index.html`+`dashboard.js` 신설, `dashboard-server.mjs`의 `GET /`·`GET /dashboard.js`를 토큰 검사 밖에 뒀다(페이지를 열어야 토큰을 얻을 수 있는 순환 문제 회피 — O-Brain과 동일 전제, `/api/*` 데이터는 계속 토큰 보호). 착수 전 설계 검토에서 실제로 터졌을 결함 2건을 미리 잡았다: ① `<img src>`는 커스텀 헤더를 못 보내 스크린샷이 403으로 깨질 뻔함 → `fetch()`+토큰 헤더+`Blob`→`URL.createObjectURL()`로 해결(토큰을 URL 파라미터에 넣지 않음 — 히스토리·referrer 노출 방지) ② 인라인 `<script>`를 쓰면 2a에서 O-Brain보다 엄격하게 만든 CSP(`script-src 'self'`, unsafe-inline 없음)에 자기 스크립트가 막힐 뻔함 → `dashboard.js`를 완전히 외부 파일로 분리해 해결(CSP 완화 안 함). `/api/reports/:runId` 응답에 `screenshots` 배열 신설(`extractScreenshotPaths()` — report-writer.mjs가 이미 만드는 마크다운 형식을 그대로 파싱, 새 마크다운 파서 안 들임). `dashboard.js`는 전체 파일에서 `innerHTML`을 단 한 번도 쓰지 않고 `textContent`/`createElement`만 사용. 단위테스트 7건 신설(109→116) 중 하나가 **실제 헤드리스 브라우저(Playwright — 기존 의존성, 신규 추가 없음)로 악성 payload를 실제 렌더한 XSS 방어 실측**: `<script>`·`onerror`·`onmouseover` 3종 공격 벡터를 담은 가짜 run/report를 만들어 실제 페이지 로드+클릭까지 거치고 `window.__xssFired`가 여전히 `undefined`임을 확인(코드 형태가 아니라 실행 결과로 증명) + 원문 텍스트가 화면에서 사라지지 않고 그대로 보임(조용히 필터링된 게 아님)까지 확인. 실제 픽스처(실행 이력 50건) 대상으로 `GET /`이 토큰 없이 200 + 토큰이 `data-token` 속성에 정확히 주입됨을 실측 확인. `npm audit` 0건 유지. 01_PRD.md §3 설치 확인 기준("대시보드=127.0.0.1 페이지 로드")이 이제 실제로 충족된다.
+
+---
+
+**재검증 트리거(2c)가 구현됐다 (2026-08-09, 2b-2 다음 증분 — Phase 2 대시보드 4단계 전부 완료)**: 대시보드에 "재검증" 버튼이 생겼다. 착수 전 설계 검토에서 실제로 막혔을 문제 2가지를 먼저 해결했다: ① `PipelineRun`에 `route` 필드가 저장된 적이 없어(위 스키마 표 참조) 재검증이 애초에 불가능했음 → `report-writer.mjs`·`verify-runner.mjs`에 배선해 이제부터 저장됨(2026-08-09 이전 판정서는 route가 없어 재검증 명확히 거부 — 경로를 추측해서 땜질하지 않음). ② "대시보드는 GET만"이라는 전제가 틀렸다는 걸 재확인 — 02가 금지한 건 "직접 쓰기"이지 "POST"가 아니었다(트리거≠쓰기). `POST /api/reverify/:runId` 1개만 예외로 허용, 나머지는 여전히 GET-only. `reverifyRun()`은 `verify-runner.mjs`의 `main()`을 건드리지 않고 이미 export된 코어 함수(`acquireLock`·`startDevServer`·`verifyPage`·`judge`·`writeReport`·`releaseLock`)를 그대로 호출해 재현(01 §3 Parity Matrix 원칙 그대로). `execution-lock.mjs`의 잠금 거부 에러에 `statusCode: 409`를 부여해 화면이 "이미 다른 검증이 진행 중" 문구로 번역해 보여줄 수 있게 함. 단위테스트 6건 신설(거부 경로만 — 성공 경로는 실제 Next.js dev server가 필요해 자기완결적 테스트 스위트엔 안 맞음, verify-runner.test.mjs가 정적 스텁 서버를 쓰는 것과 같은 이유로 실제 픽스처 실측으로 대체) + **실제 픽스처(실제 Next.js dev server) 대상 실측**: `--route` 포함한 진짜 run 시드 생성 → 토큰 없는 POST 403 / 허용 안 된 Origin+정상 토큰 POST 403(위조 요청 방어) / **진짜 동시 POST 2건 발사 — 하나는 200(PASS 새 판정서 생성), 하나는 409(거부, 파일 생성 없음)** 확인. 기존 판정서 50건 전부 보존(52건 = 50+시드1+성공1, 거부분은 파일 0개). `npm audit` 0건. **Phase 2 대시보드가 이걸로 4단계(`.lock`→2a→2b-1→2b-2→2c) 전부 완료됐다.**
 
 ## [NEEDS CLARIFICATION]
 

@@ -17,6 +17,7 @@ import {
   readReportContent,
   readScreenshotFile,
   extractScreenshotPaths,
+  reverifyRun,
 } from '../scripts/dashboard-server.mjs';
 
 function makeMockRes() {
@@ -402,6 +403,77 @@ test('createRequestHandler: GET /api/reports/:runId 응답에 screenshots 배열
   } finally {
     await rm(projectDir, { recursive: true, force: true });
   }
+});
+
+// ── 재검증 트리거(2c) — 거부 경로만 단위테스트로 (성공 경로는 실제 Next.js dev server가
+// 필요해서 mkdtemp 임시 폴더로 못 만듦 — verify-runner.test.mjs가 이미 그 이유로 정적 스텁
+// 서버를 쓰는 것과 동일한 원칙. 성공·동시성 경로는 실제 픽스처로 별도 실측한다) ──
+
+test('reverifyRun: runId 형식이 틀리면(경로 조작 포함) 400', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-reverify-'));
+  try {
+    await assert.rejects(
+      () => reverifyRun(projectDir, path.join(projectDir, '.design-kit'), '../../etc'),
+      (err) => err.statusCode === 400
+    );
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: 존재하지 않는 runId는 404', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-reverify-'));
+  try {
+    await assert.rejects(
+      () => reverifyRun(projectDir, path.join(projectDir, '.design-kit'), '2026-01-01-999'),
+      (err) => err.statusCode === 404
+    );
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: route가 없는 구버전 판정서는 명확한 사유와 함께 400 (추측으로 땜질하지 않음)', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-reverify-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(path.join(designKitDir, 'runs'), { recursive: true });
+    await writeFile(
+      path.join(designKitDir, 'runs', '2026-08-01-001.json'),
+      JSON.stringify({ runId: '2026-08-01-001', status: 'pass', target: '구버전', generatedFiles: [], retryCount: 0 })
+    );
+    await assert.rejects(
+      () => reverifyRun(projectDir, designKitDir, '2026-08-01-001'),
+      (err) => err.statusCode === 400 && /route 정보가 없어/.test(err.message)
+    );
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('createRequestHandler: POST /api/reverify/:id — 토큰 없으면 실행 자체가 시작되지 않고 403', async () => {
+  const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir: '/nonexistent', projectDir: '/nonexistent' });
+  const res = makeMockRes();
+  await handler({ method: 'POST', url: '/api/reverify/2026-08-01-001', headers: {} }, res);
+  assert.equal(res._statusCode, 403);
+});
+
+test('createRequestHandler: POST /api/reverify/:id — 토큰이 맞아도 허용 안 된 Origin이면 403 (Origin 검사가 가장 먼저 — 위조 요청 방어의 1차 층)', async () => {
+  const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir: '/nonexistent', projectDir: '/nonexistent' });
+  const res = makeMockRes();
+  await handler(
+    { method: 'POST', url: '/api/reverify/2026-08-01-001', headers: { origin: 'http://evil.example.com', 'x-design-kit-token': 'good-token' } },
+    res
+  );
+  assert.equal(res._statusCode, 403);
+  assert.match(res._body.error, /forbidden origin/);
+});
+
+test('createRequestHandler: GET으로 /api/reverify/:id를 부르면(POST 전용 라우트) 404', async () => {
+  const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir: '/nonexistent', projectDir: '/nonexistent' });
+  const res = makeMockRes();
+  await handler({ method: 'GET', url: '/api/reverify/2026-08-01-001', headers: { 'x-design-kit-token': 'good-token' } }, res);
+  assert.equal(res._statusCode, 404);
 });
 
 // ── XSS 방어 실측 (핵심) ──────────────────────────────────────────────

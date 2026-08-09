@@ -53,11 +53,59 @@
     target.textContent = run.target || '';
     card.appendChild(target);
 
+    const actions = document.createElement('div');
+    actions.className = 'run-actions';
+
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'run-toggle';
     toggle.textContent = '판정서 보기';
-    card.appendChild(toggle);
+    actions.appendChild(toggle);
+
+    const reverifyBtn = document.createElement('button');
+    reverifyBtn.type = 'button';
+    reverifyBtn.className = 'run-reverify';
+    reverifyBtn.textContent = '재검증';
+    actions.appendChild(reverifyBtn);
+    card.appendChild(actions);
+
+    const status = document.createElement('div');
+    status.className = 'run-status-msg';
+    status.hidden = true;
+    card.appendChild(status);
+
+    // 이중 클릭 방지 — 클릭 즉시 비활성화. 응답이 올 때까지(성공이든 .lock 거부든) 재클릭 불가.
+    reverifyBtn.addEventListener('click', async () => {
+      reverifyBtn.disabled = true;
+      reverifyBtn.textContent = '검증 중...';
+      status.hidden = false;
+      status.className = 'run-status-msg';
+      status.textContent = '검증을 다시 실행하고 있습니다. 몇 초에서 수십 초 걸릴 수 있습니다...';
+      try {
+        const res = await fetch('/api/reverify/' + encodeURIComponent(run.runId), {
+          method: 'POST',
+          headers: { 'x-design-kit-token': token },
+        });
+        const body = await res.json();
+        if (res.status === 409) {
+          status.className = 'run-status-msg run-status-locked';
+          status.textContent = '이미 다른 검증이 진행 중입니다. 잠시 후 다시 시도하세요.';
+        } else if (!res.ok) {
+          status.className = 'run-status-msg run-status-error';
+          status.textContent = '재검증 실패: ' + (body.error || res.status);
+        } else {
+          status.className = 'run-status-msg run-status-ok';
+          status.textContent =
+            '재검증 완료 — 새 판정: ' + body.verdict + ' (새 판정서: ' + body.runId + '). 화면을 새로고침하면 목록에 반영됩니다.';
+        }
+      } catch (err) {
+        status.className = 'run-status-msg run-status-error';
+        status.textContent = '요청 실패: ' + err.message;
+      } finally {
+        reverifyBtn.disabled = false;
+        reverifyBtn.textContent = '재검증';
+      }
+    });
 
     const detail = document.createElement('div');
     detail.className = 'run-detail';

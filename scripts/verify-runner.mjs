@@ -310,6 +310,7 @@ async function main() {
         target,
         generatedFiles: generatedFiles ? generatedFiles.split(',').map((s) => s.trim()).filter(Boolean) : [],
         retryCount: retryCount ? Number(retryCount) : 0,
+        route,
         verifyRunnerOutput: output,
       });
       output.runId = report.runId;

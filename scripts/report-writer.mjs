@@ -166,7 +166,7 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
  * @param {object} opts.verifyRunnerOutput - verify-runner.mjs의 JSON 출력 전체
  */
 export async function writeReport(opts) {
-  const { designKitDir, target, generatedFiles = [], retryCount = 0, recheck = null, date = new Date(), verifyRunnerOutput } = opts;
+  const { designKitDir, target, generatedFiles = [], retryCount = 0, recheck = null, date = new Date(), route = null, verifyRunnerOutput } = opts;
   const { devServer: devServerInfo, verdict, reasons, ...rawVerifyResult } = verifyRunnerOutput;
   const judgement = { verdict, reasons };
 
@@ -203,6 +203,11 @@ export async function writeReport(opts) {
     generatedFiles,
     status: judgement.verdict === 'PASS' ? 'pass' : 'fail',
     retryCount,
+    // 2026-08-09(2c) 신설 — 대시보드 재검증 트리거가 "이 판정서가 어느 화면을 검사했는지"를
+    // 다시 알아내려면 route가 저장돼 있어야 한다(생성 파일 경로에서 역추론하는 건 컨벤션이
+    // 바뀌면 조용히 깨지는 추측이라 채택하지 않음 — 실제 값을 저장). null이면(구버전 판정서)
+    // 재검증 라우트가 "정보 없음"으로 명확히 거부한다(추측으로 땜질하지 않음).
+    route,
   };
 
   const runPath = path.join(runsDir, `${runId}.json`);

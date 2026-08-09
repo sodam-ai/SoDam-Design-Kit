@@ -68,6 +68,21 @@
     font-size: 0.88rem;
   }
   .run-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .run-actions { display: flex; gap: 0.5rem; }
+  .run-reverify {
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+  }
+  .run-reverify:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .run-reverify:disabled { opacity: 0.6; cursor: not-allowed; }
+  .run-status-msg { margin-top: 0.6rem; font-size: 0.85rem; }
+  .run-status-locked { color: #9a6700; }
+  .run-status-error { color: var(--fail-text); }
+  .run-status-ok { color: var(--pass-text); }
   .run-detail { margin-top: 0.85rem; }
   .run-report-content {
     white-space: pre-wrap;

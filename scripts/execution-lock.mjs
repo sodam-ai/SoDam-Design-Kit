@@ -71,15 +71,25 @@ export async function acquireLock(designKitDir, { isAlive = isProcessAlive } = {
     try {
       existing = JSON.parse(readFileSync(lockPath, 'utf-8'));
     } catch (err) {
-      throw new Error(
-        `[lock] .design-kit/.lock 파일이 손상되어 읽을 수 없습니다 (${err.message}). ` +
-          `다른 실행이 진짜로 없는지 확인한 뒤 "${lockPath}" 파일을 직접 삭제하고 다시 시도하세요.`
+      throw Object.assign(
+        new Error(
+          `[lock] .design-kit/.lock 파일이 손상되어 읽을 수 없습니다 (${err.message}). ` +
+            `다른 실행이 진짜로 없는지 확인한 뒤 "${lockPath}" 파일을 직접 삭제하고 다시 시도하세요.`
+        ),
+        { statusCode: 500 }
       );
     }
     if (existing && typeof existing.pid === 'number' && isAlive(existing.pid)) {
-      throw new Error(
-        `[lock] 다른 실행이 이미 진행 중입니다 (PID ${existing.pid}, 시작: ${existing.acquiredAt}). ` +
-          `그 실행이 끝난 뒤 다시 시도하세요.`
+      // statusCode: 409(Conflict) — dashboard-server.mjs의 재검증 트리거(2c)가 이 값을 그대로
+      // HTTP 응답 코드로 써서 "이미 다른 검증이 진행 중"임을 화면에 안내한다(01 §5: 실행
+      // 중이면 .lock 안내로 비활성). CLI는 이 값을 쓰지 않으므로(에러 메시지만 stderr에
+      // 출력) 하위 호환은 유지된다.
+      throw Object.assign(
+        new Error(
+          `[lock] 다른 실행이 이미 진행 중입니다 (PID ${existing.pid}, 시작: ${existing.acquiredAt}). ` +
+            `그 실행이 끝난 뒤 다시 시도하세요.`
+        ),
+        { statusCode: 409 }
       );
     }
     // 기록된 PID가 죽어있음 — 비정상 종료로 남은 stale 잠금으로 판정해 회수

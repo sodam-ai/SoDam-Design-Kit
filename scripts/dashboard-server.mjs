@@ -16,7 +16,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findAvailablePort } from './verify-runner.mjs';
+import { findAvailablePort, startDevServer, verifyPage, judge } from './verify-runner.mjs';
+import { writeReport } from './report-writer.mjs';
+import { acquireLock, releaseLock } from './execution-lock.mjs';
 
 // verify-runner.mjs의 dev server 포트 범위(3000~3020)와 절대 겹치지 않도록 별도 대역 사용.
 const DASHBOARD_PORT_RANGE_START = 4570;
@@ -178,6 +180,63 @@ export async function readReportContent(designKitDir, runId) {
 }
 
 /**
+ * 저장된 run 기록으로 같은 화면을 다시 검증한다(2c — 재검증 트리거).
+ *
+ * verify-runner.mjs의 main()과 정확히 같은 순서(락 획득 → dev server 기동 → 렌더+axe 검사 →
+ * 판정서 기록 → dev server 종료 → 락 해제)를, 이미 export된 코어 함수들을 그대로 호출해서
+ * 재현한다 — main() 자체를 건드리지 않고 같은 함수를 다른 진입점에서 재사용한다(01_PRD.md
+ * §3 Parity Matrix: "모든 표면은 같은 코어 엔진을 호출하는 얇은 래퍼").
+ *
+ * 코드를 다시 생성하지 않는다 — 이미 만들어진 코드를 다시 검사만 한다(T2 AI 작업은 대시보드
+ * 범위 밖, 01 §3). route가 저장돼 있지 않은 오래된 판정서(2026-08-09 이전)는 재검증을
+ * 명확히 거부한다(경로를 추측해서 땜질하지 않음 — 02 결정 기록).
+ */
+export async function reverifyRun(projectDir, designKitDir, runId) {
+  if (!RUN_ID_PATTERN.test(String(runId))) {
+    throw Object.assign(new Error('잘못된 runId 형식'), { statusCode: 400 });
+  }
+  const runPath = path.resolve(path.join(designKitDir, 'runs', `${runId}.json`));
+  let originalRun;
+  try {
+    originalRun = JSON.parse(await readFile(runPath, 'utf-8'));
+  } catch {
+    throw Object.assign(new Error('원본 실행 기록을 찾을 수 없습니다'), { statusCode: 404 });
+  }
+  if (!originalRun.route) {
+    throw Object.assign(
+      new Error(
+        '이 실행 기록엔 route 정보가 없어 재검증할 수 없습니다(오래된 판정서). 파이프라인을 다시 실행해 새 판정서를 만들어주세요.'
+      ),
+      { statusCode: 400 }
+    );
+  }
+
+  await acquireLock(designKitDir); // 실행 중이면 여기서 statusCode 409로 거부됨(execution-lock.mjs)
+  let devServer;
+  try {
+    devServer = await startDevServer(projectDir);
+    const result = await verifyPage({
+      baseUrl: devServer.url,
+      route: originalRun.route,
+      screenshotDir: path.join(designKitDir, 'reports', 'screenshots', `reverify-${runId}-${Date.now()}`),
+    });
+    const judgement = judge(result);
+    const report = await writeReport({
+      designKitDir,
+      target: `${originalRun.target} (대시보드 재검증)`,
+      generatedFiles: originalRun.generatedFiles || [],
+      retryCount: 0,
+      route: originalRun.route,
+      verifyRunnerOutput: { devServer: { port: devServer.port, autoStarted: true }, ...result, ...judgement },
+    });
+    return { ...report, verdict: judgement.verdict };
+  } finally {
+    if (devServer) await devServer.stop();
+    await releaseLock(designKitDir);
+  }
+}
+
+/**
  * 스크린샷 파일을 서빙한다 — 04_PROJECT_SPEC.md DO NOT이 **이름으로 지목한** 위험
  * ("경로 조작 차단 — 스크린샷 서빙 포함"). 요청 경로에 `..`가 섞여 있어도 반드시
  * `.design-kit/reports/screenshots/` 밖으로 못 나가게 resolve+startsWith로 검증하고,
@@ -213,7 +272,7 @@ export async function readScreenshotFile(designKitDir, relativePath) {
  * JSON 응답 단계에서는 브라우저가 실행할 마크업이 없어 XSS 위험이 사실상 없고, 이 단계의
  * 실제 위험은 경로 조작(파일을 실제로 읽는 시점)이라 그것부터 독립적으로 증명한다.
  */
-export function createRequestHandler({ apiToken, port, designKitDir }) {
+export function createRequestHandler({ apiToken, port, designKitDir, projectDir }) {
   return async function handleRequest(req, res) {
     try {
       const origin = req.headers.origin;
@@ -228,8 +287,27 @@ export function createRequestHandler({ apiToken, port, designKitDir }) {
         return sendJson(res, 400, { error: '잘못된 요청 경로' });
       }
 
+      // 재검증 트리거(2c)만 유일한 예외로 POST를 허용한다 — 부작용(dev server 기동·판정서
+      // 생성)이 있는 명령이라 GET으로 만들면 브라우저 프리페치·재시도가 의도치 않게 검증을
+      // 반복 트리거할 위험이 있다(HTTP 의미론). "대시보드는 상태를 직접 쓰지 않는다"(02
+      // 결정 기록)는 여전히 지켜진다 — 이 라우트도 코어 엔진(reverifyRun → verify-runner
+      // 함수들)을 호출만 하고, 판정·기록은 엔진이 한다(트리거≠쓰기).
+      const reverifyMatch = pathname.match(/^\/api\/reverify\/([^/]+)$/);
+      if (req.method === 'POST' && reverifyMatch) {
+        const receivedToken = req.headers[TOKEN_HEADER];
+        if (!timingSafeTokenEqual(receivedToken, apiToken)) {
+          return sendJson(res, 403, { error: '허용되지 않은 요청 — 토큰이 없거나 틀렸습니다' });
+        }
+        try {
+          const result = await reverifyRun(projectDir, designKitDir, reverifyMatch[1]);
+          return sendJson(res, 200, result);
+        } catch (err) {
+          return sendJson(res, err.statusCode || 500, { error: err.message });
+        }
+      }
+
       if (req.method !== 'GET') {
-        return sendJson(res, 405, { error: '이 증분은 읽기(GET)만 지원합니다' });
+        return sendJson(res, 405, { error: '지원하지 않는 메서드입니다' });
       }
 
       // 셸(HTML·정적 JS)은 토큰 없이 서빙 — 페이지를 열어야 토큰을 얻을 수 있으므로.
@@ -315,7 +393,7 @@ export async function startDashboardServer({
   const apiToken = await generateApiToken(designKitDir);
   const port = await findAvailablePort(portRangeStart, portRangeEnd);
 
-  const server = createServer(createRequestHandler({ apiToken, port, designKitDir }));
+  const server = createServer(createRequestHandler({ apiToken, port, designKitDir, projectDir: resolvedProjectDir }));
 
   await new Promise((resolve, reject) => {
     server.once('error', reject);

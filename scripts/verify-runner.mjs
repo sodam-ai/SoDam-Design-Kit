@@ -13,6 +13,7 @@ import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 import { writeReport } from './report-writer.mjs';
 import { acquireLock, releaseLock } from './execution-lock.mjs';
+import { compareRunToBaseline, promoteBaseline } from './visual-regression.mjs';
 
 export const VIEWPORTS = [
   { width: 360, height: 800, label: '360' },
@@ -221,14 +222,23 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
   return { targetUrl, renderOk, consoleErrors, axeCounts, axeViolations, screenshots };
 }
 
-/** PASS 조건 4가지 (단일 출처: .PRD/02_DATA_MODEL.md VerifyReport 섹션) */
-export function judge(result) {
+/**
+ * PASS 조건 (단일 출처: .PRD/02_DATA_MODEL.md VerifyReport 섹션 — 기본 4가지 + 시각 회귀는 opt-in).
+ * `visualRegressions`를 안 넘기면(기본값 []) 기존 4조건 판정과 완전히 동일하게 동작한다 —
+ * 하위 호환 유지(--visualRegression 플래그를 안 쓰는 기존 호출부는 전혀 영향 없음).
+ */
+export function judge(result, { visualRegressions = [] } = {}) {
   const reasons = [];
   if (!result.renderOk) reasons.push('렌더 실패 (대상 URL 정상 로드 안 됨)');
   if (result.consoleErrors.length > 0) reasons.push(`콘솔 에러 ${result.consoleErrors.length}건`);
   const a11yFail = result.axeCounts.critical + result.axeCounts.serious;
   if (a11yFail > 0) reasons.push(`axe critical/serious 위반 ${a11yFail}건`);
   if (result.screenshots.length !== VIEWPORTS.length) reasons.push('뷰포트 3종 스크린샷 미충족');
+
+  const regressed = visualRegressions.filter((r) => r.status === 'regression');
+  if (regressed.length > 0) {
+    reasons.push(`시각 회귀 감지 ${regressed.length}건 (${regressed.map((r) => `${r.viewport}px`).join(', ')})`);
+  }
 
   return { verdict: reasons.length === 0 ? 'PASS' : 'FAIL', reasons };
 }
@@ -268,6 +278,12 @@ async function main() {
   const target = getArg('target');
   const generatedFiles = getArg('generatedFiles');
   const retryCount = getArg('retryCount');
+  // 시각 회귀는 opt-in이다(플래그 없으면 기존과 완전 동일하게 동작) — config.json의
+  // gateEnabled/a11yLevel처럼 현재 이 킷 어디서도 config.json을 실제로 읽어 게이트 동작을
+  // 바꾸는 코드가 없다(설정 스키마만 있고 소비하는 코드가 없는 기존 공백 — 이번 작업 범위 밖이라
+  // 그 공백을 넓히지 않고 기존 CLI 플래그 패턴(--target 등)을 그대로 따른다).
+  const visualRegressionEnabled = args.includes('--visualRegression');
+  const shouldPromoteBaseline = args.includes('--promoteBaseline');
 
   let devServer = null;
   let baseUrl = explicitUrl;
@@ -283,7 +299,7 @@ async function main() {
 
     if (!baseUrl) {
       if (!projectDir) {
-        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]]');
+        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]]');
         process.exit(2);
       }
       devServer = await startDevServer(path.resolve(projectDir));
@@ -291,11 +307,27 @@ async function main() {
     }
 
     const result = await verifyPage({ baseUrl, route, screenshotDir });
-    const judgement = judge(result);
+
+    let visualRegression = [];
+    if (visualRegressionEnabled && projectDir && result.screenshots.length > 0) {
+      const designKitDirForVr = path.join(path.resolve(projectDir), '.design-kit');
+      visualRegression = await compareRunToBaseline({ designKitDir: designKitDirForVr, route, screenshots: result.screenshots });
+    }
+    const judgement = judge(result, { visualRegressions: visualRegression });
+
+    // 기준본 승격은 PASS일 때만 허용 — 깨진 화면을 "정상"으로 못박는 걸 막는다(04 DO NOT
+    // "게이트를 우회하는 옵션을 몰래 켜지 마"와 같은 방향: 실패를 성공으로 둔갑시키지 않음).
+    let baselinePromotion = null;
+    if (shouldPromoteBaseline && projectDir && judgement.verdict === 'PASS' && result.screenshots.length > 0) {
+      const designKitDirForVr = path.join(path.resolve(projectDir), '.design-kit');
+      baselinePromotion = await promoteBaseline({ designKitDir: designKitDirForVr, route, screenshots: result.screenshots });
+    }
 
     const output = {
       devServer: devServer ? { port: devServer.port, autoStarted: true } : { url: baseUrl, autoStarted: false },
       ...result,
+      ...(visualRegressionEnabled ? { visualRegression } : {}),
+      ...(baselinePromotion ? { baselinePromotion } : {}),
       ...judgement,
     };
 

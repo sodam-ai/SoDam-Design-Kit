@@ -36,6 +36,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   └── verify-gate.mjs         # runs/에 verifying·fail 상태가 있을 때만 발동 (오탐 방지 스코핑)
 ├── scripts/
 │   ├── verify-runner.mjs       # dev server 자동 기동(포트 자동 우회)+Playwright+axe 실행기
+│   ├── visual-regression.mjs   # [P2, 2026-08-09 완료] 로컬 시각 회귀 감지 — opt-in(--visualRegression), pixelmatch+pngjs
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')

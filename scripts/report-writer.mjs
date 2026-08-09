@@ -113,7 +113,7 @@ export async function nextRunId(designKitDir, date = new Date()) {
 }
 
 function renderReportMarkdown({ runId, target, verifyResult, judgement, devServerInfo, recheck }) {
-  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots } = verifyResult;
+  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression } = verifyResult;
   const lines = [];
   lines.push(`# 판정서 — ${runId}`);
   lines.push('');
@@ -139,6 +139,19 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
     for (const v of axeViolations) {
       const targetsText = v.targets && v.targets.length ? ` — 대상: ${v.targets.join(', ')}` : '';
       lines.push(`- [${v.impact}] ${v.id}: ${v.description}${targetsText}`);
+    }
+  }
+  if (visualRegression && visualRegression.length > 0) {
+    lines.push('');
+    lines.push('## 시각 회귀 (기준본 비교, opt-in)');
+    for (const r of visualRegression) {
+      if (r.status === 'no-baseline') {
+        lines.push(`- ${r.viewport}px: 기준본 없음 (비교 생략 — 첫 실행이거나 아직 승인 안 됨)`);
+      } else if (r.status === 'matched') {
+        lines.push(`- ${r.viewport}px: 일치 (차이 ${(r.diffRatio * 100).toFixed(2)}%, 허용 범위 안)`);
+      } else {
+        lines.push(`- ${r.viewport}px: **회귀 감지** — ${r.reason}${r.diffImagePath ? ` (diff 이미지: ${r.diffImagePath})` : ''}`);
+      }
     }
   }
   lines.push('');
@@ -193,6 +206,15 @@ export async function writeReport(opts) {
       path: path.isAbsolute(s.path)
         ? path.relative(designKitDir, s.path).split(path.sep).join('/')
         : s.path,
+    })),
+    // visualRegression[].diffImagePath도 스크린샷과 같은 이유로 절대경로를 판정서에 남기지 않는다
+    // (2026-08-09 신설 — 시각 회귀 감지).
+    visualRegression: (rawVerifyResult.visualRegression || []).map((r) => ({
+      ...r,
+      diffImagePath:
+        r.diffImagePath && path.isAbsolute(r.diffImagePath)
+          ? path.relative(designKitDir, r.diffImagePath).split(path.sep).join('/')
+          : r.diffImagePath,
     })),
   };
 

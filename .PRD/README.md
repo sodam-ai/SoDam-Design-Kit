@@ -95,6 +95,8 @@ Phase 1을 시작하려면 [03_PHASES.md](./03_PHASES.md)의 "Phase 1 시작 프
 
 - **43차(2026-08-09, 42차 직후 — axe moderate `page-has-heading-one` 해소)**: `preview-route.mjs`가 생성하는 프리뷰 페이지에 `<h1>`이 없어 axe moderate 위반(`page-has-heading-one`)이 판정서에 계속 남아있었다(`2026-08-04-009` 등). critical/serious만 게이트 기준이라 PASS 자체는 항상 정상이었지만, 검증을 표방하는 킷 자신의 산출물이 접근성 지적을 남기는 건 정체성과 어긋난다고 판단해 해소했다. sr-only 기법(`position:absolute`+`clip`, `display:none` 아님 — axe와 스크린리더 둘 다 "존재함"으로 인식)으로 시각적으론 안 보이게 넣어 01 §5의 "프리뷰 라우트는 미니멀이 기능 요건"과 충돌하지 않게 했다. 단위테스트 1건 신설(134→135) + **실제 픽스처 재생성 후 진짜 axe-core 실행으로 실측**: `axeCounts.moderate` 1→0, `axeViolations: []`, PASS 유지 확인.
 
+- **44차(2026-08-09, 43차 직후 — 로컬 시각 회귀 감지, Phase 2 대형 후보 4개 중 첫 착수·완료)**: PRD 9개 문서 전수 재검토(서브에이전트 독립 검증 포함) 후 남은 Phase 2 후보(Storybook·디자인 토큰 동기화·시각 회귀·폰트 파이프라인) 중 외부 통신·대상 프로젝트 변경이 없어 위험이 가장 낮은 시각 회귀를 선택했다. `scripts/visual-regression.mjs` 신설(`pixelmatch`+`pngjs`, ISC/MIT). axe와 달리 디자인 변경도 항상 "다름"으로 나오는 특성상 **opt-in**(`--visualRegression`)으로 설계하고 기준본 승인도 `--promoteBaseline`(PASS 전용)으로 사람이 명시 결정하게 했다 — 상시 Must 게이트로 만들면 정상 작업마다 오탐 FAIL이 남발될 위험을 사전에 차단. 단위테스트 8건(135→143) + **실제 픽스처로 진짜 회귀를 고의로 만들어 실측**: 기준본 승격 → 무변경 재실행 matched → 배경색 고의 변경 후 재실행 3뷰포트 전부 regression+FAIL(exit 1) + diff PNG 3장 실제 생성 확인 → 원상복구 후 matched 복귀. 이 과정에서 Bash(Git Bash)로 스크립트를 재실행했다가 `@/` import 경로가 오염되는 새로운 함정 사례를 발견·즉시 수정(기존에 알려진 `/`-인자 오염 함정의 변주 — `--importPath` 값도 영향받음을 처음 확인). `03_PHASES.md`의 "토큰 변경→시각 회귀" 암묵 순서 전제(CHECKPOINT.md "강제 순서 없음"과 미조정 상태였음)도 이번에 발견·정정했다. `npm audit` 0건.
+
 ## 핵심 결정 이력 (인터뷰 확정)
 
 - 결과물: Claude Code 플러그인 (독립 서비스 아님, Codex는 AGENTS.md로 대응) + P2 open 대시보드·P3 MCP 래퍼로 Claude Desktop 확장 (2026-07-19 사용자 결정 — GPT Desktop은 조건부 백로그)

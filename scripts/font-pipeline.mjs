@@ -13,7 +13,7 @@
 // 찾았다. 짐작으로 URL을 박아넣지 않는다는 원칙을 스스로 지킨 사례.
 
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile, appendFile, readdir } from 'node:fs/promises';
+import { mkdir, writeFile, appendFile, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -198,6 +198,131 @@ ${srcLines}
   await mkdir(outDir, { recursive: true });
   await writeFile(outPath, content, 'utf-8');
   return { modulePath: outPath, varName, cssVar };
+}
+
+// ---------------------------------------------------------------------------
+// 폰트 게이트 C (opt-in, 2026-08-10) — 04_PROJECT_SPEC.md ALWAYS DO가 원래 "상시" 뉘앙스로
+// 적어뒀지만, axe(항상 나쁜 것)와 달리 이 검사는 "이미 완료된 P1 픽스처·기존 사용자 프로젝트를
+// 아무 예고 없이 FAIL로 뒤집을 수 있다"는 실질적 회귀 위험이 있다 — 폰트 파이프라인 A를 한 번도
+// 안 써본 프로젝트는 정의상 ASSET-LEDGER.csv가 없거나 폰트가 하나도 안 실려 있어, 상시 게이트로
+// 켜면 프로젝트가 이미 갖고 있던(=이 킷과 무관하게 원래 있던) 폰트 파일까지 전부 "미등록"으로
+// FAIL 처리된다. 이는 visual-regression.mjs가 opt-in을 선택한 것과 같은 이유(정상 상태를 갑자기
+// FAIL 남발로 뒤집으면 사용자가 게이트 자체를 꺼버리는 최악 시나리오)라 같은 패턴을 그대로 따른다
+// — verify-runner.mjs --fontGate 플래그로만 켜지고, 안 쓰면 기존 4조건 판정과 완전히 동일하다.
+// ---------------------------------------------------------------------------
+
+const FONT_FILE_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2']);
+// PRD 원문은 ".ttf/.otf/.woff2"만 나열하지만 .woff를 빼면 그 확장자만 골라 미등록 폰트를 넣는
+// 사각지대가 생겨 게이트의 목적(저작권 불명 폰트 차단)이 무너진다 — 04 DO NOT 원칙 그대로 확장.
+const FONT_SCAN_EXCLUDED_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'build', 'out', '.turbo', '.vercel']);
+
+/**
+ * 프로젝트 안의 폰트 파일(.ttf/.otf/.woff/.woff2)을 재귀 스캔한다. node_modules·.next 등
+ * 빌드/의존성 산출물 디렉터리는 제외(그 안의 폰트는 사용자 자산이 아니라 잡음이라 스캔하면
+ * 오탐만 늘어남). `.design-kit/fonts/`(이 킷이 관리하는 화이트리스트 폰트 보관 위치)는
+ * 제외하지 않는다 — 오히려 여기가 "정상적으로 대장에 등록된 폰트"의 표본이라 게이트가
+ * 이걸 오탐 없이 통과시키는지 검증하는 게 이 기능의 핵심 사례다.
+ * 심볼릭 링크는 따라가지 않는다(순환 참조로 인한 무한 루프 방지).
+ * 반환값은 프로젝트 루트 기준 상대경로(posix `/` 구분자)의 정렬된 배열.
+ */
+export async function scanProjectFontFiles(projectDir) {
+  const found = [];
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return; // 읽을 수 없는 디렉터리는 조용히 건너뜀(권한 문제 등 — 스캔 자체를 죽이지 않음)
+    }
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (FONT_SCAN_EXCLUDED_DIRS.has(entry.name)) continue;
+        // eslint-disable-next-line no-await-in-loop -- 재귀 스캔이 의도(전체 트리를 순서대로 훑음)
+        await walk(full);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (FONT_FILE_EXTENSIONS.has(ext)) {
+          found.push(path.relative(projectDir, full).split(path.sep).join('/'));
+        }
+      }
+    }
+  }
+  await walk(projectDir);
+  return found.sort();
+}
+
+/** CSV 한 줄을 필드 배열로 파싱(csvEscape의 역연산) — 따옴표로 감싼 값 안의 `,`·`\n`·이스케이프된 `""`를 처리. */
+function parseCsvLine(line) {
+  const fields = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      fields.push(cur);
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  fields.push(cur);
+  return fields;
+}
+
+/**
+ * ASSET-LEDGER.csv에 등록된 파일명을, 게이트 스캔 결과와 바로 대조할 수 있도록 **프로젝트
+ * 루트 기준 상대경로**로 정규화해 Set으로 반환한다. 대장의 파일명 컬럼은 `.design-kit/` 기준
+ * 상대경로로 기록된다(font-pipeline.mjs의 기존 관례 — 예: "fonts/pretendard/Pretendard-Regular.otf").
+ * 파일이 없으면 빈 Set(= 아무 것도 등록 안 됨, 스캔된 폰트가 있으면 전부 미등록으로 판정됨 —
+ * 이게 정확한 동작이다: 대장이 아예 없다는 건 이 킷의 폰트 파이프라인을 한 번도 안 썼다는 뜻).
+ */
+export async function loadAssetLedgerFilenames(designKitDir) {
+  const ledgerPath = path.join(designKitDir, 'ASSET-LEDGER.csv');
+  if (!existsSync(ledgerPath)) return new Set();
+  const content = await readFile(ledgerPath, 'utf-8');
+  const lines = content.split('\n').filter((l) => l.trim().length > 0);
+  const projectDir = path.dirname(designKitDir);
+  const registered = new Set();
+  for (let i = 1; i < lines.length; i += 1) {
+    // 0번째 줄은 헤더("파일명,종류,...") — 데이터 행만 순회
+    const [filename] = parseCsvLine(lines[i]);
+    if (!filename) continue;
+    const absolute = path.join(designKitDir, filename);
+    registered.add(path.relative(projectDir, absolute).split(path.sep).join('/'));
+  }
+  return registered;
+}
+
+/**
+ * 폰트 게이트 판정: 프로젝트를 스캔해 찾은 폰트 파일 중 ASSET-LEDGER.csv에 등록 안 된 것을
+ * 미등록(violation)으로 분류한다. verify-runner.mjs가 --fontGate일 때만 호출한다(opt-in —
+ * 파일 최상단 주석 참조). "왜 미등록인지"를 자동으로 판단하지 않는다(허용목록 밖 폰트의 라이선스
+ * 적합성·로고 워드마크 여부는 04_PROJECT_SPEC.md가 요구하는 대로 사람의 판단 영역으로 남긴다 —
+ * 이 게이트는 "등록됐는가/안 됐는가"만 기계적으로 확인하고, 등록 자체(대장에 행 추가)는 사람이나
+ * font-pipeline.mjs 같은 별도 도구가 한다).
+ */
+export async function checkFontGate({ projectDir, designKitDir }) {
+  const [scanned, registered] = await Promise.all([
+    scanProjectFontFiles(projectDir),
+    loadAssetLedgerFilenames(designKitDir),
+  ]);
+  const violations = scanned.filter((f) => !registered.has(f)).map((file) => ({ file }));
+  return { scannedCount: scanned.length, registeredCount: registered.size, violations };
 }
 
 async function main() {

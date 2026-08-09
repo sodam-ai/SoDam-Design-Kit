@@ -37,7 +37,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 ├── scripts/
 │   ├── verify-runner.mjs       # dev server 자동 기동(포트 자동 우회)+Playwright+axe 실행기
 │   ├── visual-regression.mjs   # [P2, 2026-08-09 완료] 로컬 시각 회귀 감지 — opt-in(--visualRegression), pixelmatch+pngjs
-│   ├── font-pipeline.mjs       # [P2, 2026-08-09 완료] 폰트 파이프라인 A(전자동) — OFL 화이트리스트 다운로드+ASSET-LEDGER+next/font/local 모듈
+│   ├── font-pipeline.mjs       # [P2] 폰트 파이프라인 A(전자동, 2026-08-09)+게이트 C(opt-in, 2026-08-10) — OFL 화이트리스트 다운로드+ASSET-LEDGER+next/font/local 모듈+미등록 폰트 스캔(--fontGate)
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
@@ -116,7 +116,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 - [ ] FAIL 판정 확정 전 같은 코드로 1회 자동 재검 (2회 연속 FAIL만 진짜 FAIL — flaky 오탐이 게이트 신뢰를 깎아 사용자가 게이트를 끄게 되는 최악 시나리오 방지)
 - [ ] FAIL 시 판정서의 실패 사유(axe 위반 항목·콘솔 에러)를 다음 생성 시도에 주입해 수정 → 재검증 (**실패 피드백 주입** — 피드백 없는 재시도는 같은 실패를 반복함. 최대 maxAutoRetry회, 초과 시 사용자에게 보고)
 - [ ] 훅·플러그인 구조 변경 후에는 **새 세션 설치 테스트**로 검증
-- [ ] 폰트 게이트(C, **P2부터 적용** — P1엔 대장이 없어 구현 불가): 프로젝트의 .ttf/.otf/.woff2 스캔 → ASSET-LEDGER 미등록 폰트 감지 시 FAIL. 화이트리스트(OFL) 밖 폰트는 자료 -03 §12의 점검 10항 답변이 대장에 기록되어야 통과, 로고 워드마크 폰트는 항상 수동 확인(약관 해석은 자동 확정 불가)
+- [x] **폰트 게이트(C, 2026-08-10 완료 — opt-in으로 정밀화, 결정 기록 아래)**: 프로젝트의 .ttf/.otf/.woff/.woff2 스캔 → ASSET-LEDGER 미등록 폰트 감지 시 FAIL. 화이트리스트(OFL) 밖 폰트는 자료 -03 §12의 점검 10항 답변이 대장에 기록되어야 통과, 로고 워드마크 폰트는 항상 수동 확인(약관 해석은 자동 확정 불가) — **단, "10항 점검"·"로고 워드마크 구분"은 이번 구현 범위 밖**: 이 게이트는 "대장에 등록됐는가"만 기계적으로 판정하고, 등록 자체(출처·라이선스·10항 답변 기록)는 사람이 대장에 직접 기록하는 몫으로 남긴다. **원문은 "상시" 뉘앙스였으나 구현 시 opt-in(`verify-runner.mjs --fontGate`)으로 정밀화했다** — 이 원칙 문서(04) 자체가 그대로 상시 적용됐다면, 폰트 파이프라인 A를 한 번도 안 써본 기존 프로젝트(ASSET-LEDGER.csv가 없거나 비어있는 모든 프로젝트, P1 픽스처 포함)의 이미 정상이던 폰트 파일이 전부 "미등록"으로 갑자기 FAIL 처리되는 회귀가 발생했을 것 — axe(위반=항상 나쁨)와 달리 이 검사는 "이미 완료된 정상 상태"를 예고 없이 뒤집을 수 있어, 시각 회귀(2026-08-09)가 opt-in을 택한 것과 정확히 같은 이유다. 상세는 `.PRD/README.md` 47차·`02_DATA_MODEL.md` 결정 기록
 - [ ] 생성 코드의 색·간격·글자 크기는 프로젝트의 기존 Tailwind 스케일·shadcn 테마 토큰을 재사용 (하드코딩 hex·px 금지 — 토큰이 없으면 P2 토큰 동기화 전까지 shadcn 기본값 사용)
 - [ ] 인터랙티브 요소는 hover·focus-visible·active·disabled 상태를 shadcn variants로 구현 (focus 링 제거 금지), 터치 영역 44×44px 이상·인접 타깃 간격 8px 이상
 - [ ] 상태 화면 세트 확인: loading(300ms+ 작업만)·empty(안내+다음 행동 1개)·error(원인+재시도 경로)·success/warning 피드백 — 상세 기준의 정본은 01 §5 UI/UX 요구사항

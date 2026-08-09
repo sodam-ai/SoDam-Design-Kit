@@ -10,6 +10,9 @@ import {
   downloadFont,
   appendAssetLedger,
   generateFontModule,
+  scanProjectFontFiles,
+  loadAssetLedgerFilenames,
+  checkFontGate,
 } from '../scripts/font-pipeline.mjs';
 
 // 실제 네트워크를 타지 않는다 — fetchFn을 주입해 로직만 검증한다(CI·오프라인 환경에서도
@@ -182,6 +185,128 @@ test('generateFontModule: src/ 디렉터리가 있으면 src/lib/design-kit-font
     assert.match(content, /next\/font\/local/);
     assert.match(content, /Pretendard-Regular\.otf/);
     assert.match(content, /SoDam-Design-Kit 자동 생성/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// --- 폰트 게이트 C (opt-in, 2026-08-10) ---
+
+test('scanProjectFontFiles: .ttf/.otf/.woff/.woff2를 찾고 node_modules·.next는 제외한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    await mkdir(path.join(dir, 'public', 'fonts'), { recursive: true });
+    await writeFile(path.join(dir, 'public', 'fonts', 'Custom.ttf'), Buffer.from('fake'));
+    await writeFile(path.join(dir, 'public', 'fonts', 'Custom.OTF'), Buffer.from('fake')); // 대문자 확장자도 인식
+    await writeFile(path.join(dir, 'public', 'fonts', 'notes.txt'), 'not a font');
+    await mkdir(path.join(dir, 'node_modules', 'some-pkg'), { recursive: true });
+    await writeFile(path.join(dir, 'node_modules', 'some-pkg', 'icons.woff2'), Buffer.from('fake'));
+    await mkdir(path.join(dir, '.next', 'cache'), { recursive: true });
+    await writeFile(path.join(dir, '.next', 'cache', 'compiled.woff'), Buffer.from('fake'));
+
+    const found = await scanProjectFontFiles(dir);
+    assert.deepEqual(found, ['public/fonts/Custom.OTF', 'public/fonts/Custom.ttf']);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('scanProjectFontFiles: 폰트가 하나도 없으면 빈 배열(대부분의 shadcn 프로젝트가 이 케이스)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    await mkdir(path.join(dir, 'src'), { recursive: true });
+    await writeFile(path.join(dir, 'src', 'index.ts'), 'export {}');
+    assert.deepEqual(await scanProjectFontFiles(dir), []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadAssetLedgerFilenames: 대장이 없으면 빈 Set(=스캔된 폰트가 전부 미등록으로 판정됨)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    const registered = await loadAssetLedgerFilenames(designKitDir);
+    assert.equal(registered.size, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('loadAssetLedgerFilenames: 대장의 파일명을 프로젝트 루트 기준 상대경로로 정규화한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await appendAssetLedger(designKitDir, [
+      { filename: 'fonts/pretendard/Pretendard-Regular.otf', kind: '폰트', sourceUrl: 'https://x', license: 'OFL-1.1', commercialUse: 'O', attribution: '-', aiGenerated: 'N' },
+    ]);
+    const registered = await loadAssetLedgerFilenames(designKitDir);
+    assert.ok(registered.has('.design-kit/fonts/pretendard/Pretendard-Regular.otf'));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('checkFontGate: 대장에 정확히 등록된 폰트(정상적인 font-pipeline A 산출물)는 위반 0건', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    const fetchFn = fakeFetchReturning(otfLikeBuffer());
+    const download = await downloadFont('pretendard', designKitDir, { fetchFn });
+    await appendAssetLedger(designKitDir, [
+      { filename: `fonts/pretendard/${download.files[0].filename}`, kind: '폰트', sourceUrl: download.files[0].sourceUrl, license: download.licenseName, commercialUse: 'O', attribution: '불필요(OFL)', aiGenerated: 'N' },
+    ]);
+
+    const result = await checkFontGate({ projectDir: dir, designKitDir });
+    assert.equal(result.scannedCount, 1);
+    assert.equal(result.violations.length, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('checkFontGate: 대장에 없는 폰트 파일은 미등록(violation)으로 판정한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await mkdir(path.join(dir, 'public', 'fonts'), { recursive: true });
+    await writeFile(path.join(dir, 'public', 'fonts', 'MysteryBrand.ttf'), Buffer.from('fake'));
+
+    const result = await checkFontGate({ projectDir: dir, designKitDir });
+    assert.equal(result.scannedCount, 1);
+    assert.deepEqual(result.violations, [{ file: 'public/fonts/MysteryBrand.ttf' }]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('checkFontGate: 등록된 폰트와 미등록 폰트가 섞여 있으면 미등록분만 골라낸다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    const fetchFn = fakeFetchReturning(otfLikeBuffer());
+    const download = await downloadFont('pretendard', designKitDir, { fetchFn });
+    await appendAssetLedger(designKitDir, [
+      { filename: `fonts/pretendard/${download.files[0].filename}`, kind: '폰트', sourceUrl: download.files[0].sourceUrl, license: download.licenseName, commercialUse: 'O', attribution: '불필요(OFL)', aiGenerated: 'N' },
+    ]);
+    await mkdir(path.join(dir, 'public', 'fonts'), { recursive: true });
+    await writeFile(path.join(dir, 'public', 'fonts', 'MysteryBrand.ttf'), Buffer.from('fake'));
+
+    const result = await checkFontGate({ projectDir: dir, designKitDir });
+    assert.equal(result.scannedCount, 2);
+    assert.deepEqual(result.violations, [{ file: 'public/fonts/MysteryBrand.ttf' }]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('checkFontGate: 폰트 파일이 전혀 없으면(대부분의 프로젝트) 대장 유무와 무관하게 위반 0건', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-fontgate-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    const result = await checkFontGate({ projectDir: dir, designKitDir });
+    assert.equal(result.scannedCount, 0);
+    assert.deepEqual(result.violations, []);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

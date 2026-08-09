@@ -89,6 +89,25 @@ test('judge: 뷰포트 스크린샷이 3개 미만이면 FAIL', () => {
   assert.equal(result.verdict, 'FAIL');
 });
 
+// 폰트 게이트(opt-in, 2026-08-10) — fontGateViolations를 안 넘기면(기본값 []) 기존 4조건
+// 판정과 완전히 동일해야 한다(하위 호환). --fontGate 플래그를 쓸 때만 이 분기가 개입한다.
+test('judge: fontGateViolations를 안 넘기면 기존 4조건 판정과 동일 (하위 호환)', () => {
+  const result = judge(baseResult());
+  assert.equal(result.verdict, 'PASS');
+  assert.deepEqual(result.reasons, []);
+});
+
+test('judge: 미등록 폰트가 있으면 FAIL, 사유에 파일 목록이 포함된다', () => {
+  const result = judge(baseResult(), { fontGateViolations: [{ file: 'public/fonts/MysteryBrand.ttf' }] });
+  assert.equal(result.verdict, 'FAIL');
+  assert.ok(result.reasons.some((r) => r.includes('미등록 폰트') && r.includes('MysteryBrand.ttf')));
+});
+
+test('judge: 미등록 폰트가 0건이면(빈 배열) PASS 유지', () => {
+  const result = judge(baseResult(), { fontGateViolations: [] });
+  assert.equal(result.verdict, 'PASS');
+});
+
 // summarizeAxeViolations: 2026-07-27 신설(M5) — axe-core 원시 violations를 카운트(기존과 동일)
 // + 상세 목록(신규)으로 요약. 실제 axe-core가 돌려주는 violation 객체 모양(id/impact/description/
 // nodes[].target)을 그대로 합성 입력으로 사용 — 브라우저 없이도 변환 로직만 정직하게 검증 가능.

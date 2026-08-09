@@ -14,6 +14,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { writeReport } from './report-writer.mjs';
 import { acquireLock, releaseLock } from './execution-lock.mjs';
 import { compareRunToBaseline, promoteBaseline } from './visual-regression.mjs';
+import { checkFontGate } from './font-pipeline.mjs';
 
 export const VIEWPORTS = [
   { width: 360, height: 800, label: '360' },
@@ -223,11 +224,12 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
 }
 
 /**
- * PASS 조건 (단일 출처: .PRD/02_DATA_MODEL.md VerifyReport 섹션 — 기본 4가지 + 시각 회귀는 opt-in).
- * `visualRegressions`를 안 넘기면(기본값 []) 기존 4조건 판정과 완전히 동일하게 동작한다 —
- * 하위 호환 유지(--visualRegression 플래그를 안 쓰는 기존 호출부는 전혀 영향 없음).
+ * PASS 조건 (단일 출처: .PRD/02_DATA_MODEL.md VerifyReport 섹션 — 기본 4가지 + 시각 회귀·폰트
+ * 게이트는 opt-in). `visualRegressions`·`fontGateViolations`를 안 넘기면(기본값 둘 다 [])
+ * 기존 4조건 판정과 완전히 동일하게 동작한다 — 하위 호환 유지(--visualRegression·--fontGate
+ * 플래그를 안 쓰는 기존 호출부는 전혀 영향 없음).
  */
-export function judge(result, { visualRegressions = [] } = {}) {
+export function judge(result, { visualRegressions = [], fontGateViolations = [] } = {}) {
   const reasons = [];
   if (!result.renderOk) reasons.push('렌더 실패 (대상 URL 정상 로드 안 됨)');
   if (result.consoleErrors.length > 0) reasons.push(`콘솔 에러 ${result.consoleErrors.length}건`);
@@ -238,6 +240,10 @@ export function judge(result, { visualRegressions = [] } = {}) {
   const regressed = visualRegressions.filter((r) => r.status === 'regression');
   if (regressed.length > 0) {
     reasons.push(`시각 회귀 감지 ${regressed.length}건 (${regressed.map((r) => `${r.viewport}px`).join(', ')})`);
+  }
+
+  if (fontGateViolations.length > 0) {
+    reasons.push(`미등록 폰트 감지 ${fontGateViolations.length}건 (${fontGateViolations.map((v) => v.file).join(', ')})`);
   }
 
   return { verdict: reasons.length === 0 ? 'PASS' : 'FAIL', reasons };
@@ -284,6 +290,9 @@ async function main() {
   // 그 공백을 넓히지 않고 기존 CLI 플래그 패턴(--target 등)을 그대로 따른다).
   const visualRegressionEnabled = args.includes('--visualRegression');
   const shouldPromoteBaseline = args.includes('--promoteBaseline');
+  // 폰트 게이트도 시각 회귀와 같은 이유로 opt-in이다 — judge() 주석·font-pipeline.mjs의
+  // "폰트 게이트 C" 절 참조(P1 픽스처·기존 프로젝트를 예고 없이 FAIL로 뒤집지 않기 위함).
+  const fontGateEnabled = args.includes('--fontGate');
 
   let devServer = null;
   let baseUrl = explicitUrl;
@@ -299,7 +308,7 @@ async function main() {
 
     if (!baseUrl) {
       if (!projectDir) {
-        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]]');
+        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]] [--fontGate]');
         process.exit(2);
       }
       devServer = await startDevServer(path.resolve(projectDir));
@@ -313,7 +322,17 @@ async function main() {
       const designKitDirForVr = path.join(path.resolve(projectDir), '.design-kit');
       visualRegression = await compareRunToBaseline({ designKitDir: designKitDirForVr, route, screenshots: result.screenshots });
     }
-    const judgement = judge(result, { visualRegressions: visualRegression });
+
+    let fontGate = null;
+    if (fontGateEnabled && projectDir) {
+      const designKitDirForFonts = path.join(path.resolve(projectDir), '.design-kit');
+      fontGate = await checkFontGate({ projectDir: path.resolve(projectDir), designKitDir: designKitDirForFonts });
+    }
+
+    const judgement = judge(result, {
+      visualRegressions: visualRegression,
+      fontGateViolations: fontGate ? fontGate.violations : [],
+    });
 
     // 기준본 승격은 PASS일 때만 허용 — 깨진 화면을 "정상"으로 못박는 걸 막는다(04 DO NOT
     // "게이트를 우회하는 옵션을 몰래 켜지 마"와 같은 방향: 실패를 성공으로 둔갑시키지 않음).
@@ -328,6 +347,7 @@ async function main() {
       ...result,
       ...(visualRegressionEnabled ? { visualRegression } : {}),
       ...(baselinePromotion ? { baselinePromotion } : {}),
+      ...(fontGate ? { fontGate } : {}),
       ...judgement,
     };
 

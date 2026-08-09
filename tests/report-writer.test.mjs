@@ -280,6 +280,82 @@ test('writeReport: 스크린샷 폴더가 10개를 넘으면 오래된 것부터
   }
 });
 
+test('writeReport: fontGate 결과가 없으면(플래그 미사용) 폰트 게이트 섹션 자체를 생략 (하위 호환)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
+  try {
+    const result = await writeReport({
+      designKitDir: dir,
+      target: 'test',
+      verifyRunnerOutput: {
+        devServer: { port: 3000, autoStarted: true },
+        renderOk: true,
+        consoleErrors: [],
+        axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+        screenshots: [],
+        verdict: 'PASS',
+        reasons: [],
+      },
+    });
+
+    const reportMd = await readFile(result.reportPath, 'utf-8');
+    assert.doesNotMatch(reportMd, /폰트 게이트/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeReport: fontGate 위반이 있으면 판정서에 미등록 폰트 목록을 기록한다 (2026-08-10 신설)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
+  try {
+    const result = await writeReport({
+      designKitDir: dir,
+      target: 'test',
+      verifyRunnerOutput: {
+        devServer: { port: 3000, autoStarted: true },
+        renderOk: true,
+        consoleErrors: [],
+        axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+        screenshots: [],
+        fontGate: { scannedCount: 2, registeredCount: 1, violations: [{ file: 'public/fonts/MysteryBrand.ttf' }] },
+        verdict: 'FAIL',
+        reasons: ['미등록 폰트 감지 1건 (public/fonts/MysteryBrand.ttf)'],
+      },
+    });
+
+    const reportMd = await readFile(result.reportPath, 'utf-8');
+    assert.match(reportMd, /## 폰트 게이트/);
+    assert.match(reportMd, /미등록 폰트 1건/);
+    assert.match(reportMd, /public\/fonts\/MysteryBrand\.ttf/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeReport: fontGate 위반이 0건이면 "미등록 폰트 없음"으로 명확히 기록한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
+  try {
+    const result = await writeReport({
+      designKitDir: dir,
+      target: 'test',
+      verifyRunnerOutput: {
+        devServer: { port: 3000, autoStarted: true },
+        renderOk: true,
+        consoleErrors: [],
+        axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+        screenshots: [],
+        fontGate: { scannedCount: 1, registeredCount: 1, violations: [] },
+        verdict: 'PASS',
+        reasons: [],
+      },
+    });
+
+    const reportMd = await readFile(result.reportPath, 'utf-8');
+    assert.match(reportMd, /미등록 폰트 없음/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('writeReport: .design-kit/screenshots/(정본 위치 밖) 도 .gitignore에 등록된다 (2026-08-09 실측 발견 — 대시보드에서 404로 드러난 결함 회귀 방지)', async () => {
   // --screenshotDir에 "reports/" 접두가 빠진 상대경로가 오면 verify-runner.mjs의 정규화가
   // .design-kit/ 자체를 기준점으로 삼아 .design-kit/screenshots/ 밑에 스크린샷을 만든다(설계된

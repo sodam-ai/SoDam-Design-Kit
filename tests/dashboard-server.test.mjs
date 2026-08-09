@@ -381,6 +381,28 @@ test('extractScreenshotPaths: "## 시각 회귀" 섹션의 동일 형식 줄을 
   ]);
 });
 
+test('extractScreenshotPaths: "## 폰트 게이트" 섹션이 추가돼도(시각 회귀와 동시에 있어도) screenshots만 정확히 뽑는다 (2026-08-10 신설 — 섹션 경계 수정이 새 섹션에도 그대로 일반화되는지 확인)', () => {
+  const md = [
+    '# 판정서',
+    '## 시각 회귀 (기준본 비교, opt-in)',
+    '- 360px: 일치 (차이 0.00%, 허용 범위 안)',
+    '## 폰트 게이트 (미등록 폰트 검사, opt-in)',
+    '- 스캔한 폰트 파일: 2개 / 대장(ASSET-LEDGER) 등록: 1개',
+    '- **미등록 폰트 1건** (ASSET-LEDGER.csv에 출처·라이선스를 기록해야 통과):',
+    '  - public/fonts/MysteryBrand.ttf',
+    '## screenshots',
+    '- 360px: reports/screenshots/x/360.png',
+    '- 768px: reports/screenshots/x/768.png',
+    '- 1440px: reports/screenshots/x/1440.png',
+  ].join('\n');
+  const shots = extractScreenshotPaths(md);
+  assert.deepEqual(shots, [
+    { viewport: '360', path: 'reports/screenshots/x/360.png' },
+    { viewport: '768', path: 'reports/screenshots/x/768.png' },
+    { viewport: '1440', path: 'reports/screenshots/x/1440.png' },
+  ]);
+});
+
 test('createRequestHandler: GET / 은 토큰 없이도 200 (셸은 공개 — 토큰 순환 문제 회피)', async () => {
   const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
   try {

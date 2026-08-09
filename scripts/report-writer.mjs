@@ -113,7 +113,7 @@ export async function nextRunId(designKitDir, date = new Date()) {
 }
 
 function renderReportMarkdown({ runId, target, verifyResult, judgement, devServerInfo, recheck }) {
-  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression } = verifyResult;
+  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression, fontGate } = verifyResult;
   const lines = [];
   lines.push(`# 판정서 — ${runId}`);
   lines.push('');
@@ -152,6 +152,17 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
       } else {
         lines.push(`- ${r.viewport}px: **회귀 감지** — ${r.reason}${r.diffImagePath ? ` (diff 이미지: ${r.diffImagePath})` : ''}`);
       }
+    }
+  }
+  if (fontGate) {
+    lines.push('');
+    lines.push('## 폰트 게이트 (미등록 폰트 검사, opt-in)');
+    lines.push(`- 스캔한 폰트 파일: ${fontGate.scannedCount}개 / 대장(ASSET-LEDGER) 등록: ${fontGate.registeredCount}개`);
+    if (fontGate.violations.length === 0) {
+      lines.push('- 미등록 폰트 없음');
+    } else {
+      lines.push(`- **미등록 폰트 ${fontGate.violations.length}건** (ASSET-LEDGER.csv에 출처·라이선스를 기록해야 통과):`);
+      for (const v of fontGate.violations) lines.push(`  - ${v.file}`);
     }
   }
   lines.push('');

@@ -15,7 +15,7 @@
 | 접근성 검사 | @axe-core/playwright (게이트 판정 기준) + Lighthouse (세션 내 chrome-devtools lighthouse_audit, 참고 지표) | 무료. 정정 사유: 게이트는 Node 스크립트에서 결정적으로 재현돼야 하는데 MCP 도구는 스크립트에서 호출 불가 — 판정은 axe로 단일화, Lighthouse는 참고 병행(원천 자료 15번 "단일 도구 의존 금지" 취지 유지) |
 | 생성 대상 코드 | Next.js + Tailwind + shadcn/ui — **P1은 Next.js 전용 고정** (타 프레임워크 지원은 백로그) | 원천 자료 1·6번 핵심 조합. 프리뷰 라우트·시드 스캔·검증이 전부 프레임워크 결합 코드라 "변경 가능" 문구가 P1 복잡도를 배로 만듦 — 스코프 크립 차단 |
 | Codex 대응 | AGENTS.md 동봉 (원천 자료 19번 형식) | 원래 목적("Claude Code, Codex 등")을 플러그인 미지원 환경에서도 규칙 수준으로 유지 |
-| open 대시보드 [P2]·MCP 래퍼 [P3] | Node 로컬 서버 (127.0.0.1 전용·실행별 토큰·CSP — O-Brain server.mjs 실측 패턴 이식, **2026-08-09 골격 구현 완료** — `scripts/dashboard-server.mjs`) + MCP 서버(.mcpb로 Claude Desktop 지원) | 본인 코드로 검증된 보안 패턴 재사용(실제 소스 읽고 이식, timing-safe 비교는 개선 추가), 대시보드와 MCP가 같은 서버 공유(O-Brain 동거 구조) — 2026-07-19 사용자 결정 |
+| open 대시보드 [P2]·MCP 래퍼 [P3] | Node 로컬 서버 (127.0.0.1 전용·실행별 토큰·CSP — O-Brain server.mjs 실측 패턴 이식, **2026-08-09 완료** — `scripts/dashboard-server.mjs` + `commands/open.md` 진입점, 백그라운드 기동·재사용·`--stop` 종료까지 실측) + MCP 서버(.mcpb로 Claude Desktop 지원) | 본인 코드로 검증된 보안 패턴 재사용(실제 소스 읽고 이식, timing-safe 비교는 개선 추가), 대시보드와 MCP가 같은 서버 공유(O-Brain 동거 구조) — 2026-07-19 사용자 결정 |
 | 배포 | sodam-ai marketplace (추천, 이름 확정 후) | `add` 한 줄 설치, 기존 관리 일원화 |
 
 ---
@@ -28,7 +28,8 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   └── plugin.json             # agents는 개별 .md 파일 경로! (디렉터리 지정 거부됨)
 ├── commands/
 │   ├── setup.md                # /design-kit 설정 마법사
-│   └── pipeline.md             # 디자인→코드→검증 파이프라인
+│   ├── pipeline.md             # 디자인→코드→검증 파이프라인
+│   └── open.md                 # [P2] open 대시보드 진입점 — 2026-08-09 신설(엔진은 있었으나 진입점이 없던 공백 해소)
 ├── skills/
 │   └── design-pipeline/SKILL.md
 ├── hooks/

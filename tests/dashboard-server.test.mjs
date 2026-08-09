@@ -18,6 +18,10 @@ import {
   readScreenshotFile,
   extractScreenshotPaths,
   reverifyRun,
+  readDashboardState,
+  ensureDashboardRunning,
+  stopDashboard,
+  openBrowser,
 } from '../scripts/dashboard-server.mjs';
 
 function makeMockRes() {
@@ -571,6 +575,231 @@ test('startDashboardServer: 실제 HTTP 왕복 — 올바른 토큰은 200, 틀�
     assert.equal(forbiddenResult.status, 403);
   } finally {
     if (dashboard) await dashboard.stop();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+// --- 2d: /sodam-design-kit:open 진입점 — 백그라운드 실행·재사용·종료 -------------------------
+// PRD(01/03)가 `/sodam-design-kit:open` 슬래시 명령을 명시했지만 실제로는 존재하지 않았음
+// (2026-08-09 감사에서 발견 — 엔진은 완성됐으나 진입점이 없어 실사용자가 도달할 방법이 없었다).
+// 이 증분은 그 진입점의 핵심 판단 로직(재사용/새로 시작/종료)을 증명한다.
+
+test('readDashboardState: 상태 파일이 없거나 손상돼도 null(판정 게이트 아님 — fail-open)', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-state-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    assert.equal(await readDashboardState(designKitDir), null);
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(path.join(designKitDir, '.dashboard.json'), '{ 깨진 JSON', 'utf-8');
+    assert.equal(await readDashboardState(designKitDir), null);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('ensureDashboardRunning: 상태 없음 → spawnFn으로 새로 띄우고(가짜 자식이 상태를 씀) reused:false', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-launch-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    let spawnCalled = 0;
+    const fakeSpawn = () => {
+      spawnCalled += 1;
+      setTimeout(async () => {
+        await mkdir(designKitDir, { recursive: true });
+        await writeFile(
+          path.join(designKitDir, '.dashboard.json'),
+          JSON.stringify({ pid: 999999, port: 4570, url: 'http://127.0.0.1:4570', startedAt: new Date().toISOString() })
+        );
+      }, 20);
+      return { unref() {} };
+    };
+    const result = await ensureDashboardRunning(projectDir, { spawnFn: fakeSpawn, waitTimeoutMs: 2000 });
+    assert.equal(spawnCalled, 1);
+    assert.equal(result.reused, false);
+    assert.equal(result.url, 'http://127.0.0.1:4570');
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('ensureDashboardRunning: 기록된 PID가 살아있으면 재사용하고 새로 안 띄운다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-launch-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(
+      path.join(designKitDir, '.dashboard.json'),
+      JSON.stringify({ pid: 12345, port: 4571, url: 'http://127.0.0.1:4571', startedAt: new Date().toISOString() })
+    );
+    let spawnCalled = 0;
+    const fakeSpawn = () => {
+      spawnCalled += 1;
+      return { unref() {} };
+    };
+    const result = await ensureDashboardRunning(projectDir, { isAlive: () => true, spawnFn: fakeSpawn });
+    assert.equal(spawnCalled, 0);
+    assert.equal(result.reused, true);
+    assert.equal(result.url, 'http://127.0.0.1:4571');
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('ensureDashboardRunning: 기록된 PID가 죽어있으면(stale) 새로 띄운다 — execution-lock과 같은 원칙', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-launch-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(
+      path.join(designKitDir, '.dashboard.json'),
+      JSON.stringify({ pid: 12345, port: 4571, url: 'http://127.0.0.1:4571', startedAt: 'old' })
+    );
+    let spawnCalled = 0;
+    const fakeSpawn = () => {
+      spawnCalled += 1;
+      setTimeout(async () => {
+        await writeFile(
+          path.join(designKitDir, '.dashboard.json'),
+          JSON.stringify({ pid: 999999, port: 4572, url: 'http://127.0.0.1:4572', startedAt: new Date().toISOString() })
+        );
+      }, 20);
+      return { unref() {} };
+    };
+    const result = await ensureDashboardRunning(projectDir, { isAlive: () => false, spawnFn: fakeSpawn, waitTimeoutMs: 2000 });
+    assert.equal(spawnCalled, 1);
+    assert.equal(result.reused, false);
+    assert.equal(result.url, 'http://127.0.0.1:4572');
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('ensureDashboardRunning: 자식이 상태 파일을 끝내 안 쓰면(기동 실패) 대기 시간 초과로 명확히 실패한다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-launch-'));
+  try {
+    const fakeSpawn = () => ({ unref() {} }); // 상태 파일을 절대 안 씀
+    await assert.rejects(
+      () => ensureDashboardRunning(projectDir, { spawnFn: fakeSpawn, waitTimeoutMs: 300 }),
+      /대기 시간을 초과/
+    );
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('stopDashboard: 실행 기록이 없으면 kill을 호출하지 않고 not-running을 반환한다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-stop-'));
+  try {
+    let killCalled = false;
+    const result = await stopDashboard(projectDir, { kill: () => (killCalled = true) });
+    assert.equal(result.stopped, false);
+    assert.equal(result.reason, 'not-running');
+    assert.equal(killCalled, false);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('stopDashboard: 살아있는 PID는 kill 후 상태 파일을 지운다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-stop-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(
+      path.join(designKitDir, '.dashboard.json'),
+      JSON.stringify({ pid: 4242, port: 4570, url: 'http://127.0.0.1:4570', startedAt: 'now' })
+    );
+    let killedPid = null;
+    const result = await stopDashboard(projectDir, { isAlive: () => true, kill: (pid) => (killedPid = pid) });
+    assert.equal(result.stopped, true);
+    assert.equal(killedPid, 4242);
+    assert.equal(existsSync(path.join(designKitDir, '.dashboard.json')), false);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('stopDashboard: 죽어있는(stale) PID는 kill을 호출하지 않고 상태만 정리한다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-stop-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(
+      path.join(designKitDir, '.dashboard.json'),
+      JSON.stringify({ pid: 4242, port: 4570, url: 'http://127.0.0.1:4570', startedAt: 'now' })
+    );
+    let killCalled = false;
+    const result = await stopDashboard(projectDir, { isAlive: () => false, kill: () => (killCalled = true) });
+    assert.equal(result.stopped, false);
+    assert.equal(result.reason, 'stale');
+    assert.equal(killCalled, false);
+    assert.equal(existsSync(path.join(designKitDir, '.dashboard.json')), false);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('openBrowser: 셸 문자열 조합 없이 인자 배열로만 호출한다(04 DO NOT 준수) — 이 환경(win32)에서 cmd+start', () => {
+  let calledWith = null;
+  const fakeSpawn = (cmd, args, opts) => {
+    calledWith = { cmd, args, opts };
+    return { unref: () => {} };
+  };
+  openBrowser('http://127.0.0.1:4570', { spawnFn: fakeSpawn });
+  assert.ok(calledWith, 'spawnFn이 호출되어야 함');
+  if (process.platform === 'win32') {
+    assert.equal(calledWith.cmd, 'cmd');
+    assert.deepEqual(calledWith.args, ['/c', 'start', '', 'http://127.0.0.1:4570']);
+  }
+  assert.equal(calledWith.opts.detached, true);
+  assert.equal(calledWith.opts.stdio, 'ignore');
+});
+
+test('openBrowser: spawn이 예외를 던져도 명령 자체는 죽지 않는다(편의 기능일 뿐 핵심 경로 아님)', () => {
+  const fakeSpawn = () => {
+    throw new Error('실행 파일을 찾을 수 없음');
+  };
+  assert.doesNotThrow(() => openBrowser('http://127.0.0.1:4570', { spawnFn: fakeSpawn }));
+});
+
+// 실제 분리 프로세스를 진짜로 띄우고 진짜로 죽인다 — mock만으로 "백그라운드 실행이 된다"고
+// 주장하지 않는다(이 파일의 다른 실제-프로세스 테스트들과 같은 철학). 이 테스트가 곧
+// `/sodam-design-kit:open`이 실사용자 환경에서 실제로 하게 될 일 그대로다.
+test('ensureDashboardRunning → stopDashboard: 실제 분리 프로세스 왕복(진짜 기동·진짜 HTTP 응답·진짜 종료)', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-real-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    const state = await ensureDashboardRunning(projectDir, { waitTimeoutMs: 8000 });
+    assert.equal(state.reused, false);
+    assert.ok(state.pid > 0);
+    assert.match(state.url, /^http:\/\/127\.0\.0\.1:\d+$/);
+
+    // 진짜 서버가 진짜로 응답하는지 확인(토큰 없이도 200이어야 하는 GET / — 셸은 공개)
+    const homeStatus = await new Promise((resolve, reject) => {
+      http.get(state.url, (res) => resolve(res.statusCode)).on('error', reject);
+    });
+    assert.equal(homeStatus, 200);
+
+    // .gitignore에 실제로 등록됐는지 확인 — 이건 진짜 자식(writeDashboardState)이 한 일이다
+    const gitignore = await readFile(path.join(projectDir, '.gitignore'), 'utf-8');
+    assert.match(gitignore, /\.design-kit\/\.dashboard\.json/);
+
+    const stopResult = await stopDashboard(projectDir);
+    assert.equal(stopResult.stopped, true);
+    assert.equal(existsSync(path.join(designKitDir, '.dashboard.json')), false);
+
+    // 종료가 진짜로 먹혔는지 — 잠깐 대기 후 같은 포트로 요청하면 실패해야 함
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await assert.rejects(
+      () =>
+        new Promise((resolve, reject) => {
+          http.get(state.url, resolve).on('error', reject);
+        }),
+      /ECONNREFUSED/
+    );
+  } finally {
+    // 테스트가 도중에 실패해도 떠 있는 프로세스가 남지 않도록 항상 정리 시도
+    await stopDashboard(projectDir).catch(() => {});
     await rm(projectDir, { recursive: true, force: true });
   }
 });

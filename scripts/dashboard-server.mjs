@@ -13,17 +13,19 @@
 import { createServer } from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readdir, readFile, rm } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findAvailablePort, startDevServer, verifyPage, judge } from './verify-runner.mjs';
 import { writeReport } from './report-writer.mjs';
-import { acquireLock, releaseLock } from './execution-lock.mjs';
+import { acquireLock, releaseLock, isProcessAlive } from './execution-lock.mjs';
 
 // verify-runner.mjs의 dev server 포트 범위(3000~3020)와 절대 겹치지 않도록 별도 대역 사용.
 const DASHBOARD_PORT_RANGE_START = 4570;
 const DASHBOARD_PORT_RANGE_END = 4590;
 const TOKEN_HEADER = 'x-design-kit-token';
+const DASHBOARD_STATE_FILENAME = '.dashboard.json';
 const ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const WEB_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'dashboard-web');
 // report-writer.mjs의 nextRunId()가 만드는 형식과 정확히 일치(YYYY-MM-DD-NNN).
@@ -92,6 +94,136 @@ export async function generateApiToken(designKitDir) {
   const tokenPath = path.join(designKitDir, '.api-token');
   await writeFile(tokenPath, token, { mode: 0o600 });
   return token;
+}
+
+async function ensureDashboardStateGitignored(projectDir) {
+  const gitignorePath = path.join(projectDir, '.gitignore');
+  const pattern = '.design-kit/.dashboard.json';
+  const content = existsSync(gitignorePath) ? readFileSync(gitignorePath, 'utf-8') : '';
+  if (content.includes(pattern)) return false;
+
+  const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+  await writeFile(gitignorePath, `${content}${separator}${pattern}\n`, 'utf-8');
+  return true;
+}
+
+/**
+ * `/sodam-design-kit:open`이 백그라운드로 띄운 서버의 생존 상태(pid·port·url)를 기록한다.
+ * 토큰은 여기 절대 넣지 않는다 — 토큰은 `.api-token` 하나로만 존재해야 시크릿이 두 곳으로
+ * 흩어지지 않는다(01 §6 "시크릿... 로그·Git 추적 제외"의 확장 적용).
+ */
+export async function readDashboardState(designKitDir) {
+  try {
+    return JSON.parse(await readFile(path.join(designKitDir, DASHBOARD_STATE_FILENAME), 'utf-8'));
+  } catch {
+    // 없거나 손상됨 — listRuns()와 같은 원칙: 이건 판정 게이트가 아니라 상태 열람이라
+    // fail-closed로 막지 않고 "실행 중 아님"으로 취급해 새로 시작할 수 있게 한다.
+    return null;
+  }
+}
+
+async function writeDashboardState(designKitDir, state) {
+  await mkdir(designKitDir, { recursive: true });
+  await ensureDashboardStateGitignored(path.dirname(designKitDir));
+  await writeFile(path.join(designKitDir, DASHBOARD_STATE_FILENAME), JSON.stringify(state, null, 2), 'utf-8');
+}
+
+async function removeDashboardState(designKitDir) {
+  try {
+    await rm(path.join(designKitDir, DASHBOARD_STATE_FILENAME), { force: true });
+  } catch {
+    // 이미 없으면 지울 것도 없음
+  }
+}
+
+/** OS 기본 브라우저로 URL을 연다. 실패해도 명령 자체를 실패시키지 않는다(주소를 콘솔에
+ * 이미 출력했으므로 사용자가 직접 열 수 있음 — 브라우저 자동 실행은 편의 기능일 뿐 핵심
+ * 경로가 아니다). shell:true·셸 문자열 조합 금지(04 DO NOT)를 지키기 위해 각 OS의 실제
+ * 바이너리를 인자 배열로만 호출한다(Windows는 `cmd`가 `start`를 실행 — `cmd` 자체가
+ * 대상 바이너리이지 셸 문자열 조합이 아니다). */
+export function openBrowser(url, { spawnFn = spawn } = {}) {
+  try {
+    if (process.platform === 'win32') {
+      spawnFn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
+    } else if (process.platform === 'darwin') {
+      spawnFn('open', [url], { detached: true, stdio: 'ignore' }).unref();
+    } else {
+      spawnFn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
+    }
+  } catch (err) {
+    console.error('[dashboard] 브라우저 자동 실행 실패 — 위 주소를 직접 열어주세요:', err.message);
+  }
+}
+
+async function waitForDashboardState(designKitDir, timeoutMs) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const state = await readDashboardState(designKitDir);
+    if (state && typeof state.pid === 'number' && typeof state.url === 'string') return state;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('[dashboard] 서버 시작 대기 시간을 초과했습니다. 다시 시도해주세요.');
+}
+
+/**
+ * 대시보드가 이미 떠 있으면 그걸 재사용하고, 없으면(또는 기록된 PID가 죽어있으면 — 비정상
+ * 종료로 남은 stale 상태) 자기 자신을 `--serve` 플래그로 분리 실행(detached+unref)해 새로
+ * 띄운다. 이 함수가 그 판단을 전담하므로 "이미 실행 중인데 또 띄워서 포트를 낭비하는" 문제가
+ * `/sodam-design-kit:open`을 몇 번 다시 쳐도 생기지 않는다(execution-lock.mjs의 stale
+ * 판정과 같은 원칙 — PID 생존 확인 후에만 새로 시작).
+ *
+ * @param {object} [opts]
+ * @param {(pid:number)=>boolean} [opts.isAlive] - 테스트 주입용
+ * @param {Function} [opts.spawnFn] - 테스트 주입용(실제 프로세스를 띄우지 않고 상태 파일만
+ *   써서 "자식이 정상 기동함"을 흉내낼 수 있게 함)
+ */
+export async function ensureDashboardRunning(projectDir, { isAlive = isProcessAlive, spawnFn = spawn, waitTimeoutMs = 5000 } = {}) {
+  const resolvedProjectDir = path.resolve(projectDir);
+  const designKitDir = path.join(resolvedProjectDir, '.design-kit');
+
+  const existing = await readDashboardState(designKitDir);
+  if (existing && typeof existing.pid === 'number' && isAlive(existing.pid)) {
+    return { ...existing, reused: true };
+  }
+  if (existing) {
+    // stale 상태 파일을 먼저 지운다 — 안 지우면 아래 waitForDashboardState()가 이 낡은
+    // 파일을 "새 자식이 이미 썼다"고 착각해 새 서버를 기다리지 않고 옛 정보를 반환해버린다
+    // (실제로 이 순서가 없어서 테스트가 실패해 발견된 결함 — execution-lock.mjs의 stale
+    // 회수는 잠금 파일을 곧바로 덮어써서 이 문제가 없었지만, 여기는 "다른 프로세스가 쓸 때까지
+    // 기다리는" 비동기 핸드셰이크라 미리 지워야 한다).
+    await removeDashboardState(designKitDir);
+  }
+
+  const child = spawnFn(
+    process.execPath,
+    [fileURLToPath(import.meta.url), '--project', resolvedProjectDir, '--serve'],
+    { detached: true, stdio: 'ignore' }
+  );
+  child.unref();
+
+  const state = await waitForDashboardState(designKitDir, waitTimeoutMs);
+  return { ...state, reused: false };
+}
+
+/**
+ * 실행 중인 대시보드를 종료한다. `kill`·`isAlive`를 주입 가능하게 한 이유는 테스트가 실제
+ * 시스템 프로세스를 잘못 죽이는 사고를 원천 차단하기 위함(execution-lock.mjs 테스트와 같은
+ * 안전 원칙).
+ */
+export async function stopDashboard(projectDir, { isAlive = isProcessAlive, kill = (pid) => process.kill(pid) } = {}) {
+  const resolvedProjectDir = path.resolve(projectDir);
+  const designKitDir = path.join(resolvedProjectDir, '.design-kit');
+  const state = await readDashboardState(designKitDir);
+  if (!state) return { stopped: false, reason: 'not-running' };
+
+  if (!isAlive(state.pid)) {
+    await removeDashboardState(designKitDir);
+    return { stopped: false, reason: 'stale', pid: state.pid };
+  }
+
+  kill(state.pid);
+  await removeDashboardState(designKitDir);
+  return { stopped: true, pid: state.pid };
 }
 
 function sendJson(res, status, body) {
@@ -410,6 +542,15 @@ export async function startDashboardServer({
   };
 }
 
+/**
+ * CLI 진입점 — 세 가지 모드.
+ * 1) (플래그 없음) 런처: `/sodam-design-kit:open`이 실제로 실행하는 모드. 이미 떠 있으면
+ *    재사용, 없으면 자기 자신을 --serve로 분리 실행 후 브라우저를 연다. 즉시 반환한다
+ *    (슬래시 명령을 실행한 에이전트/터미널이 서버 때문에 멈춰있지 않아도 됨).
+ * 2) --serve: 위 런처가 분리 실행하는 실제 서버 프로세스. 상태 파일을 쓴 뒤 계속 떠 있는다
+ *    (server.listen이 이벤트 루프를 붙잡아 자연히 종료되지 않음).
+ * 3) --stop: 떠 있는 서버를 찾아 종료한다.
+ */
 async function main() {
   const args = process.argv.slice(2);
   const getArg = (name) => {
@@ -417,10 +558,31 @@ async function main() {
     return i >= 0 ? args[i + 1] : undefined;
   };
   const projectDir = path.resolve(getArg('project') || process.cwd());
+  const designKitDir = path.join(projectDir, '.design-kit');
 
-  const { url, apiToken } = await startDashboardServer({ projectDir });
-  console.log(`[dashboard] 브라우저에서 열기: ${url}`);
-  console.log(`[dashboard] 진단용 토큰(로컬 전용 콘솔 출력 — 판정서·로그 파일에는 절대 기록 안 함): ${apiToken}`);
+  if (args.includes('--stop')) {
+    const result = await stopDashboard(projectDir);
+    if (result.stopped) console.log(`[dashboard] 종료했습니다 (PID ${result.pid}).`);
+    else if (result.reason === 'stale') console.log('[dashboard] 이미 종료되어 있었습니다 (상태 정리함).');
+    else console.log('[dashboard] 실행 중인 대시보드가 없습니다.');
+    return;
+  }
+
+  if (args.includes('--serve')) {
+    const { port, url, apiToken } = await startDashboardServer({ projectDir });
+    await writeDashboardState(designKitDir, { pid: process.pid, port, url, startedAt: new Date().toISOString() });
+    console.log(`[dashboard] 서버 시작: ${url}`);
+    console.log(`[dashboard] 진단용 토큰(로컬 전용 콘솔 출력 — 판정서·로그 파일에는 절대 기록 안 함): ${apiToken}`);
+    return; // 반환해도 프로세스는 안 끝남 — 열린 HTTP 서버가 이벤트 루프를 붙잡고 있음
+  }
+
+  const state = await ensureDashboardRunning(projectDir);
+  console.log(
+    state.reused ? `[dashboard] 이미 실행 중입니다: ${state.url}` : `[dashboard] 새로 시작했습니다: ${state.url}`
+  );
+  openBrowser(state.url);
+  console.log('[dashboard] 브라우저가 자동으로 안 열리면 위 주소를 직접 여세요.');
+  console.log(`[dashboard] 종료하려면: node "${fileURLToPath(import.meta.url)}" --stop --project "${projectDir}"`);
 }
 
 // 진입점 판정은 fileURLToPath로 (2026-07-27 실측 발견·수정 — 사유 정본은 hooks/verify-gate.mjs 주석).

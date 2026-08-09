@@ -164,6 +164,7 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 |---|---|---|---|---|
 | `/sodam-design-kit:setup` | Generates config.json and seeds component-map by scanning shadcn components | none (optional: Figma file link) | inside the target (Next.js) project | ✅ verified working |
 | `/sodam-design-kit:pipeline` | Figma read → mapping → shadcn/ui code generation → verification gate | Figma page/node link | inside the target (Next.js) project | ✅ both the reuse (mapped-component) path and the new-component generation path verified PASS |
+| `/sodam-design-kit:open` | Opens a browser dashboard to review verification history, reports, and screenshots + trigger re-verification (127.0.0.1 only; stop with `--stop`) | none | inside the target project | ✅ real background start/reuse/stop round-trip verified PASS |
 
 Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |

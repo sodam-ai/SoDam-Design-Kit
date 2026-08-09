@@ -32,7 +32,8 @@
     ├── ATTRIBUTION.md        # [P3] 출처 표기 자동 생성
     ├── AI-GENERATION-LOG.md  # [P3] AI 생성 이력 자동 append
     ├── .api-token            # [P2] 대시보드 로컬 토큰 — 실행마다 재생성·0600·gitignore (커밋 금지)
-    └── .lock                 # [P2] 실행 잠금 — 파이프라인·재검증 동시 실행 방지 (실행 1개 원칙·완료 시 삭제·gitignore)
+    ├── .lock                 # [P2] 실행 잠금 — 파이프라인·재검증 동시 실행 방지 (실행 1개 원칙·완료 시 삭제·gitignore)
+    └── .dashboard.json       # [P2] 대시보드 백그라운드 프로세스 상태(pid·port·url) — 2026-08-09 신설, 토큰은 안 들어감(gitignore, --stop이 이 파일로 서버를 찾음)
 ```
 
 ---
@@ -150,6 +151,10 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 ---
 
 **독립 검증 라운드(2026-08-09, 2c 직후 — 문서 감사가 아닌 실제 테스트·재현·수정)**: 이번 세션에서 구현한 전체(`.lock`·대시보드 4단계)를 처음부터 다시 실제로 검증했다. 단위테스트 123/123·`npm audit` 0건·E2E 셀프테스트(PASS/FAIL/재검증) 전부 통과 확인, CLI↔대시보드 교차 `.lock`(서로 다른 진입점 간 동시성) 신규 실측 확인, 극단적 입력(5000자 runId·유니코드·잘못된 URL 인코딩)에도 서버가 크래시 없이 400을 내는 것 확인. **실제 브라우저(Playwright)로 실 픽스처를 열어보다가 진짜 결함 1건 발견**: `--screenshotDir`에 `reports/` 접두가 빠진 상대경로(예: `"screenshots/foo"`)를 주면 정규화 규칙(32/33차 결정)에 따라 `.design-kit/screenshots/`에 저장되는데, 이 위치는 `.gitignore`에 등록돼 있지 않아 `git add`로 스크린샷이 커밋될 수 있는 상태였다(실측: `git status`에 노출 확인). 22차·32차·33차와 같은 계열의 결함. **수정**: `report-writer.mjs`·`setup-wizard.mjs`의 `ensureScreenshotsGitignored()`가 이제 정본 위치(`.design-kit/reports/screenshots/`)와 이 경로(`.design-kit/screenshots/`) 둘 다 등록한다. 회귀 테스트 1건 신설(`npm test` 122→123), 실제 픽스처에 자가 치유 적용해 `git status`로 노출 해소 재확인. **의도적으로 안 한 것**: `readScreenshotFile()`이 정본 위치 밖 파일을 서빙하도록 넓히지 않음 — 그건 경로 조작 방어(04 DO NOT)를 약화시키는 방향이라, 정본 위치 밖 스크린샷은 대시보드가 계속 정확히 거부하는 게 맞는 설계(UI는 "(로드 실패)"로 우아하게 처리, 크래시 없음).
+
+---
+
+**대시보드 진입점(`/sodam-design-kit:open`)이 구현됐다 (2026-08-09, 독립 검증 직후 — 새로 발견된 공백 해소)**: 위 독립 검증 라운드 도중 PRD(01 §3·03 Phase 2)가 명시한 `/sodam-design-kit:open` 슬래시 명령이 실제로는 어디에도 존재하지 않는다는 걸 발견했다 — `commands/` 폴더엔 `setup.md`·`pipeline.md`뿐이었고, `startDashboardServer()` 엔진은 이미 완성돼 있었지만 사용자가 그걸 실행할 방법이 없었다(엔진은 있는데 문이 없는 상태). 착수 전 검토에서 진짜 걸림돌 하나를 미리 잡았다: 슬래시 명령은 실행 후 바로 반환돼야 하는데 HTTP 서버는 계속 떠 있어야 한다 — `spawn(..., {detached:true}).unref()`로 자기 자신을 `--serve` 플래그로 분리 실행해 해결. 새 상태 파일 `.design-kit/.dashboard.json`(pid·port·url만, 토큰은 절대 안 넣음)을 신설해 "이미 떠 있으면 재사용"(포트 낭비·중복 프로세스 방지, execution-lock.mjs의 stale PID 판정과 동일 원칙)과 `--stop` 종료를 가능하게 했다. 브라우저 자동 실행은 OS별 바이너리를 인자 배열로 직접 호출(Windows `cmd /c start "" <url>`)해 04 DO NOT("셸 문자열 조합 금지")를 지켰다. 개발 중 실제로 잡은 버그 1건: `ensureDashboardRunning()`이 stale 상태를 확인하고도 그 파일을 안 지운 채 새 자식을 기다리면, 대기 로직이 "파일이 존재함"만 보고 옛 정보를 새 정보로 착각해 반환했다(테스트로 재현·확인 후 즉시 수정 — stale 판정 시 파일을 먼저 지우고 기다리도록). 단위테스트 12건 신설(재사용/새로시작/stale회수/대기시간초과/종료 3가지 경로/브라우저 호출 형태, `isAlive`·`kill`·`spawnFn` 전부 주입 가능해 테스트가 실제 시스템 프로세스를 건드리지 않음) + **진짜 분리 프로세스로 왕복하는 테스트 1건**(가짜 함수 없이 실제 자식 프로세스를 진짜로 띄우고 진짜 HTTP 200을 받고 진짜로 종료시킴, `npm test` 123→134) + **실제 픽스처 대상 수동 실측**: 기동→HTTP 200 실응답→Chrome이 실제로 새로 열림(프로세스 생성 시각이 서버 시작 시각과 정확히 일치하는 것으로 확인)→재실행 시 재사용(중복 기동 없음)→`--stop`으로 실제 PID 종료→포트 응답 중단(ECONNREFUSED)까지 전 구간 확인. `npm audit` 0건 유지. **이걸로 대시보드가 "엔진은 완성, 문은 없음" 상태에서 실제로 도달 가능한 기능이 됐다.**
 
 ## [NEEDS CLARIFICATION]
 

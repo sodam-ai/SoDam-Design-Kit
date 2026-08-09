@@ -83,6 +83,8 @@ Phase 1을 시작하려면 [03_PHASES.md](./03_PHASES.md)의 "Phase 1 시작 프
 
 - **37차(2026-08-09, 36차 직후 — 대시보드 보안 골격, `.lock`과 같은 쪼개기 전략의 다음 단계)**: `.lock` 다음으로 대시보드 자체를 통째로 만들지 않고, 그중 보안 primitive만(`/health` 라우트 1개, 데이터 0건) 먼저 독립 구현했다. 착수 전 O-Brain의 실제 `server.mjs`(D:\...\26y_06m_21d_SoDam_O-Brain\app\src\server.mjs)를 직접 읽고 이식했다 — "O-Brain 패턴 이식"이라는 문서 지시를 처음으로 문자 그대로 지켰다(그 전까지는 실제로 읽은 적 없이 설명만 반영하는 게 됐을 뻔함). 이식 중 하나 개선했다: O-Brain의 토큰 비교는 `!==` 직접 비교였는데, 이 킷은 `crypto.timingSafeEqual`로 강화(Node 내장이라 신규 의존성 없음). 프레임워크도 O-Brain의 express 대신 Node 내장 `http`만 사용(이 킷엔 웹 프레임워크가 아예 없어 골격 하나 때문에 새 의존성을 들이지 않음 — 공급망 최소화). 단위테스트 17건 신설(79→96) + 실제 CLI로 픽스처 대상 서버를 띄워 `Get-NetTCPConnection`으로 127.0.0.1 단독 바인딩 확인·올바른 토큰 200/틀린 토큰 403/토큰 없음 403/CSP 헤더 응답 포함까지 실측 확인. `npm audit` 0건 유지. **범위를 의도적으로 좁혔다** — 판정서·스크린샷을 실제로 보여주는 것(2b)과 재검증 트리거(2c)는 다음 증분. 상세는 `.PRD/02_DATA_MODEL.md`·`04_PROJECT_SPEC.md` 결정 기록.
 
+- **38차(2026-08-09, 37차 직후 — 2b를 더 쪼갠 첫 조각: 데이터 API + 경로 조작 방어)**: 2b를 "데이터 API"와 "실제 화면"으로 재분할한 뒤 그 첫 조각만 구현했다. `/api/runs`·`/api/reports/:runId`·`/api/screenshots/*` 3개 GET 라우트 신설 — 04_PROJECT_SPEC.md DO NOT가 이름으로 지목한 "스크린샷 서빙" 경로 조작 위험을 runId 정규식 선검증 + resolve/startsWith + 확장자 화이트리스트 3중으로 방어했다. XSS 위험이 실제로 생기는 HTML 렌더 단계(2b-2)는 의도적으로 미뤘다 — JSON 단계는 브라우저가 실행할 마크업이 없어 위험이 다르다고 판단. 단위테스트 13건 신설(96→109) + **실제 픽스처(실행 이력 50건 보유) 대상 실측**: `/api/runs` 200(50건)·`/api/reports/<실ID>` 200(실제 판정서 내용)·`/api/screenshots/pipeline-421-3078/360.png` 200(진짜 PNG 3469바이트)까지 정상 조회되고, `..%2f..%2f` 경로 조작 시도는 두 라우트 전부 400으로 차단됨을 확인. `npm audit` 0건. 상세는 `.PRD/02_DATA_MODEL.md` 결정 기록.
+
 ## 핵심 결정 이력 (인터뷰 확정)
 
 - 결과물: Claude Code 플러그인 (독립 서비스 아님, Codex는 AGENTS.md로 대응) + P2 open 대시보드·P3 MCP 래퍼로 Claude Desktop 확장 (2026-07-19 사용자 결정 — GPT Desktop은 조건부 백로그)

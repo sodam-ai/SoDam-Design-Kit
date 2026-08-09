@@ -12,6 +12,7 @@ import http from 'node:http';
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 import { writeReport } from './report-writer.mjs';
+import { acquireLock, releaseLock } from './execution-lock.mjs';
 
 export const VIEWPORTS = [
   { width: 360, height: 800, label: '360' },
@@ -270,8 +271,16 @@ async function main() {
 
   let devServer = null;
   let baseUrl = explicitUrl;
+  // 프로젝트가 주어지면 검증 전체(dev server 포트 점유 ~ 판정서 기록)를 잠근다 —
+  // "실행 1개" 원칙(04_PROJECT_SPEC.md 연결/동기화 스펙 2번). 대시보드가 재검증
+  // 트리거를 갖기 전에 먼저 갖춰야 하는 전제조건으로 독립 구현했다(scripts/execution-lock.mjs).
+  const lockedDesignKitDir = projectDir ? path.join(path.resolve(projectDir), '.design-kit') : null;
 
   try {
+    if (lockedDesignKitDir) {
+      await acquireLock(lockedDesignKitDir);
+    }
+
     if (!baseUrl) {
       if (!projectDir) {
         console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]]');
@@ -312,6 +321,7 @@ async function main() {
     process.exitCode = judgement.verdict === 'PASS' ? 0 : 1;
   } finally {
     if (devServer) await devServer.stop();
+    if (lockedDesignKitDir) await releaseLock(lockedDesignKitDir);
   }
 }
 

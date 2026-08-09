@@ -91,6 +91,17 @@ test('applySecurityHeaders: CSP·nosniff·frame-ancestors 세트를 전부 설�
   assert.match(res._headers['Content-Security-Policy'], /object-src 'none'/);
 });
 
+test('applySecurityHeaders: img-src에 blob:이 허용된다 (2026-08-10 실측 발견 결함 회귀 방지 — 스크린샷이 CSP에 막혀 안 보이던 문제)', () => {
+  // dashboard.js의 loadScreenshotInto()는 <img src>에 인증 헤더를 못 보내는 문제를 fetch+Blob+
+  // URL.createObjectURL()로 우회한다(2b-2 설계) — 그런데 img-src가 data:만 허용하고 blob:이
+  // 빠져 있어서 실제 브라우저에서는 이 방식으로 만든 이미지가 CSP 위반으로 조용히 차단되고
+  // 있었다(헤드리스 브라우저로 실제 판정서를 열어봐야 드러나는 결함, 콘솔 에러만 남고 크래시는
+  // 없었음). blob: 허용이 빠지면 스크린샷이 다시 전부 안 보이게 된다.
+  const res = makeMockRes();
+  applySecurityHeaders(res);
+  assert.match(res._headers['Content-Security-Policy'], /img-src 'self' data: blob:/);
+});
+
 test('generateApiToken: .design-kit/.api-token을 32자 hex로 생성하고 gitignore에 등록한다', async () => {
   const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
   const designKitDir = path.join(projectDir, '.design-kit');
@@ -316,6 +327,41 @@ test('readScreenshotFile: 정상 경로는 PNG 바이트를 그대로 반환', a
     await writeFile(path.join(dir, '360.png'), fakePng);
     const buf = await readScreenshotFile(designKitDir, 'pipeline-421-3078/360.png');
     assert.deepEqual(buf, fakePng);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('readScreenshotFile: 판정서 screenshots[].path 형식("reports/screenshots/<run>/<file>.png")도 정상 서빙한다 (2026-08-10 실측 발견 결함 회귀 방지)', async () => {
+  // dashboard.js가 실제로 요청하는 형식이 이것이다 — report-writer.mjs의 writeReport()가
+  // designKitDir 기준으로 상대화한 경로를 그대로 붙여 보내는데, 이 함수는 원래 screenshotsDir
+  // 기준(접두어 없는) 경로만 받아들여서 실제 브라우저에서 스크린샷이 전부 404였다(콘솔 에러만
+  // 남고 크래시는 없어 헤드리스 브라우저로 실제 렌더해봐야 드러남). "reports/screenshots/" 접두어를
+  // 정규화해서 벗겨내는 수정 이후에는 이 형식도 정상 동작해야 한다.
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    const dir = path.join(designKitDir, 'reports', 'screenshots', 'pipeline-421-3078');
+    await mkdir(dir, { recursive: true });
+    const fakePng = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+    await writeFile(path.join(dir, '360.png'), fakePng);
+    const buf = await readScreenshotFile(designKitDir, 'reports/screenshots/pipeline-421-3078/360.png');
+    assert.deepEqual(buf, fakePng);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('readScreenshotFile: "reports/screenshots/" 접두어 뒤에 경로 탈출(../)을 숨겨도 여전히 400 (접두어 정규화가 방어를 약화시키지 않는지 확인)', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(path.join(designKitDir, 'reports', 'screenshots'), { recursive: true });
+    await writeFile(path.join(designKitDir, 'component-map.json'), '[]', 'utf-8');
+    await assert.rejects(
+      () => readScreenshotFile(designKitDir, 'reports/screenshots/../../../component-map.json'),
+      (err) => err.statusCode === 400
+    );
   } finally {
     await rm(projectDir, { recursive: true, force: true });
   }

@@ -67,7 +67,14 @@ export function applySecurityHeaders(res) {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    // img-src에 blob:이 2026-08-10 실측 추가됨 — dashboard.js의 loadScreenshotInto()가 <img src>에
+    // 커스텀 인증 헤더를 못 보내는 문제를 fetch()+Blob+URL.createObjectURL()로 우회하도록 설계돼
+    // 있는데(2b-2 결정 기록), O-Brain에서 그대로 이식한 CSP는 data:만 허용하고 blob:은 빠져 있어
+    // 실제 브라우저에서 스크린샷 이미지가 CSP 위반으로 조용히 차단되고 있었다(콘솔 에러만 남고
+    // 크래시는 없어 발견이 늦었음 — 헤드리스 브라우저로 실제 판정서를 열어 재현). blob: URL은
+    // 이 페이지 자신이 인증된 fetch 응답으로 그 자리에서 생성한 것만 존재할 수 있어(외부 주입 불가),
+    // script-src 등 다른 지시어는 그대로 두고 img-src만 최소 확장했다.
+    "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
   );
 }
 
@@ -398,7 +405,19 @@ export async function readScreenshotFile(designKitDir, relativePath) {
   } catch {
     throw Object.assign(new Error('잘못된 경로 인코딩'), { statusCode: 400 });
   }
-  const resolved = path.resolve(path.join(screenshotsDir, decoded));
+  // 2026-08-10 실측 발견·수정: 판정서의 screenshots[].path는 report-writer.mjs의 writeReport()가
+  // designKitDir 기준으로 상대화한 값이라 "reports/screenshots/<run>/<viewport>.png" 형태다
+  // (04 DO NOT "절대경로를 판정서에 남기지 마" 원칙에 따라 늘 이 형태). 그런데 dashboard.js는
+  // 이 값을 그대로 `/api/screenshots/` 뒤에 붙여 요청한다 — 이 라우트는 screenshotsDir(=
+  // designKitDir/reports/screenshots) 기준 상대경로를 기대하므로, 접두어가 중복돼
+  // "reports/screenshots/reports/screenshots/..."를 찾다가 항상 404였다. 실제 헤드리스
+  // 브라우저로 진짜 판정서(스크린샷 3장 실존)를 열어봤을 때 콘솔에 404가 3건 그대로 재현됐고,
+  // 화면엔 "(로드 실패)"만 조용히 남아 크래시도 없어 지금까지 발견되지 않았다(2b-2 XSS 검증
+  // 라운드는 이미지 로드 성공 여부까진 확인 안 했음). 이미 알고 있는 이 접두어만 정규화해서
+  // 벗겨내면, 접두어 없이 호출하는 다른 경로(예: 단위테스트)는 그대로 영향받지 않는다 —
+  // 아래 resolve+startsWith 보안 검증은 정규화 후에도 그대로 적용됨(경로 조작 방어 약화 없음).
+  const normalized = decoded.replace(/^[/\\]*reports[/\\]screenshots[/\\]/, '');
+  const resolved = path.resolve(path.join(screenshotsDir, normalized));
   if (!resolved.startsWith(screenshotsDir + path.sep) || !resolved.toLowerCase().endsWith('.png')) {
     throw Object.assign(new Error('잘못된 경로'), { statusCode: 400 });
   }

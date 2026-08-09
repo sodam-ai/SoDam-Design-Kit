@@ -41,8 +41,26 @@ function baselineDirFor(designKitDir, routeSlug) {
  */
 export async function diffScreenshot(candidatePath, baselinePath, { maxDiffRatio = DEFAULT_MAX_DIFF_RATIO } = {}) {
   const [candidateBuf, baselineBuf] = await Promise.all([readFile(candidatePath), readFile(baselinePath)]);
-  const candidate = PNG.sync.read(candidateBuf);
-  const baseline = PNG.sync.read(baselineBuf);
+
+  let candidate;
+  let baseline;
+  try {
+    candidate = PNG.sync.read(candidateBuf);
+    baseline = PNG.sync.read(baselineBuf);
+  } catch (err) {
+    // 2026-08-09 실측 발견·수정: 기준본 또는 이번 실행 스크린샷이 유효한 PNG가 아니면
+    // pngjs가 처리되지 않은 예외를 던져 verify-runner.mjs 전체가 크래시했다(재현 확인 —
+    // 다른 정상 검증 결과(axe·렌더·콘솔)까지 전부 사용자에게 전달되지 못함). 손상된 파일을
+    // "일치"로 조용히 넘기면 실제 회귀를 놓칠 위험이 더 크므로(execution-lock.mjs의
+    // "손상 상태를 정상으로 오인해 통과시키지 않는다" fail-closed 원칙과 같은 방향),
+    // 크래시 대신 안전하게 회귀로 판정하고 사유를 남긴다.
+    return {
+      status: 'regression',
+      reason: `이미지 파일이 손상되어 비교할 수 없습니다 (${err.message})`,
+      diffRatio: 1,
+      diffPng: null,
+    };
+  }
 
   if (candidate.width !== baseline.width || candidate.height !== baseline.height) {
     return {

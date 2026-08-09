@@ -89,6 +89,24 @@ test('diffScreenshot: 허용 오차를 넘는 큰 차이는 regression + diff �
   }
 });
 
+test('diffScreenshot: 손상된(유효하지 않은) PNG는 크래시하지 않고 regression으로 안전하게 판정한다 (2026-08-09 실측 발견 결함 회귀 방지)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-vr-'));
+  try {
+    await writeFile(path.join(dir, 'corrupt.png'), Buffer.from('이건 PNG가 아닙니다'));
+    await writeFile(path.join(dir, 'valid.png'), makeSolidPngBuffer(20, 20));
+    // 후보가 손상된 경우
+    const r1 = await diffScreenshot(path.join(dir, 'corrupt.png'), path.join(dir, 'valid.png'));
+    assert.equal(r1.status, 'regression');
+    assert.match(r1.reason, /손상/);
+    // 기준본이 손상된 경우
+    const r2 = await diffScreenshot(path.join(dir, 'valid.png'), path.join(dir, 'corrupt.png'));
+    assert.equal(r2.status, 'regression');
+    assert.match(r2.reason, /손상/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('diffScreenshot: 크기가 다르면 픽셀 비교 없이 즉시 regression', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-vr-'));
   try {

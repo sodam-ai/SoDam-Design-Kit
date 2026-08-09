@@ -362,6 +362,25 @@ test('extractScreenshotPaths: 스크린샷 섹션이 없으면 빈 배열', () =
   assert.deepEqual(extractScreenshotPaths('# 판정서\n- 판정: PASS'), []);
 });
 
+test('extractScreenshotPaths: "## 시각 회귀" 섹션의 동일 형식 줄을 스크린샷으로 오인하지 않는다 (2026-08-09 실측 발견 결함 회귀 방지)', () => {
+  const md = [
+    '# 판정서',
+    '## 시각 회귀 (기준본 비교, opt-in)',
+    '- 360px: 일치 (차이 0.00%, 허용 범위 안)',
+    '- 768px: **회귀 감지** — 픽셀 99.33% 차이 (허용 1.00%) (diff 이미지: reports/screenshots/x/768.diff.png)',
+    '## screenshots',
+    '- 360px: reports/screenshots/x/360.png',
+    '- 768px: reports/screenshots/x/768.png',
+    '- 1440px: reports/screenshots/x/1440.png',
+  ].join('\n');
+  const shots = extractScreenshotPaths(md);
+  assert.deepEqual(shots, [
+    { viewport: '360', path: 'reports/screenshots/x/360.png' },
+    { viewport: '768', path: 'reports/screenshots/x/768.png' },
+    { viewport: '1440', path: 'reports/screenshots/x/1440.png' },
+  ]);
+});
+
 test('createRequestHandler: GET / 은 토큰 없이도 200 (셸은 공개 — 토큰 순환 문제 회피)', async () => {
   const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
   try {

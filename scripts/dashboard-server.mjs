@@ -250,10 +250,26 @@ function sendText(res, status, contentType, text) {
  * 않고(공급망 최소화) 이미 정해진 출력 형식을 그대로 이용한다. 화면(2b-2)이 뷰포트별로
  * 스크린샷을 나란히 보여주려면(01 §5) 구조화된 목록이 필요해서 신설했다.
  */
+/**
+ * "## screenshots" 섹션 안의 줄만 파싱한다(2026-08-09 실측 발견·수정 — 회귀).
+ * 원래는 문서 전체에서 `- {숫자}px: ...` 패턴을 무조건 스크린샷으로 인식했는데, 시각 회귀
+ * 기능(visual-regression.mjs)이 추가한 "## 시각 회귀" 섹션이 우연히 같은 줄 형식
+ * (`- 360px: 일치 (...)`)을 써서, 그 설명 문구가 스크린샷 "경로"로 잘못 파싱되는 실제
+ * 결함이 재현됐다(대시보드가 존재하지 않는 가짜 이미지를 로드 시도 → "(로드 실패)" 문구가
+ * 실제 스크린샷 앞뒤로 끼어들어 화면이 지저분해짐 — 크래시·보안 결함은 아니지만 실제 기능
+ * 결함). 섹션 경계 밖 텍스트는 애초에 후보에서 제외해 앞으로 비슷한 줄 형식의 새 섹션이
+ * 추가돼도 재발하지 않게 근본 수정했다 — 이 섹션 안에서만 파싱할 것, 되돌리지 말 것.
+ */
 export function extractScreenshotPaths(markdownContent) {
   const lines = String(markdownContent || '').split('\n');
   const screenshots = [];
+  let inScreenshotsSection = false;
   for (const line of lines) {
+    if (/^## /.test(line)) {
+      inScreenshotsSection = line.trim() === '## screenshots';
+      continue;
+    }
+    if (!inScreenshotsSection) continue;
     const match = line.match(/^- (\d+)px: (.+)$/);
     if (match) screenshots.push({ viewport: match[1], path: match[2].trim() });
   }

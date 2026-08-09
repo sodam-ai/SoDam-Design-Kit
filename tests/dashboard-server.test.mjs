@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import { chromium } from 'playwright';
 import {
   isAllowedOrigin,
   timingSafeTokenEqual,
@@ -15,6 +16,7 @@ import {
   listRuns,
   readReportContent,
   readScreenshotFile,
+  extractScreenshotPaths,
 } from '../scripts/dashboard-server.mjs';
 
 function makeMockRes() {
@@ -338,6 +340,127 @@ test('readScreenshotFile: .png가 아닌 확장자는 400 (파일 유형 화이�
     await writeFile(path.join(screenshotsDir, 'notes.txt'), 'not a screenshot', 'utf-8');
     await assert.rejects(() => readScreenshotFile(designKitDir, 'notes.txt'), (err) => err.statusCode === 400);
   } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('extractScreenshotPaths: 판정서 마크다운에서 뷰포트별 경로를 뽑아낸다', () => {
+  const md = '# 판정서\n## screenshots\n- 360px: pipeline-421-3078/360.png\n- 768px: pipeline-421-3078/768.png\n';
+  const shots = extractScreenshotPaths(md);
+  assert.deepEqual(shots, [
+    { viewport: '360', path: 'pipeline-421-3078/360.png' },
+    { viewport: '768', path: 'pipeline-421-3078/768.png' },
+  ]);
+});
+
+test('extractScreenshotPaths: 스크린샷 섹션이 없으면 빈 배열', () => {
+  assert.deepEqual(extractScreenshotPaths('# 판정서\n- 판정: PASS'), []);
+});
+
+test('createRequestHandler: GET / 은 토큰 없이도 200 (셸은 공개 — 토큰 순환 문제 회피)', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
+  try {
+    const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir: path.join(projectDir, '.design-kit') });
+    const res = makeMockRes();
+    await handler({ method: 'GET', url: '/', headers: {} }, res);
+    assert.equal(res._statusCode, 200);
+    assert.match(res._headers['Content-Type'], /text\/html/);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('createRequestHandler: GET /dashboard.js 는 토큰 없이도 200이고 인라인 스크립트가 없다(CSP script-src \'self\'만으로 동작 확인)', async () => {
+  const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir: '/nonexistent' });
+  const res = makeMockRes();
+  await handler({ method: 'GET', url: '/dashboard.js', headers: {} }, res);
+  assert.equal(res._statusCode, 200);
+  assert.match(res._headers['Content-Type'], /javascript/);
+});
+
+test('createRequestHandler: GET /api/runs 은 여전히 토큰 없으면 403 (셸만 공개, 데이터는 계속 보호)', async () => {
+  const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir: '/nonexistent' });
+  const res = makeMockRes();
+  await handler({ method: 'GET', url: '/api/runs', headers: {} }, res);
+  assert.equal(res._statusCode, 403);
+});
+
+test('createRequestHandler: GET /api/reports/:runId 응답에 screenshots 배열이 함께 온다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-'));
+  const designKitDir = path.join(projectDir, '.design-kit');
+  try {
+    await mkdir(path.join(designKitDir, 'reports'), { recursive: true });
+    await writeFile(
+      path.join(designKitDir, 'reports', '2026-08-09-001.md'),
+      '# 판정서\n- 판정: PASS\n## screenshots\n- 360px: foo/360.png\n'
+    );
+    const handler = createRequestHandler({ apiToken: 'good-token', port: 4570, designKitDir });
+    const res = makeMockRes();
+    await handler({ method: 'GET', url: '/api/reports/2026-08-09-001', headers: { 'x-design-kit-token': 'good-token' } }, res);
+    assert.equal(res._statusCode, 200);
+    assert.deepEqual(res._body.screenshots, [{ viewport: '360', path: 'foo/360.png' }]);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+// ── XSS 방어 실측 (핵심) ──────────────────────────────────────────────
+// mock DOM이나 문자열 검사가 아니라 실제 헤드리스 브라우저(Playwright — 이 킷의 기존
+// 의존성, 신규 추가 없음)로 악성 payload가 든 가짜 데이터를 진짜로 렌더해서 스크립트가
+// 실행되지 않는지 증명한다. verify-runner.mjs가 생성 코드를 실브라우저로 검증하는 것과
+// 정확히 같은 철학 — "코드가 그렇게 생겼으니 안전하다"가 아니라 실제로 안전한지 확인한다.
+test('XSS 방어 실측: 악성 payload가 든 run/report를 실제 브라우저로 렌더해도 스크립트가 실행되지 않고 텍스트로만 보인다', async () => {
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-dashboard-xss-'));
+  let dashboard;
+  let browser;
+  try {
+    const designKitDir = path.join(projectDir, '.design-kit');
+    await mkdir(path.join(designKitDir, 'runs'), { recursive: true });
+    await mkdir(path.join(designKitDir, 'reports'), { recursive: true });
+
+    const maliciousTarget = '<img src=x onerror="window.__xssFired=(window.__xssFired||0)+1">';
+    await writeFile(
+      path.join(designKitDir, 'runs', '2026-08-09-999.json'),
+      JSON.stringify({ runId: '2026-08-09-999', status: 'fail', target: maliciousTarget, generatedFiles: [], retryCount: 0, startedAt: new Date().toISOString() })
+    );
+    await writeFile(
+      path.join(designKitDir, 'reports', '2026-08-09-999.md'),
+      '# 판정서\n<script>window.__xssFired=(window.__xssFired||0)+1;</script>\n- 사유: <b onmouseover="window.__xssFired=(window.__xssFired||0)+1">악성 태그 테스트</b>\n'
+    );
+
+    dashboard = await startDashboardServer({ projectDir });
+    browser = await chromium.launch();
+    const page = await browser.newPage();
+    const consoleErrors = [];
+    page.on('pageerror', (err) => consoleErrors.push(String(err)));
+
+    await page.goto(dashboard.url, { waitUntil: 'networkidle' });
+    await page.getByText('판정서 보기').click();
+    await page.waitForSelector('.run-report-content');
+
+    // 핵심 증거 1: 페이지 로드+렌더+판정서 열람까지 다 거쳤는데도 payload의 스크립트가
+    // 단 한 번도 실행되지 않았다 (innerHTML이었다면 <script>·onerror·onmouseover 중
+    // 최소 하나는 실행돼 값이 1 이상이 됐을 것)
+    const xssFired = await page.evaluate(() => window.__xssFired);
+    assert.equal(xssFired, undefined, 'payload의 스크립트가 실행되면 안 됨(innerHTML 사용 시 실행됨)');
+
+    // 핵심 증거 2: 그래도 데이터 자체는 화면에서 사라지지 않고 "글자 그대로" 보인다
+    // (조용히 필터링/삭제된 게 아니라 안전하게 무해한 텍스트로 표시됨을 확인)
+    const targetText = await page.locator('.run-target').textContent();
+    assert.match(targetText, /<img src=x onerror=/, 'textContent로 렌더돼 원문 그대로 보여야 함');
+
+    const reportText = await page.locator('.run-report-content').textContent();
+    assert.match(reportText, /<script>window\.__xssFired/, '판정서 원문도 텍스트 그대로 보여야 함');
+
+    // 핵심 증거 3: 실제로 DOM에 <script> 엘리먼트가 삽입되지 않았다(innerHTML이었다면 파서가
+    // 문자열 속 <script> 태그를 실제 엘리먼트로 만들었을 것 — textContent는 그런 파싱을 하지 않음)
+    const scriptCount = await page.locator('#runs script').count();
+    assert.equal(scriptCount, 0, '#runs 안에 실제 <script> 엘리먼트가 생기면 안 됨');
+
+    assert.deepEqual(consoleErrors, []);
+  } finally {
+    if (browser) await browser.close();
+    if (dashboard) await dashboard.stop();
     await rm(projectDir, { recursive: true, force: true });
   }
 });

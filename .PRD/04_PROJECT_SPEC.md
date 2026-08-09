@@ -37,6 +37,9 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   ├── verify-runner.mjs       # dev server 자동 기동(포트 자동 우회)+Playwright+axe 실행기
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
+│   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
+│   │   ├── index.html          #      GET / — 토큰 없이 서빙(셸만, 데이터는 /api/*가 보호)
+│   │   └── dashboard.js        #      GET /dashboard.js — innerHTML 사용 금지, textContent만
 │   └── mcp-server.mjs          # [P3] MCP 래퍼 — 대시보드 서버와 공유 (Claude Desktop .mcpb)
 ├── AGENTS.md                   # Codex용 규칙 (원천 자료 19번 기반)
 └── README.md

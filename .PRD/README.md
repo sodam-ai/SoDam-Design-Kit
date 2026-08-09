@@ -85,6 +85,8 @@ Phase 1을 시작하려면 [03_PHASES.md](./03_PHASES.md)의 "Phase 1 시작 프
 
 - **38차(2026-08-09, 37차 직후 — 2b를 더 쪼갠 첫 조각: 데이터 API + 경로 조작 방어)**: 2b를 "데이터 API"와 "실제 화면"으로 재분할한 뒤 그 첫 조각만 구현했다. `/api/runs`·`/api/reports/:runId`·`/api/screenshots/*` 3개 GET 라우트 신설 — 04_PROJECT_SPEC.md DO NOT가 이름으로 지목한 "스크린샷 서빙" 경로 조작 위험을 runId 정규식 선검증 + resolve/startsWith + 확장자 화이트리스트 3중으로 방어했다. XSS 위험이 실제로 생기는 HTML 렌더 단계(2b-2)는 의도적으로 미뤘다 — JSON 단계는 브라우저가 실행할 마크업이 없어 위험이 다르다고 판단. 단위테스트 13건 신설(96→109) + **실제 픽스처(실행 이력 50건 보유) 대상 실측**: `/api/runs` 200(50건)·`/api/reports/<실ID>` 200(실제 판정서 내용)·`/api/screenshots/pipeline-421-3078/360.png` 200(진짜 PNG 3469바이트)까지 정상 조회되고, `..%2f..%2f` 경로 조작 시도는 두 라우트 전부 400으로 차단됨을 확인. `npm audit` 0건. 상세는 `.PRD/02_DATA_MODEL.md` 결정 기록.
 
+- **39차(2026-08-09, 38차 직후 — 2b-2: 실제 화면 + XSS 방어 실측, Phase 2 대시보드 4단계 중 3단계 완료)**: 2b를 쪼갠 두 번째 조각을 구현했다. `scripts/dashboard-web/`(index.html+dashboard.js) 신설, `GET /`·`GET /dashboard.js`를 토큰 검사 밖으로(셸은 공개, 데이터는 계속 보호). **착수 전 설계 검토에서 실제로 터졌을 결함 2건을 코드 짜기 전에 미리 잡았다**: 스크린샷 `<img>`가 커스텀 헤더를 못 보내는 문제(→ fetch+Blob URL로 해결) / 인라인 `<script>`가 자기 CSP에 막히는 문제(→ 외부 js 분리로 해결). `dashboard.js`는 innerHTML을 전혀 안 쓰고 textContent만 쓴다 — 이걸 "코드 리뷰 규칙"이 아니라 **실제 헤드리스 브라우저(Playwright, 기존 의존성)로 악성 payload를 진짜 렌더해서** `window.__xssFired`가 끝까지 `undefined`임을 실측 증명했다. 단위테스트 109→116(XSS 실측 포함). 실제 픽스처 대상 `GET /` 토큰 없이 200 + 토큰 정확히 주입 확인. `npm audit` 0건. 상세는 `.PRD/02_DATA_MODEL.md` 결정 기록. 남은 건 2c(재검증 트리거)뿐.
+
 ## 핵심 결정 이력 (인터뷰 확정)
 
 - 결과물: Claude Code 플러그인 (독립 서비스 아님, Codex는 AGENTS.md로 대응) + P2 open 대시보드·P3 MCP 래퍼로 Claude Desktop 확장 (2026-07-19 사용자 결정 — GPT Desktop은 조건부 백로그)

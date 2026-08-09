@@ -23,6 +23,7 @@ const DASHBOARD_PORT_RANGE_START = 4570;
 const DASHBOARD_PORT_RANGE_END = 4590;
 const TOKEN_HEADER = 'x-design-kit-token';
 const ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+const WEB_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'dashboard-web');
 // report-writer.mjs의 nextRunId()가 만드는 형식과 정확히 일치(YYYY-MM-DD-NNN).
 // 이 정규식을 먼저 통과해야만 파일 경로 조립에 쓰인다 — `.`·`/`가 섞인 값은 애초에 이 형식에
 // 맞을 수 없으므로 경로 조작 문자가 여기서 원천 차단된다(방어의 1차 층).
@@ -101,6 +102,28 @@ function sendBinary(res, status, contentType, buffer) {
   applySecurityHeaders(res);
   res.writeHead(status, { 'Content-Type': contentType });
   res.end(buffer);
+}
+
+function sendText(res, status, contentType, text) {
+  applySecurityHeaders(res);
+  res.writeHead(status, { 'Content-Type': contentType });
+  res.end(text);
+}
+
+/**
+ * 판정서 markdown에서 스크린샷 목록을 뽑아낸다. report-writer.mjs의 renderReportMarkdown()이
+ * 만드는 정확한 형식(`- ${viewport}px: ${path}`)만 매칭한다 — 새 마크다운 파서를 들이지
+ * 않고(공급망 최소화) 이미 정해진 출력 형식을 그대로 이용한다. 화면(2b-2)이 뷰포트별로
+ * 스크린샷을 나란히 보여주려면(01 §5) 구조화된 목록이 필요해서 신설했다.
+ */
+export function extractScreenshotPaths(markdownContent) {
+  const lines = String(markdownContent || '').split('\n');
+  const screenshots = [];
+  for (const line of lines) {
+    const match = line.match(/^- (\d+)px: (.+)$/);
+    if (match) screenshots.push({ viewport: match[1], path: match[2].trim() });
+  }
+  return screenshots;
 }
 
 /**
@@ -198,11 +221,6 @@ export function createRequestHandler({ apiToken, port, designKitDir }) {
         return sendJson(res, 403, { error: 'forbidden origin' });
       }
 
-      const receivedToken = req.headers[TOKEN_HEADER];
-      if (!timingSafeTokenEqual(receivedToken, apiToken)) {
-        return sendJson(res, 403, { error: '허용되지 않은 요청 — 토큰이 없거나 틀렸습니다' });
-      }
-
       let pathname;
       try {
         pathname = new URL(req.url, `http://127.0.0.1:${port}`).pathname;
@@ -212,6 +230,33 @@ export function createRequestHandler({ apiToken, port, designKitDir }) {
 
       if (req.method !== 'GET') {
         return sendJson(res, 405, { error: '이 증분은 읽기(GET)만 지원합니다' });
+      }
+
+      // 셸(HTML·정적 JS)은 토큰 없이 서빙 — 페이지를 열어야 토큰을 얻을 수 있으므로.
+      // 실제 데이터는 이 아래 전부 토큰 검사를 거친다.
+      if (pathname === '/') {
+        try {
+          const html = (await readFile(path.join(WEB_DIR, 'index.html'), 'utf-8')).replace(
+            '__DESIGN_KIT_TOKEN__',
+            apiToken
+          );
+          return sendText(res, 200, 'text/html; charset=utf-8', html);
+        } catch {
+          return sendText(res, 500, 'text/plain; charset=utf-8', '대시보드 화면을 불러오지 못했습니다');
+        }
+      }
+      if (pathname === '/dashboard.js') {
+        try {
+          const js = await readFile(path.join(WEB_DIR, 'dashboard.js'), 'utf-8');
+          return sendText(res, 200, 'application/javascript; charset=utf-8', js);
+        } catch {
+          return sendJson(res, 500, { error: 'dashboard.js 로딩 실패' });
+        }
+      }
+
+      const receivedToken = req.headers[TOKEN_HEADER];
+      if (!timingSafeTokenEqual(receivedToken, apiToken)) {
+        return sendJson(res, 403, { error: '허용되지 않은 요청 — 토큰이 없거나 틀렸습니다' });
       }
 
       if (pathname === '/health') {
@@ -227,7 +272,8 @@ export function createRequestHandler({ apiToken, port, designKitDir }) {
       if (reportMatch) {
         try {
           const content = await readReportContent(designKitDir, reportMatch[1]);
-          return sendJson(res, 200, { runId: reportMatch[1], content });
+          const screenshots = extractScreenshotPaths(content);
+          return sendJson(res, 200, { runId: reportMatch[1], content, screenshots });
         } catch (err) {
           return sendJson(res, err.statusCode || 500, { error: err.message });
         }
@@ -294,11 +340,9 @@ async function main() {
   };
   const projectDir = path.resolve(getArg('project') || process.cwd());
 
-  const { url, port, apiToken } = await startDashboardServer({ projectDir });
-  console.log(`[dashboard] 서버 시작: ${url} (2b-1 증분 — 읽기 전용 데이터 API, HTML 화면은 아직 없음)`);
+  const { url, apiToken } = await startDashboardServer({ projectDir });
+  console.log(`[dashboard] 브라우저에서 열기: ${url}`);
   console.log(`[dashboard] 진단용 토큰(로컬 전용 콘솔 출력 — 판정서·로그 파일에는 절대 기록 안 함): ${apiToken}`);
-  console.log(`[dashboard] 예: curl -H "${TOKEN_HEADER}: ${apiToken}" http://127.0.0.1:${port}/health`);
-  console.log(`[dashboard]     curl -H "${TOKEN_HEADER}: ${apiToken}" http://127.0.0.1:${port}/api/runs`);
 }
 
 // 진입점 판정은 fileURLToPath로 (2026-07-27 실측 발견·수정 — 사유 정본은 hooks/verify-gate.mjs 주석).

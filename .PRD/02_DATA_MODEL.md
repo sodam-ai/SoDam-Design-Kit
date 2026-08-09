@@ -132,6 +132,8 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 
 ---
 
+**대시보드 서버 골격(2a)이 구현됐다 (2026-08-09, `.lock`과 동일 전략 — 통째로 만들지 않고 보안 primitive만 먼저 독립 증명)**: `scripts/dashboard-server.mjs` 신설. O-Brain(`26y_06m_21d_SoDam_O-Brain/app/src/server.mjs`)의 실측 검증된 패턴(127.0.0.1 전용 바인딩·Origin 검사·CSP/nosniff/frame-ancestors 헤더·`crypto.randomBytes` 실행별 토큰)을 실제로 읽고 이식했다(추측 재발명이 아님). O-Brain 원본과 다른 점 1가지: 토큰 비교를 `crypto.timingSafeEqual`로 강화(O-Brain은 `!==` 직접 비교 — 01 §6에서 Should 항목이라 생략된 것으로 보임, Node 내장 함수라 비용 없이 반영). express 대신 Node 내장 `http`만 사용(이 킷은 웹 프레임워크 의존성이 0개라 신규 의존성 없이 골격만으로 충분 — 공급망 최소화 원칙). 포트는 `verify-runner.mjs`의 `findAvailablePort()`를 그대로 재사용하되 대역만 분리(4570~4590, dev server 3000~3020과 무충돌). **범위 — `/health` 라우트 1개뿐, 데이터 0건**: 판정서·스크린샷 열람은 2b, 재검증 트리거는 2c로 의도적으로 미룸. 단위테스트 17건 신설(`npm test` 79→96) + 실제 HTTP 왕복 테스트 1건(mock 아닌 진짜 소켓) + **실제 CLI로 픽스처 대상 기동해 실측**: `Get-NetTCPConnection`으로 127.0.0.1 단독 바인딩 확인(0.0.0.0 아님), 올바른 토큰 200/틀린 토큰 403/토큰 없음 403/CSP 헤더 응답에 실제로 포함까지 전부 확인. `.api-token`은 `.lock`과 동일 패턴으로 대상 프로젝트 `.gitignore`에 자동 등록. `npm audit` 0건 유지.
+
 ## [NEEDS CLARIFICATION]
 
 - [x] **reports/screenshots 용량 관리 (2026-07-19 재감사 확정 · 2026-07-20 실제 구현 완료)** — 최근 10회 실행분만 보관·초과분 자동 삭제 + `.gitignore`에 screenshots 등록(판정서 MD만 커밋). 단 **시각 회귀 기준본은 `reports/baseline/`로 분리해 보관 정책에서 제외**(커밋 대상). 근거: 기준본까지 자동 삭제되면 Phase 2 시각 회귀가 자멸하는 정책 간 충돌이 있었음 — 분리로 해소.

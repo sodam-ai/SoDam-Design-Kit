@@ -560,7 +560,7 @@ A. Not necessarily. It could be an accessibility rule violation, a console error
 <p><strong>Q. Can I edit the generated code myself?</strong>
 A. Yes — the generated code becomes a regular file in your own project, and you&#39;re free to modify it. Re-running the pipeline will re-verify it.</p>
 <p><strong>Q. Can I use this commercially, or share/redistribute it?</strong>
-A. <strong>No, not currently.</strong> This kit&#39;s own license has not yet been finalized. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> below carefully.</p>
+A. <strong>Yes, under the terms of the Apache License 2.0</strong> (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the &quot;SoDam-Design-Kit&quot; name or trademark itself. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> below carefully.</p>
 <p><strong>Q. Does this work on Windows/Mac/Linux?</strong>
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is <strong>Windows</strong>. Real-world verification on Mac/Linux has not yet been performed.</p>
 <hr>
@@ -568,12 +568,11 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 <blockquote>
 <p>⚠️ This section is <strong>not legal advice and carries no legal guarantee.</strong> It is provided for reference only, and anything not yet finalized is clearly marked &quot;undecided&quot; below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.</p>
 </blockquote>
-<h3 id="license-for-sodam-design-kit-itself--undecided-strict-default-all-rights-reserved">License for SoDam-Design-Kit itself — <strong>Undecided (strict default: all rights reserved)</strong></h3>
+<h3 id="license-for-sodam-design-kit-itself--apache-license-20-finalized-2026-08-09">License for SoDam-Design-Kit itself — <strong>Apache License 2.0 (finalized 2026-08-09)</strong></h3>
 <ul>
-<li><strong>Current status (confirmed fact)</strong>: this repository has no <code>LICENSE</code> file and no license has been designated.</li>
-<li><strong>What this means</strong>: a work with no explicit license grant is, in principle, treated as <strong>All Rights Reserved by the copyright holder</strong>. In other words, <strong>without explicit permission, you may not distribute, copy, redistribute, sell, deliver to a company/client, or offer this kit&#39;s code or documentation as a paid service to any third party.</strong> For now, treat this as usable <strong>only by its creator, for personal use.</strong></li>
-<li><strong>Future plan (not yet finalized — under consideration)</strong>: adopting the Apache License 2.0 at the time of public release is being considered, but this is <strong>not yet a finalized decision</strong> — it still requires review by the creator (user) and, ideally, legal counsel. Until this section is actually updated to reflect a finalized decision, the &quot;all rights reserved&quot; default above remains in effect.</li>
-<li>Once a license is finalized, this section and a <code>LICENSE</code> file at the repository root will be updated together.</li>
+<li><strong>Current status (confirmed fact)</strong>: a <code>LICENSE</code> file (full text of Apache License 2.0) exists at the repository root. The copyright holder is <strong>SoDam AI Studio</strong>, year 2026.</li>
+<li><strong>What this means</strong>: Apache License 2.0 is a permissive license that allows use, copying, modification, redistribution, and commercial use of the code and documentation. It requires that you include a copy of the license, mark any modified files as changed, and preserve the original copyright/patent/trademark notices (see Section 4 of the license text). <strong>Rights to the &quot;SoDam-Design-Kit&quot; name or trademark are not granted by this license.</strong></li>
+<li>No separate NOTICE file is included (this is a new work with no upstream NOTICE to carry forward).</li>
 </ul>
 <h3 id="licenses-of-open-source-components-used-internally--confirmed-by-direct-inspection">Licenses of open-source components used internally — confirmed by direct inspection</h3>
 <p>Separately from this kit&#39;s own license, the open-source libraries it uses internally for verification are governed by their own respective licenses, and <strong>this kit uses them unmodified, as installed dependencies only.</strong></p>
@@ -601,7 +600,7 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 <p>This kit only reads designs you personally have access to, through your own Figma account, and never redistributes, stores, or transmits Figma design data itself elsewhere. However, <strong>whether you have the right (copyright) to turn a given design into code is entirely your own responsibility</strong> — copyright in the original design belongs to whoever created it (or their organization), and this kit does not verify or guarantee that relationship on your behalf.</p>
 <h3 id="responsibility-for-ai-generated-code">Responsibility for AI-generated code</h3>
 <p>The code this kit generates is produced by Claude (an AI). <strong>Copyright attribution and the scope of protection for AI-generated works is an area where legal interpretation still varies by country and remains unsettled.</strong> Before using generated code commercially, please seek expert confirmation at your own responsibility if needed. This kit and its documentation provide no legal guarantee regarding this.</p>
-<h3 id="summary-table-strict-standard">Summary table (strict standard)</h3>
+<h3 id="summary-table-apache-license-20-standard">Summary table (Apache License 2.0 standard)</h3>
 <table>
 <thead>
 <tr>
@@ -615,19 +614,23 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 </tr>
 <tr>
 <td>Modifying the code for solo/internal team use</td>
-<td>⚠️ License undecided — not recommended (ask the creator directly)</td>
+<td>✅ Allowed</td>
 </tr>
 <tr>
 <td>Distributing/copying this kit itself to a third party</td>
-<td>❌ Not allowed (license undecided)</td>
+<td>✅ Allowed — must include license copy + mark changes</td>
 </tr>
 <tr>
 <td>Selling a paid service/product built on this kit</td>
-<td>❌ Not allowed (license undecided)</td>
+<td>✅ Allowed — same conditions apply</td>
 </tr>
 <tr>
 <td>Delivering this kit to a company/client</td>
-<td>❌ Not allowed (license undecided)</td>
+<td>✅ Allowed — same conditions apply</td>
+</tr>
+<tr>
+<td>Distributing under the &quot;SoDam-Design-Kit&quot; name/trademark as-is</td>
+<td>⚠️ Not recommended — the license permits code use but does not grant naming/trademark rights</td>
 </tr>
 <tr>
 <td>Using code <strong>generated by</strong> this kit in your own project</td>

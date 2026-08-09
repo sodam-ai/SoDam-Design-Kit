@@ -96,7 +96,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 - [ ] 판정서·runs·AI-GENERATION-LOG·디버그 로그에 시크릿·토큰·절대경로를 기록하지 마 (프롬프트 기록에도 시크릿 필터)
 - [ ] 폰트를 허용목록(공식 출처) 밖 URL에서 내려받지 마 (다운로드 후 파일 형식 검증·실행 금지)
 - [ ] 타인의 상표·로고·브랜드명·캐릭터·저작물·개인정보·고객사 정보·비공개 자료를 코드·예제·샘플 데이터·더미 텍스트·문서 스크린샷에 넣지 마 (더미 데이터만 — 01 §7 Must)
-- [ ] 라이선스 확정 전에 킷을 제3자에게 배포·판매·납품하지 마 (현재 지정 라이선스 없음 = 본인 사용만 — 01 §7)
+- [ ] 라이선스 조건(Apache-2.0 — 01 §7) 밖의 사용(상표권 오인 유발 등)을 허용된 것처럼 안내하지 마 — 라이선스는 확정됐으나 조건 준수는 여전히 필수
 
 ---
 
@@ -148,8 +148,8 @@ node scripts/verify-runner.mjs --url http://localhost:3000/login
 
 ## 배포 방법
 
-1. GitHub 저장소 push (이름 확정 후 · **공개 저장소는 LICENSE·저작권자 확정 필수 — 01 §7, 확정 전엔 PRIVATE만**)
-2. marketplace.json에 등록 (sodam-ai 재사용 추천)
+1. GitHub 저장소 push — **완료**: `sodam-ai/SoDam-Design-Kit`, PUBLIC, LICENSE(Apache-2.0) 확정(2026-08-09 — 01 §7)
+2. marketplace.json에 등록 (sodam-ai 재사용 추천) — 완료
 3. `claude marketplace add` → `plugin install` → **완전 재시작** (실측: 재시작 없이 캐시 스냅샷이 옛 버전을 로드하는 함정 있음)
 4. 새 세션에서 라이브 검증 후 완료 선언
 

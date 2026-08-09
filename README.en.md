@@ -387,7 +387,7 @@ A. Not necessarily. It could be an accessibility rule violation, a console error
 A. Yes — the generated code becomes a regular file in your own project, and you're free to modify it. Re-running the pipeline will re-verify it.
 
 **Q. Can I use this commercially, or share/redistribute it?**
-A. **No, not currently.** This kit's own license has not yet been finalized. Please read [Section 13](#13-legal-copyright-license--commercial-use) below carefully.
+A. **Yes, under the terms of the Apache License 2.0** (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the "SoDam-Design-Kit" name or trademark itself. Please read [Section 13](#13-legal-copyright-license--commercial-use) below carefully.
 
 **Q. Does this work on Windows/Mac/Linux?**
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed.
@@ -398,11 +398,10 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 
 > ⚠️ This section is **not legal advice and carries no legal guarantee.** It is provided for reference only, and anything not yet finalized is clearly marked "undecided" below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.
 
-### License for SoDam-Design-Kit itself — **Undecided (strict default: all rights reserved)**
-- **Current status (confirmed fact)**: this repository has no `LICENSE` file and no license has been designated.
-- **What this means**: a work with no explicit license grant is, in principle, treated as **All Rights Reserved by the copyright holder**. In other words, **without explicit permission, you may not distribute, copy, redistribute, sell, deliver to a company/client, or offer this kit's code or documentation as a paid service to any third party.** For now, treat this as usable **only by its creator, for personal use.**
-- **Future plan (not yet finalized — under consideration)**: adopting the Apache License 2.0 at the time of public release is being considered, but this is **not yet a finalized decision** — it still requires review by the creator (user) and, ideally, legal counsel. Until this section is actually updated to reflect a finalized decision, the "all rights reserved" default above remains in effect.
-- Once a license is finalized, this section and a `LICENSE` file at the repository root will be updated together.
+### License for SoDam-Design-Kit itself — **Apache License 2.0 (finalized 2026-08-09)**
+- **Current status (confirmed fact)**: a `LICENSE` file (full text of Apache License 2.0) exists at the repository root. The copyright holder is **SoDam AI Studio**, year 2026.
+- **What this means**: Apache License 2.0 is a permissive license that allows use, copying, modification, redistribution, and commercial use of the code and documentation. It requires that you include a copy of the license, mark any modified files as changed, and preserve the original copyright/patent/trademark notices (see Section 4 of the license text). **Rights to the "SoDam-Design-Kit" name or trademark are not granted by this license.**
+- No separate NOTICE file is included (this is a new work with no upstream NOTICE to carry forward).
 
 ### Licenses of open-source components used internally — confirmed by direct inspection
 Separately from this kit's own license, the open-source libraries it uses internally for verification are governed by their own respective licenses, and **this kit uses them unmodified, as installed dependencies only.**
@@ -420,15 +419,16 @@ This kit only reads designs you personally have access to, through your own Figm
 ### Responsibility for AI-generated code
 The code this kit generates is produced by Claude (an AI). **Copyright attribution and the scope of protection for AI-generated works is an area where legal interpretation still varies by country and remains unsettled.** Before using generated code commercially, please seek expert confirmation at your own responsibility if needed. This kit and its documentation provide no legal guarantee regarding this.
 
-### Summary table (strict standard)
+### Summary table (Apache License 2.0 standard)
 
 | Action | Currently allowed? |
 |---|---|
 | Personal use by the creator | ✅ Allowed |
-| Modifying the code for solo/internal team use | ⚠️ License undecided — not recommended (ask the creator directly) |
-| Distributing/copying this kit itself to a third party | ❌ Not allowed (license undecided) |
-| Selling a paid service/product built on this kit | ❌ Not allowed (license undecided) |
-| Delivering this kit to a company/client | ❌ Not allowed (license undecided) |
+| Modifying the code for solo/internal team use | ✅ Allowed |
+| Distributing/copying this kit itself to a third party | ✅ Allowed — must include license copy + mark changes |
+| Selling a paid service/product built on this kit | ✅ Allowed — same conditions apply |
+| Delivering this kit to a company/client | ✅ Allowed — same conditions apply |
+| Distributing under the "SoDam-Design-Kit" name/trademark as-is | ⚠️ Not recommended — the license permits code use but does not grant naming/trademark rights |
 | Using code **generated by** this kit in your own project | ✅ Allowed — but confirming the copyright of the source Figma design is your responsibility |
 | Using the open-source components this kit relies on (Playwright, axe-core) directly, on your own | ✅ Allowed, under each project's own license (Apache-2.0 / MPL-2.0) |
 

@@ -27,8 +27,8 @@
     │   ├── 2026-07-19-001.md
     │   ├── screenshots/      # 최근 10회만 보관 (gitignore)
     │   └── baseline/         # [P2] 시각 회귀 기준본 (보관 정책 제외·커밋 대상)
-    ├── fonts/                # [P2] 폰트 + OFL.txt 라이선스 동반 보존
-    ├── ASSET-LEDGER.csv      # [P2] 자산 대장 (첫 자산인 폰트부터 최초 생성)
+    ├── fonts/                # [P2, 2026-08-09 완료] 폰트 + 라이선스 동반 보존 (fonts/<fontKey>/*.otf·LICENSE — 커밋 대상, gitignore 아님)
+    ├── ASSET-LEDGER.csv      # [P2, 2026-08-09 완료] 자산 대장 (첫 자산인 폰트부터 최초 생성 — 실제로 이렇게 생성됨)
     ├── ATTRIBUTION.md        # [P3] 출처 표기 자동 생성
     ├── AI-GENERATION-LOG.md  # [P3] AI 생성 이력 자동 append
     ├── .api-token            # [P2] 대시보드 로컬 토큰 — 실행마다 재생성·0600·gitignore (커밋 금지)
@@ -159,6 +159,10 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 ---
 
 **로컬 시각 회귀 감지가 구현됐다 (2026-08-09, Phase 2 대시보드+진입점 완료 다음 증분)**: `scripts/visual-regression.mjs` 신설. 핵심 설계 결정 — axe-core는 위반이 "항상 나쁜 것"이라 상시 Must 게이트지만, 스크린샷 diff는 의도적 디자인 변경도 항상 "다름"으로 나오므로 같은 방식으로 상시 게이트화하면 정상 작업마다 FAIL이 남발된다. 그래서 **opt-in**(`--visualRegression` 플래그, config.json 미소비 — 이 킷은 현재 config.json의 gateEnabled/a11yLevel도 어디서도 안 읽는 기존 공백이 있어 이번 증분에서 그 공백을 넓히지 않고 기존 --target류 CLI 플래그 패턴을 그대로 따름)으로 설계했고, 새 화면을 "정상"으로 받아들이는 것도 `--promoteBaseline`(PASS일 때만 허용)으로 사람이 명시 승인해야 한다. 허용오차 1%(픽셀 비율)로 안티앨리어싱 잡음을 흡수 — 04 ALWAYS DO의 "2연속 FAIL만 확정" flaky 방지 원칙과 같은 결. 기준본은 `.design-kit/reports/baseline/<routeSlug>/<viewport>.png`(02 파일 트리에 이미 예약돼 있던 위치, 커밋 대상). 새 의존성 `pixelmatch`(ISC)·`pngjs`(MIT) 둘 다 초경량·permissive. 단위테스트 8건(routeToSlug·동일이미지·허용오차 안/밖·크기불일치·기준본없음·승격 왕복·diff이미지 생성) + **실제 픽스처로 진짜 회귀 1건을 고의로 만들어 실측**: 기준본 승격(PASS, no-baseline→matched 전환) → 무변경 재실행 matched(diffRatio 0) → 프리뷰 배경색을 흰색→마젠타로 고의 변경 후 재실행 **3개 뷰포트 전부 regression(99%+ 차이) + verdict FAIL** 실측(exit code 1 확인) + diff PNG 3장 실제 생성 확인 → 원상복구 후 matched/PASS 복귀 재확인. 이 과정 중 Bash(Git Bash)로 `preview-route.mjs`를 재실행했다가 `@/` import 경로가 `@C:/Program Files/Git/...`로 오염되는 걸 실측 재현(이 프로젝트가 이미 알고 있던 Windows/Git Bash `/`-인자 오염 함정의 새 사례 — `--route` 뿐 아니라 `--importPath` 값도 영향받음이 이번에 처음 확인됨) — 즉시 Edit 도구로 직접 수정해 복구, PowerShell로 재검증해 정상 확인. **의도적으로 안 한 것**: `commands/pipeline.md` 표준 흐름에 자동 편입하지 않음(매 실행마다 기본 on으로 할지는 별도 UX 결정, 이번 범위는 코어 엔진+CLI 플래그까지).
+
+---
+
+**폰트 파이프라인 A(전자동)가 구현됐다 (2026-08-09, 시각 회귀 다음 증분 — Phase 2 남은 3개 중 첫 착수)**: `scripts/font-pipeline.mjs` 신설. 범위는 A(자동 다운로드+라이선스 보존+ASSET-LEDGER.csv 최초 생성+`next/font/local` 모듈 생성)만 — B(반자동 3종 비교)·C(폰트 게이트 FAIL)는 의도적으로 이번 범위 밖(03_PHASES.md에 별도 기록). 핵심 설계: (1) **화이트리스트 URL을 짐작으로 박지 않고 전부 실측 확인** — 처음 시도한 Pretendard 경로(`packages/.../static/*.woff2`)는 실제로 404였고, GitHub API로 실제 저장소 구조를 조회해서야 올바른 경로(`.otf`, 릴리스 태그 `v1.3.9`로 고정해 재현성 확보)를 찾았다. Noto Sans KR은 `google/fonts` 공식 저장소 경로가 처음부터 맞았다(HEAD 요청 200 확인). (2) **04 DO NOT "다운로드 후 파일 형식 검증·실행 금지"를 매직 바이트 검사로 구현** — OTF(`OTTO`)·WOFF2(`wOF2`)·WOFF(`wOFF`)·TTF(`sfnt` 시그니처) 인식, 폰트가 아닌 응답(예: 404 에러 HTML)은 저장하지 않고 즉시 거부. (3) **대상 프로젝트의 기존 파일(layout.tsx 등)은 자동으로 안 건드림** — 01 §5 "로직 불변경 제약"과 같은 원칙, `next/font/local` 모듈만 새로 생성하고 실제 연결은 사용자 몫(모듈 파일에 사용법 주석 포함). (4) **멱등성** — 이미 받아둔 폰트는 재실행해도 네트워크를 다시 안 탐(setup-wizard.mjs와 같은 원칙). 단위테스트 12건 신설(143→155, 실제 네트워크 없이 fetchFn 주입으로 결정적 검증 — CI·오프라인 환경에서도 항상 통과해야 하므로) + **실제 네트워크로 Pretendard 진짜 다운로드 실측**: 실제 픽스처 대상 1.5MB 진짜 OTF 파일 저장 확인, `ASSET-LEDGER.csv`가 실제로 처음 생성되며 헤더+행 정확히 기록됨을 확인, 생성된 `next/font/local` 모듈의 상대경로가 실제로 올바르게 계산됨(`src/lib/design-kit-fonts/pretendard.ts`에서 `../../../.design-kit/fonts/...`) 확인, 재실행 시 네트워크 재호출·대장 중복 행 없음(멱등성) 실측 확인. `npm audit` 0건(새 의존성 없음 — Node 내장 `fetch`만 사용).
 
 ## [NEEDS CLARIFICATION]
 

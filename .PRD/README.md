@@ -97,6 +97,8 @@ Phase 1을 시작하려면 [03_PHASES.md](./03_PHASES.md)의 "Phase 1 시작 프
 
 - **44차(2026-08-09, 43차 직후 — 로컬 시각 회귀 감지, Phase 2 대형 후보 4개 중 첫 착수·완료)**: PRD 9개 문서 전수 재검토(서브에이전트 독립 검증 포함) 후 남은 Phase 2 후보(Storybook·디자인 토큰 동기화·시각 회귀·폰트 파이프라인) 중 외부 통신·대상 프로젝트 변경이 없어 위험이 가장 낮은 시각 회귀를 선택했다. `scripts/visual-regression.mjs` 신설(`pixelmatch`+`pngjs`, ISC/MIT). axe와 달리 디자인 변경도 항상 "다름"으로 나오는 특성상 **opt-in**(`--visualRegression`)으로 설계하고 기준본 승인도 `--promoteBaseline`(PASS 전용)으로 사람이 명시 결정하게 했다 — 상시 Must 게이트로 만들면 정상 작업마다 오탐 FAIL이 남발될 위험을 사전에 차단. 단위테스트 8건(135→143) + **실제 픽스처로 진짜 회귀를 고의로 만들어 실측**: 기준본 승격 → 무변경 재실행 matched → 배경색 고의 변경 후 재실행 3뷰포트 전부 regression+FAIL(exit 1) + diff PNG 3장 실제 생성 확인 → 원상복구 후 matched 복귀. 이 과정에서 Bash(Git Bash)로 스크립트를 재실행했다가 `@/` import 경로가 오염되는 새로운 함정 사례를 발견·즉시 수정(기존에 알려진 `/`-인자 오염 함정의 변주 — `--importPath` 값도 영향받음을 처음 확인). `03_PHASES.md`의 "토큰 변경→시각 회귀" 암묵 순서 전제(CHECKPOINT.md "강제 순서 없음"과 미조정 상태였음)도 이번에 발견·정정했다. `npm audit` 0건.
 
+- **45차(2026-08-09, 44차 직후 — 폰트 파이프라인 A, Phase 2 남은 3개 중 2번째 착수·완료)**: 남은 3개(Storybook·토큰 동기화·폰트) 중 사용자가 직접 선택. `scripts/font-pipeline.mjs` 신설, 범위는 A(자동 다운로드+대장+모듈 생성)만 — B·C는 의도적으로 범위 밖. 화이트리스트 URL을 짐작으로 넣지 않고 GitHub API로 실제 저장소 구조를 확인해 고정(최초 시도한 Pretendard 경로는 실제로 404였음). 매직 바이트로 폰트 형식 검증(04 DO NOT 구현), 대상 프로젝트 기존 파일은 자동으로 안 건드림. 단위테스트 12건(143→155, 네트워크 없이 fetchFn 주입) + **실제 네트워크로 Pretendard 진짜 다운로드**: 1.5MB 실 OTF 저장·ASSET-LEDGER.csv 최초 생성·모듈 상대경로 정확성·재실행 멱등성(네트워크 재호출 0회) 전부 실측 확인. `npm audit` 0건. 상세는 `.PRD/02_DATA_MODEL.md` 결정 기록.
+
 ## 핵심 결정 이력 (인터뷰 확정)
 
 - 결과물: Claude Code 플러그인 (독립 서비스 아님, Codex는 AGENTS.md로 대응) + P2 open 대시보드·P3 MCP 래퍼로 Claude Desktop 확장 (2026-07-19 사용자 결정 — GPT Desktop은 조건부 백로그)

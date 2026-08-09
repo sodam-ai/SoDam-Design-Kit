@@ -22,15 +22,26 @@ const SCREENSHOT_RETENTION_COUNT = 10;
  * 프로젝트에 setup 없이 --target+--screenshotDir로 직접 실행 → .design-kit/runs·reports는
  * 생겼지만 .gitignore는 끝내 생기지 않는 것을 확인). **이 호출을 제거하지 말 것.**
  */
+// 정본 위치(.design-kit/reports/screenshots/) 외에, --screenshotDir에 "reports/" 접두를
+//빠뜨린 상대경로(예: "screenshots/foo")가 들어오면 verify-runner.mjs의 정규화 규칙(2026-08-04,
+// .design-kit/ 자체가 기준점)에 따라 .design-kit/screenshots/ 밑에 생긴다 — 이 위치는
+// .gitignore 밖이라 git에 그대로 노출될 수 있음을 2026-08-09 실측으로 발견(대시보드에서
+// 이 경로의 스크린샷이 404로 안 뜨는 것을 계기로 추적). 두 위치 다 등록해 어느 쪽으로
+// 정규화되든 git 추적 밖으로 새지 않게 막는다.
+const SCREENSHOT_GITIGNORE_PATTERNS = ['.design-kit/reports/screenshots/', '.design-kit/screenshots/'];
+
 async function ensureScreenshotsGitignored(projectDir) {
   const gitignorePath = path.join(projectDir, '.gitignore');
-  const pattern = '.design-kit/reports/screenshots/';
-  const content = existsSync(gitignorePath) ? await readFile(gitignorePath, 'utf-8') : '';
-  if (content.includes(pattern)) return false;
-
-  const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
-  await writeFile(gitignorePath, `${content}${separator}${pattern}\n`, 'utf-8');
-  return true;
+  let content = existsSync(gitignorePath) ? await readFile(gitignorePath, 'utf-8') : '';
+  let changed = false;
+  for (const pattern of SCREENSHOT_GITIGNORE_PATTERNS) {
+    if (content.includes(pattern)) continue;
+    const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+    content = `${content}${separator}${pattern}\n`;
+    changed = true;
+  }
+  if (changed) await writeFile(gitignorePath, content, 'utf-8');
+  return changed;
 }
 
 /**

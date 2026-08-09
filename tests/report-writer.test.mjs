@@ -279,3 +279,34 @@ test('writeReport: 스크린샷 폴더가 10개를 넘으면 오래된 것부터
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('writeReport: .design-kit/screenshots/(정본 위치 밖) 도 .gitignore에 등록된다 (2026-08-09 실측 발견 — 대시보드에서 404로 드러난 결함 회귀 방지)', async () => {
+  // --screenshotDir에 "reports/" 접두가 빠진 상대경로가 오면 verify-runner.mjs의 정규화가
+  // .design-kit/ 자체를 기준점으로 삼아 .design-kit/screenshots/ 밑에 스크린샷을 만든다(설계된
+  // 동작). 그런데 .gitignore 등록은 정본 위치(.design-kit/reports/screenshots/)만 알고 있어서
+  // 이 위치는 git 추적 밖으로 새 있었다(실제 픽스처에서 git status로 노출 확인, 대시보드
+  // 재검증 화면에서 스크린샷이 404로 안 뜨는 것을 계기로 추적). 두 위치 다 등록되는지 확인.
+  const parentDir = await mkdtemp(path.join(tmpdir(), 'design-kit-report-'));
+  const dir = path.join(parentDir, '.design-kit');
+  try {
+    await writeReport({
+      designKitDir: dir,
+      target: 'test',
+      verifyRunnerOutput: {
+        devServer: { port: 3000, autoStarted: true },
+        renderOk: true,
+        consoleErrors: [],
+        axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+        screenshots: [],
+        verdict: 'PASS',
+        reasons: [],
+      },
+    });
+
+    const gitignore = await readFile(path.join(parentDir, '.gitignore'), 'utf-8');
+    assert.match(gitignore, /\.design-kit\/reports\/screenshots\//, '정본 위치는 계속 등록돼야 함');
+    assert.match(gitignore, /\.design-kit\/screenshots\//, '"reports/" 접두 없는 위치도 등록돼야 함(이번에 발견된 결함)');
+  } finally {
+    await rm(parentDir, { recursive: true, force: true });
+  }
+});

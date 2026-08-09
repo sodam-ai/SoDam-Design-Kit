@@ -15,15 +15,23 @@ import { fileURLToPath } from 'node:url';
  * 방치되던 걸 실측으로 발견(픽스처 프로젝트에서 실제 git status로 확인). preview-route.mjs의
  * ensureGitignored와 같은 패턴(중복 추가 방지)을 이 대상에 맞춰 별도로 구현.
  */
+// report-writer.mjs의 동일 상수와 동기화 유지 — --screenshotDir가 "reports/" 접두 없는
+// 상대경로로 오면 .design-kit/screenshots/ 밑에 생길 수 있음(2026-08-09 실측 발견, 대시보드
+// 스크린샷 404를 계기로 추적). 두 위치 다 등록.
+const SCREENSHOT_GITIGNORE_PATTERNS = ['.design-kit/reports/screenshots/', '.design-kit/screenshots/'];
+
 async function ensureScreenshotsGitignored(projectDir) {
   const gitignorePath = path.join(projectDir, '.gitignore');
-  const pattern = '.design-kit/reports/screenshots/';
-  const content = existsSync(gitignorePath) ? readFileSync(gitignorePath, 'utf-8') : '';
-  if (content.includes(pattern)) return false;
-
-  const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
-  await writeFile(gitignorePath, `${content}${separator}${pattern}\n`, 'utf-8');
-  return true;
+  let content = existsSync(gitignorePath) ? readFileSync(gitignorePath, 'utf-8') : '';
+  let changed = false;
+  for (const pattern of SCREENSHOT_GITIGNORE_PATTERNS) {
+    if (content.includes(pattern)) continue;
+    const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+    content = `${content}${separator}${pattern}\n`;
+    changed = true;
+  }
+  if (changed) await writeFile(gitignorePath, content, 'utf-8');
+  return changed;
 }
 
 /** tsconfig paths 매핑으로 "@/components/ui" 같은 별칭을 실제 상대경로로 해석 (경로 하드코딩 금지) */

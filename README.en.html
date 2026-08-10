@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -117,14 +117,16 @@ img { max-width: 100%; }
 <body>
 <div class="doc">
 <h1 id="sodam-design-kit">SoDam-Design-Kit</h1>
-<p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work &quot;done&quot; unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
+<p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status</strong>: <strong>Phase 1 (MVP) is officially complete</strong> (2026-08-04). The core scripts, verification gate, and report-writing are all built, all 68 automated tests pass, and <strong>both the &quot;reuse an already-mapped component&quot; path and the &quot;generate a brand-new component from scratch (no mapping)&quot; path</strong> have round-tripped successfully against real Figma data (PASS). The final and most important gate — <strong>reproducing the whole thing from a brand-new session, from scratch — was actually attempted 4 times and confirmed successful</strong>; 3 real defects found along the way were fixed and re-verified (see the 2026-08-04 entry in <a href="#7-update-summary">Section 7</a>). All 6 items in <a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 (Success Criteria) are now backed by real evidence.</p>
+<p>✅ <strong>Current status (as of 2026-08-10, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>the first Phase 3 (advanced) feature — the "detail-page pipeline" — is also complete</strong>. All <strong>206 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>4 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>⚠️ This kit is still <strong>version 0.1.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
-<hr>
+<hr />
 <h2 id="table-of-contents">Table of Contents</h2>
-<ol>
+<ol start="0" type="1">
+<li><a href="#0-before-you-start-key-terms-in-5-minutes">Before you start: key terms in 5 minutes</a></li>
 <li><a href="#1-what-this-tool-is">What this tool is</a></li>
 <li><a href="#2-prerequisites--required-software-with-download-instructions">Prerequisites &amp; Required Software (with download instructions)</a></li>
 <li><a href="#3-download--installation">Download &amp; Installation</a></li>
@@ -139,19 +141,104 @@ img { max-width: 100%; }
 <li><a href="#12-faq">FAQ</a></li>
 <li><a href="#13-legal-copyright-license--commercial-use">Legal, Copyright, License &amp; Commercial Use</a></li>
 </ol>
-<hr>
+<hr />
+<h2 id="0-before-you-start-key-terms-in-5-minutes">0. Before you start: key terms in 5 minutes</h2>
+<p>This document is written so that <strong>someone who has barely used a computer, an AI tool, or a messaging app</strong> can still follow it. A handful of words show up again and again throughout the document, so it's worth skimming this list once before you begin. If you're already comfortable with these, skip ahead to <a href="#1-what-this-tool-is">Section 1</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Plain-language explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>AI (artificial intelligence)</strong></td>
+<td>Software that understands plain human language and does the work for you. In this document, "AI" always means "Claude Code."</td>
+</tr>
+<tr>
+<td><strong>Claude Code</strong></td>
+<td>A program by Anthropic that you talk to, in a chat window, to get computer work done (like writing code) on your behalf. It has a "chat window" much like a messaging app — you type what you want in plain sentences.</td>
+</tr>
+<tr>
+<td><strong>Terminal</strong></td>
+<td>A text-based window where you type commands instead of clicking things. Once Claude Code is installed, the same chat window you type into <em>is</em> the terminal — there's nothing extra to learn or install.</td>
+</tr>
+<tr>
+<td><strong>Command / slash command</strong></td>
+<td>A pre-defined instruction that starts with <code>/</code> (a "slash"). If you've ever used a <code>/</code>-prefixed command in a chat app like Discord or Slack (e.g. <code>/remind</code>), it's the exact same idea. This kit uses 4 such commands, e.g. <code>/sodam-design-kit:setup</code>.</td>
+</tr>
+<tr>
+<td><strong>Plugin</strong></td>
+<td>An "add-on bundle" you attach to an existing program (here, Claude Code). It's similar to installing a new app on your phone — this kit itself is one such plugin.</td>
+</tr>
+<tr>
+<td><strong>Folder / path</strong></td>
+<td>A "folder" is a drawer that holds files; a "path" is the address that says where that drawer lives inside your computer (e.g. <code>D:\MyDocuments\Project</code>).</td>
+</tr>
+<tr>
+<td><strong>Download / install</strong></td>
+<td>"Download" means bringing a file from the internet onto your computer; "install" means setting that file up so your computer can actually use it.</td>
+</tr>
+<tr>
+<td><strong>Browser</strong></td>
+<td>A program like Chrome or Edge that displays web pages. This kit doesn't open a visible browser window for you to look at — it uses an <strong>invisible, automated browser</strong> to check the screen on its own.</td>
+</tr>
+<tr>
+<td><strong>Server (dev server)</strong></td>
+<td>A program whose job is to actually "serve up" a website's screen so it can be viewed. This kit starts and stops this server automatically every time it verifies something — you never need to start it yourself.</td>
+</tr>
+<tr>
+<td><strong>Code / file / extension</strong></td>
+<td>"Code" is the text that tells a computer how to behave; a "file" is one document where that text is stored. The part after the dot in a filename — like <code>.tsx</code>, <code>.json</code>, or <code>.md</code> — is called the "extension," and it identifies the file's type.</td>
+</tr>
+<tr>
+<td><strong>Repository</strong></td>
+<td>A whole bundle of related files grouped together. This kit's own project, and the project you're porting designs into, are each one repository.</td>
+</tr>
+<tr>
+<td><strong>Kit</strong></td>
+<td>Short for "toolkit." Whenever this document says "this kit," it always means SoDam-Design-Kit itself.</td>
+</tr>
+<tr>
+<td><strong>Figma</strong></td>
+<td>A widely used online design tool where designers draw screens (buttons, app layouts, etc.). This kit reads designs that live in Figma.</td>
+</tr>
+<tr>
+<td><strong>Component</strong></td>
+<td>A small, reusable piece of a screen — like a button or a text field — that shows up in multiple places.</td>
+</tr>
+<tr>
+<td><strong>Report</strong></td>
+<td>The file this kit writes after finishing a check, recording either "passed (PASS)" or "failed (FAIL)."</td>
+</tr>
+<tr>
+<td><strong>Toggle (expand/collapse)</strong></td>
+<td>A UI element that expands or collapses when you click it. <a href="#7-update-summary">Section 7</a> of this document uses this — try clicking one of its headings.</td>
+</tr>
+<tr>
+<td><strong>License</strong></td>
+<td>A document that spells out whether other people are allowed to use this software, and under what conditions. Covered in detail in <a href="#13-legal-copyright-license--commercial-use">Section 13</a>.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💬 <strong>Truly new to all of this?</strong>: To use this kit, you'll need at least the experience of "having opened Claude Code and typed a message into its chat window." If you're at the stage of turning on a computer for the very first time, start with the official guide at <a href="https://claude.com/claude-code">claude.com/claude-code</a>, install Claude Code, and have a short conversation with it — then come back to this document. (This kit is a developer tool that also needs Node.js and a Figma account, so it isn't the kind of thing you can use after installing just one single app — <a href="#2-prerequisites--required-software-with-download-instructions">Section 2</a> lists everything you actually need.)</p>
+</blockquote>
+<hr />
 <h2 id="1-what-this-tool-is">1. What this tool is</h2>
-<p>In one sentence: <strong>it automatically turns a Figma design into working code, and mechanically refuses to let you call it &quot;done&quot; until that code has actually been checked in a real browser.</strong></p>
+<p>In one sentence: <strong>it automatically turns a Figma design into working code, and mechanically refuses to let you call it "done" until that code has actually been checked in a real browser.</strong></p>
 <ul>
 <li>It reads a screen you drew in Figma (e.g., a single button).</li>
 <li>It generates code that matches that design, styled with <a href="https://ui.shadcn.com">shadcn/ui</a> (a React component library).</li>
-<li>It launches the generated code in a real web browser and automatically checks: does the screen render without breaking? Are there accessibility problems (e.g., for screen-reader users)? Does it look right at phone (360px), tablet (768px), and desktop (1440px) widths?</li>
-<li>If it passes, a &quot;report&quot; record is written. If it fails, the tool mechanically blocks any report of &quot;done&quot; — even if a human (or an AI) forgets or tries to skip the check.</li>
+<li>It launches the generated code with an invisible, automated browser and automatically checks: does the screen render without breaking? Are there accessibility problems (e.g., for screen-reader users)? Does it look right at phone (360px), tablet (768px), and desktop (1440px) widths?</li>
+<li>If it passes, a "report" record is written. If it fails, the tool mechanically blocks any report of "done" — even if a human (or an AI) forgets or tries to skip the check.</li>
 </ul>
-<pre><code>Figma design ──▶ Code generation ──▶ Real-browser check ──▶ Only then: &quot;done&quot;
-</code></pre>
-<p><strong>Who this is for</strong>: Anyone who designs in Figma and uses Claude Code to turn that design into code (the same person can do both) — especially anyone uneasy about &quot;the AI says it made the code, but did anyone actually check it renders?&quot;</p>
-<hr>
+<pre><code>Figma design ──▶ Code generation ──▶ Real-browser check ──▶ Only then: &quot;done&quot;</code></pre>
+<p><strong>Why a tool like this exists</strong>: if you simply tell an AI "build this to match the design," the AI can generate code and then say "all done." But whether that code <strong>actually renders correctly on screen, doesn't have broken text, and works for screen-reader users</strong> might just be something the AI <em>claimed</em> was true, without anyone actually checking. This kit forces that final check to be done mechanically by a <strong>real browser program</strong>, not just asserted in words — so "it said it worked, but it actually didn't" simply can't happen.</p>
+<p><strong>Who this is for</strong>: Anyone who designs in Figma and uses Claude Code to turn that design into code (the same person can do both) — especially anyone uneasy about "the AI says it made the code, but did anyone actually check it renders?"</p>
+<p><strong>Who this is <em>not</em> for (an honest limitation)</strong>: this is not a tool that builds an entire website from scratch for someone with zero coding background. What it generates is <strong>individual screen pieces</strong> inside a project that already exists (Next.js + Tailwind + shadcn/ui) — <a href="#2-prerequisites--required-software-with-download-instructions">Section 2</a> explains this requirement in detail.</p>
+<hr />
 <h2 id="2-prerequisites--required-software-with-download-instructions">2. Prerequisites &amp; Required Software (with download instructions)</h2>
 <p>All 4 of the following must be ready. If even one is missing, you cannot proceed to Section 3 (Installation).</p>
 <table>
@@ -159,129 +246,137 @@ img { max-width: 100%; }
 <tr>
 <th>#</th>
 <th>Requirement</th>
-<th>Why it&#39;s needed</th>
+<th>Why it's needed</th>
 <th>Download / Check</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>1</td>
 <td><strong>Claude Code</strong></td>
-<td>This kit is itself a Claude Code &quot;plugin&quot; — it cannot run without Claude Code</td>
+<td>This kit is itself a Claude Code "plugin" — it cannot run without Claude Code</td>
 <td>Install per the official guide at <a href="https://claude.com/claude-code">claude.com/claude-code</a></td>
 </tr>
 <tr>
 <td>2</td>
 <td><strong>Node.js 18 or newer</strong></td>
 <td>Every verification script in this kit is written in Node.js (a JavaScript runtime)</td>
-<td>Download the &quot;LTS&quot; version from <a href="https://nodejs.org">nodejs.org</a>. After installing, type <code>node -v</code> in a terminal — if a version number appears, you&#39;re set (this kit was built and verified on v22.19.0)</td>
+<td>Download the "LTS" version from <a href="https://nodejs.org">nodejs.org</a>. After installing, type <code>node -v</code> in a terminal — if a version number appears, you're set (this kit was built and verified on v22.19.0)</td>
 </tr>
 <tr>
 <td>3</td>
 <td><strong>Target project</strong>: Next.js + Tailwind CSS + shadcn/ui</td>
-<td>The code this kit generates assumes exactly this combination (Phase 1 is locked to this stack; other frameworks are not yet supported)</td>
-<td>You need a project already built with this stack. If you don&#39;t have one, create one with <code>npx create-next-app@latest</code> (official Next.js method) and follow the <a href="https://ui.shadcn.com/docs/installation">official shadcn/ui install guide</a></td>
+<td>The code this kit generates assumes exactly this combination (other frameworks are not yet supported)</td>
+<td>You need a project already built with this stack. If you don't have one, create one with <code>npx create-next-app@latest</code> (official Next.js method) and follow the <a href="https://ui.shadcn.com/docs/installation">official shadcn/ui install guide</a></td>
 </tr>
 <tr>
 <td>4</td>
 <td><strong>Figma file access</strong></td>
-<td>The original design you&#39;re porting to code must live in Figma</td>
+<td>The original design you're porting to code must live in Figma</td>
 <td>Use the <strong>Figma connector</strong> already linked to claude.ai, or log in via the official <strong>Figma MCP</strong> (<code>https://mcp.figma.com/mcp</code>). A free (Starter) Figma plan works, but is limited to <strong>6 reads per month</strong> (see <a href="#10-security--data-flow">Section 10</a>)</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <blockquote>
-<p><strong>&quot;What&#39;s a terminal?&quot;</strong>: A text-based window where you type commands instead of clicking. Once Claude Code is installed, the window where you type commands to it <em>is</em> the terminal — there&#39;s nothing extra to install.</p>
+<p><strong>Not sure what a term means?</strong> Check the <a href="#0-before-you-start-key-terms-in-5-minutes">glossary in Section 0</a> first. In particular, if "terminal" is unfamiliar: it's a text-based window where you type commands instead of clicking. Once Claude Code is installed, the window you type commands into <em>is</em> the terminal — nothing extra to install.</p>
 </blockquote>
-<hr>
+<blockquote>
+<p><strong>Don't have prerequisite #3 yet?</strong>: this kit assumes there's already a "somewhat-built website project" to work with. It isn't designed for "build me a whole website from nothing." If you don't have such a project yet, you can ask Claude Code in plain language to set one up first (e.g., "create an empty Next.js + Tailwind + shadcn/ui project for me").</p>
+</blockquote>
+<hr />
 <h2 id="3-download--installation">3. Download &amp; Installation</h2>
 <blockquote>
-<p>The steps below assume this kit <strong>is not yet published on GitHub, and is installed by pointing directly at a folder path on your computer</strong> (&quot;local directory source&quot; — confirmed as of 2026-07-20). If this later moves to a GitHub-hosted marketplace, step 1&#39;s address may change from a folder path to a git URL — this section will be updated when that happens.</p>
+<p>The steps below assume this kit <strong>is not on a GitHub marketplace, and is installed by pointing directly at a folder path on your computer</strong> ("local directory source" — confirmed as of 2026-07-20, still true today). If this later moves to a GitHub-hosted marketplace, step 1's address may change from a folder path to a different kind of address — this section will be updated when that happens.</p>
 </blockquote>
-<ol>
-<li><p><strong>Register the marketplace</strong> — inside Claude Code:</p>
-<pre><code>/plugin marketplace add &lt;full path to this repository folder&gt;
-</code></pre>
-<p>(example: <code>D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit</code>)</p>
-</li>
-<li><p><strong>Install the plugin</strong>:</p>
-<pre><code>/plugin install sodam-design-kit@sodam
-</code></pre>
-</li>
-<li><p><strong>Fully restart Claude Code</strong> — close the window completely and reopen it. (See <a href="#11-troubleshooting">Section 11</a>, &quot;Installed but the command doesn&#39;t show up&quot; — this must be a <strong>full restart</strong>, not a refresh.)</p>
-</li>
-<li><p><strong>Install dependencies (once only)</strong> — from <strong>inside this plugin&#39;s own repository folder</strong> (where this <code>README.en.md</code> lives):</p>
-<pre><code>npm install
-</code></pre>
-<p>The verification gate depends on Playwright and axe-core, which are not bundled with the kit&#39;s code and must be fetched with this command (<code>.gitignore</code> excludes <code>node_modules/</code>).</p>
+<ol type="1">
+<li><p><strong>Register the marketplace</strong> — inside the Claude Code chat window, type this exactly (only replace the address with your own computer's real path):</p>
+<pre><code>/plugin marketplace add &lt;full path to this repository folder&gt;</code></pre>
+<p>(example: <code>D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit</code>)</p></li>
+<li><p><strong>Install the plugin</strong> — then type:</p>
+<pre><code>/plugin install sodam-design-kit@sodam</code></pre></li>
+<li><p><strong>Fully restart Claude Code</strong> — close the window completely and reopen it. (See <a href="#11-troubleshooting">Section 11</a>, "Installed but the command doesn't show up" — this must be a <strong>full restart</strong>, not a refresh.)</p></li>
+<li><p><strong>Install dependencies (once only)</strong> — from <strong>inside this plugin's own repository folder</strong> (where this <code>README.en.md</code> lives), type into your terminal:</p>
+<pre><code>npm install</code></pre>
+<p>The verification gate depends on the browser-automation tool (Playwright) and the accessibility checker (axe-core), which are not bundled with the kit's code and must be fetched with this command.</p>
 <blockquote>
-<p><strong>Important (a confirmed real-world pitfall)</strong>: Because this plugin uses a &quot;local directory source,&quot; installing it does <strong>not</strong> create a copy anywhere like <code>~/.claude/plugins/</code>. Claude Code simply uses the original folder you pointed to in step 1. So <code>npm install</code> must also be run <strong>inside that same original folder</strong> — there is no separate &quot;installed location&quot; to go looking for (a real attempt to find one, in a fresh session, failed for exactly this reason).</p>
-</blockquote>
-</li>
-<li><p><strong>Verify the install</strong> — inside the <strong>target project</strong> (the Next.js project from prerequisite #3):</p>
-<pre><code>/sodam-design-kit:setup
-</code></pre>
-<p>If this command appears in autocomplete and runs without error, the install succeeded.</p>
-</li>
+<p><strong>Important (a confirmed real-world pitfall)</strong>: Because this plugin uses a "local directory source," installing it does <strong>not</strong> create a copy anywhere else. Claude Code simply uses the original folder you pointed to in step 1. So <code>npm install</code> must also be run <strong>inside that same original folder</strong> — there is no separate "installed location" to go looking for.</p>
+</blockquote></li>
+<li><p><strong>Verify the install</strong> — inside the <strong>target project</strong> (the Next.js project from prerequisite #3), type:</p>
+<pre><code>/sodam-design-kit:setup</code></pre>
+<p>If this command appears in autocomplete and runs without error, the install succeeded.</p></li>
 </ol>
-<hr>
+<p><strong>How do you know it failed?</strong>: if you type the first few letters (<code>/sod</code>) and nothing appears in autocomplete, the install didn't take. See the first row of <a href="#11-troubleshooting">Section 11</a>.</p>
+<hr />
 <h2 id="4-quick-start-first-success-in-5-minutes">4. Quick Start (first success in 5 minutes)</h2>
-<p>Once prerequisites and installation are done, here&#39;s the fastest path to seeing a real result.</p>
+<p>Once prerequisites and installation are done, here's the fastest path to seeing a real result.</p>
 <p><strong>Step 1 — Initial setup (once per target project)</strong></p>
-<pre><code>/sodam-design-kit:setup
-</code></pre>
+<pre><code>/sodam-design-kit:setup</code></pre>
 <p>→ Success looks like: a message confirming <code>.design-kit/config.json</code> and <code>.design-kit/component-map.json</code> were created.</p>
 <p><strong>Step 2 — Run your first pipeline (when a component is already mapped)</strong></p>
-<pre><code>/sodam-design-kit:pipeline
-</code></pre>
-<p>→ When asked for a Figma link, paste a <strong>small, single-element</strong> Figma share link (its URL should contain <code>node-id=</code>).
-→ Success looks like: a final <code>PASS</code> verdict, plus a message that a report file was written to <code>.design-kit/reports/</code>.</p>
+<pre><code>/sodam-design-kit:pipeline</code></pre>
+<p>→ When asked for a Figma link, paste a <strong>small, single-element</strong> Figma share link (its URL should contain <code>node-id=</code>). → Success looks like: a final <code>PASS</code> verdict, plus a message that a report file was written to <code>.design-kit/reports/</code>.</p>
 <p><strong>Step 3 — Check the report</strong></p>
-<pre><code>.design-kit/reports/2026-XX-XX-XXX.md
-</code></pre>
+<pre><code>.design-kit/reports/2026-XX-XX-XXX.md</code></pre>
 <p>Open this file and confirm it contains <code>**PASS**</code> and three screenshot paths for 360px/768px/1440px. If you see that, real-browser verification genuinely completed.</p>
 <blockquote>
-<p>A <code>FAIL</code> result is also normal — it means the gate is working correctly. See <a href="#11-troubleshooting">Section 11</a>, &quot;It says &#39;completion blocked.&#39;&quot;</p>
+<p>A <code>FAIL</code> result is also normal — it means the gate is working correctly. See <a href="#11-troubleshooting">Section 11</a>, "It says 'completion blocked.'"</p>
 </blockquote>
-<hr>
+<p><strong>Step 4 (optional) — See everything you've made in one place</strong></p>
+<pre><code>/sodam-design-kit:open</code></pre>
+<p>→ A browser window (dashboard) opens automatically, showing your verification history, reports, and screenshots all in one place. When you're done, type <code>/sodam-design-kit:open --stop</code> in the chat to turn it off (it's harmless to leave running, but it's good practice to stop it when you're not using it).</p>
+<hr />
 <h2 id="5-how-to-run-use-and-operate-it">5. How to Run, Use, and Operate It</h2>
-<p>This kit runs from inside Claude Code via <strong>slash commands</strong> (commands starting with <code>/</code>). You don&#39;t need to type raw Node commands yourself (those are only used by the kit&#39;s own developers for self-testing — see <a href="./.PRD/04_PROJECT_SPEC.md"><code>.PRD/04_PROJECT_SPEC.md</code></a>, &quot;Test Method&quot;).</p>
+<p>This kit runs from inside Claude Code via <strong>slash commands</strong> (commands starting with <code>/</code>). You don't need to type raw Node commands yourself (those are only used by the kit's own developers for self-testing — see <a href="./.PRD/04_PROJECT_SPEC.md"><code>.PRD/04_PROJECT_SPEC.md</code></a>, "Test Method").</p>
 <h3 id="sodam-design-kitsetup--initial-setup"><code>/sodam-design-kit:setup</code> — initial setup</h3>
 <ul>
 <li><strong>Input</strong>: none (uses the current project folder automatically) / optional: a Figma file link</li>
-<li><strong>What it does</strong>: reads <code>components.json</code> (shadcn&#39;s own config) to locate your actual component folder, scans the <code>.tsx</code> files inside it, and writes <code>.design-kit/component-map.json</code>. It also creates <code>.design-kit/config.json</code> (default settings — 3 viewport sizes, 3 auto-retries, etc.).</li>
-<li><strong>How it behaves</strong>: run it <strong>once</strong> per project. If a config already exists it&#39;s skipped automatically; add <code>--force</code> to rescan (existing Figma mappings are preserved, and only newly found components are added).</li>
+<li><strong>What it does</strong>: reads <code>components.json</code> (shadcn's own config) to locate your actual component folder, scans the <code>.tsx</code> files inside it, and writes <code>.design-kit/component-map.json</code>. It also creates <code>.design-kit/config.json</code> (default settings — 3 viewport sizes, 3 auto-retries, etc.).</li>
+<li><strong>How it behaves</strong>: run it <strong>once</strong> per project. If a config already exists it's skipped automatically; add <code>--force</code> to rescan (existing Figma mappings are preserved, and only newly found components are added).</li>
 <li><strong>Success looks like</strong>: a completion message + a new <code>.design-kit/</code> folder.</li>
 </ul>
 <h3 id="sodam-design-kitpipeline--design--code--verification"><code>/sodam-design-kit:pipeline</code> — design → code → verification</h3>
 <ul>
 <li><strong>Input</strong>: a Figma share link (a direct page/node link, not a whole-file link — see <a href="#10-security--data-flow">Section 10</a>)</li>
 <li><strong>What it does</strong>: reads Figma → records the mapping in <code>component-map.json</code> → generates shadcn/ui code → auto-creates a preview route (<code>/design-kit-preview/{component}</code>) → auto-starts a dev server → runs real-browser verification (Playwright + axe-core + 3 viewports) → writes the report.</li>
-<li><strong>How it behaves</strong>: on <code>FAIL</code>, it retries automatically up to 3 times (two consecutive failures are required to finalize a <code>FAIL</code>). <strong>Both the &quot;reuse an already-mapped component&quot; path and the &quot;generate a brand-new component from scratch&quot; path have been verified end-to-end (PASS).</strong> Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. <code>#ff0000</code>) and refuses to place the file if it finds any (see <a href="#7-update-summary">Section 7</a>).</li>
+<li><strong>How it behaves</strong>: on <code>FAIL</code>, it retries automatically up to 3 times (two consecutive failures are required to finalize a <code>FAIL</code>). <strong>Both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch" path have been verified end-to-end (PASS).</strong> Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. <code>#ff0000</code>) and refuses to place the file if it finds any.</li>
 <li><strong>Success looks like</strong>: a report file in <code>.design-kit/reports/</code> containing <code>**PASS**</code>.</li>
+</ul>
+<h3 id="sodam-design-kitopen--view-the-verification-history-dashboard"><code>/sodam-design-kit:open</code> — view the verification-history dashboard</h3>
+<ul>
+<li><strong>Input</strong>: none / only <code>--stop</code> to shut it down</li>
+<li><strong>What it does</strong>: opens all your accumulated reports, run records, and screenshots in a human-friendly browser screen (a dashboard). From there you can click into a report's details, or hit a "re-verify" button to run the check again on the spot.</li>
+<li><strong>How it behaves</strong>: it's only reachable from your own computer (address <code>127.0.0.1</code>, meaning "this computer itself") — nobody else can reach it. If it's already running, it reuses the existing instance instead of starting a new one.</li>
+<li><strong>Success looks like</strong>: a browser window opens automatically, showing your list of reports.</li>
+</ul>
+<h3 id="sodam-design-kitdetail-page--product-detail-page-pipeline-phase-3"><code>/sodam-design-kit:detail-page</code> — product detail-page pipeline (Phase 3)</h3>
+<ul>
+<li><strong>Input</strong>: a product data file (CSV or JSON — a table-style file listing product names, features, etc.)</li>
+<li><strong>What it does</strong>: reads your product data → an AI writes marketing copy (title, key benefits, description, FAQ) → that copy is wired into detail-page code → the same verification gate (real-browser + accessibility + 3 viewport sizes) as everything else must pass.</li>
+<li><strong>How it behaves</strong>: instead of creating a brand-new page file for every product, it builds exactly one page template and stores each product's data separately (to prevent the file count from growing without bound).</li>
+<li><strong>Success looks like</strong>: same as the other commands — a report in <code>.design-kit/reports/</code> containing <code>**PASS**</code>.</li>
 </ul>
 <h3 id="p1-completion-verification-procedure-for-the-project-maintainer">P1 Completion Verification Procedure (for the project maintainer)</h3>
 <blockquote>
-<p>This is not something you do on every regular use — it&#39;s the <strong>final check that the kit actually works the same way from a brand-new session, from scratch</strong> (<a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9, Success Criteria 5 and 6). Follow these steps in a new Claude Code session, and this document alone is enough to reproduce it.</p>
+<p>This is not something you do on every regular use — it's the <strong>final check that the kit actually works the same way from a brand-new session, from scratch</strong> (<a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9, Success Criteria 5 and 6). Follow these steps in a new Claude Code session, and this document alone is enough to reproduce it.</p>
 </blockquote>
-<ol>
-<li><p><strong>Pick a target project</strong> — ideally one that has already run <code>/sodam-design-kit:setup</code> and already has a Figma mapping (so no fresh Figma call is needed, and the free 6-calls-per-month limit isn&#39;t touched).</p></li>
-<li><p><strong>Before running anything, check the current state of the reports folder</strong> and keep it as your baseline (PowerShell):</p>
-<pre><code>Get-ChildItem &quot;&lt;target project path&gt;\.design-kit\runs&quot; | Sort-Object Name | Select-Object -Last 3
-</code></pre>
-<p>Remember this file list — you&#39;ll compare against it afterward to confirm nothing was deleted.</p></li>
-<li><p>In Claude Code, run:</p>
-<pre><code>/sodam-design-kit:pipeline
-</code></pre>
-<p>Provide the target project&#39;s path and the Figma node (or let it use the existing mapping).</p></li>
-<li><p><strong>Success looks like this (all of the following must be true)</strong>:</p>
+<ol type="1">
+<li><strong>Pick a target project</strong> — ideally one that has already run <code>/sodam-design-kit:setup</code> and already has a Figma mapping (so no fresh Figma call is needed, and the free 6-calls-per-month limit isn't touched).</li>
+<li><strong>Before running anything, check the current state of the reports folder</strong> and keep it as your baseline (PowerShell):
+<div class="sourceCode" id="cb10"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;target project path&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
+Remember this file list — you'll compare against it afterward to confirm nothing was deleted.</li>
+<li>In Claude Code, run:
+<pre><code>/sodam-design-kit:pipeline</code></pre>
+Provide the target project's path and the Figma node (or let it use the existing mapping).</li>
+<li><strong>Success looks like this (all of the following must be true)</strong>:
 <ul>
-<li>The result includes <code>&quot;verdict&quot;: &quot;PASS&quot;</code></li>
+<li>The result includes <code>"verdict": "PASS"</code></li>
 <li><strong>One new report file</strong> appeared in <code>.design-kit\reports\</code></li>
 <li><strong>None of the existing files</strong> you noted in step 2 were removed (no overwrites)</li>
-<li>The agent did <strong>not</strong> write a throwaway script on the fly — verification and report-writing must complete together via a single <code>verify-runner.mjs --target ...</code> command (if it doesn&#39;t, the &quot;verification and report-writing merged into one command&quot; item in <a href="#7-update-summary">Section 7</a> isn&#39;t actually working)</li>
+<li>The agent did <strong>not</strong> write a throwaway script on the fly — verification and report-writing must complete together via a single <code>verify-runner.mjs --target ...</code> command</li>
 </ul></li>
-<li><p><strong>Always run this from PowerShell</strong> — in Git Bash, values starting with <code>/</code> (like <code>/design-kit-preview/...</code>) can get misinterpreted as a path. See <a href="#11-troubleshooting">Section 11, Troubleshooting</a>.</p></li>
+<li><strong>Always run this from PowerShell</strong> — in Git Bash, values starting with <code>/</code> (like <code>/design-kit-preview/...</code>) can get misinterpreted as a path. See <a href="#11-troubleshooting">Section 11, Troubleshooting</a>.</li>
 </ol>
-<hr>
+<hr />
 <h2 id="6-command-reference">6. Command Reference</h2>
 <table>
 <thead>
@@ -293,7 +388,8 @@ img { max-width: 100%; }
 <th>Current status</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td><code>/sodam-design-kit:setup</code></td>
 <td>Generates config.json and seeds component-map by scanning shadcn components</td>
 <td>none (optional: Figma file link)</td>
@@ -314,8 +410,16 @@ img { max-width: 100%; }
 <td>inside the target project</td>
 <td>✅ real background start/reuse/stop round-trip verified PASS</td>
 </tr>
-</tbody></table>
-<p>Commands for kit developers only (end users don&#39;t need these):</p>
+<tr>
+<td><code>/sodam-design-kit:detail-page</code></td>
+<td>Product data (CSV/JSON) → copy generation → detail-page code → the same verification gate (Phase 3)</td>
+<td>a product data file (CSV or JSON)</td>
+<td>inside the target (Next.js) project</td>
+<td>✅ verified PASS → FAIL (deliberate a11y violation) → back to PASS round-trip</td>
+</tr>
+</tbody>
+</table>
+<p>Commands for kit developers only (end users don't need these):</p>
 <table>
 <thead>
 <tr>
@@ -324,89 +428,224 @@ img { max-width: 100%; }
 <th>Run from</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td><code>npm install</code></td>
 <td>Installs the browser and accessibility tools used for verification (once only)</td>
-<td>this kit&#39;s own repository folder</td>
+<td>this kit's own repository folder</td>
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit&#39;s own automated tests (68 tests)</td>
-<td>this kit&#39;s own repository folder</td>
+<td>Runs the kit's own automated tests (206 as of 2026-08-10; the count may grow over time)</td>
+<td>this kit's own repository folder</td>
 </tr>
 <tr>
-<td><code>node scripts/e2e-selftest.mjs --fixture &lt;path&gt;</code></td>
+<td><code>npm run selftest</code> (= <code>node scripts/e2e-selftest.mjs</code>)</td>
 <td>Full self-check of the round-trip pipeline (PASS/FAIL/recheck)</td>
-<td>this kit&#39;s own repository folder</td>
+<td>this kit's own repository folder</td>
 </tr>
-</tbody></table>
-<hr>
+</tbody>
+</table>
+<hr />
 <h2 id="7-update-summary">7. Update Summary</h2>
+<blockquote>
+<p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
+</blockquote>
 <details open>
-<summary><b>▶ 2026-08-04 — Fixed 3 real defects found during live new-session testing + Phase 1 (MVP) officially complete (click to collapse)</b></summary><ul>
-<li><strong>Before declaring completion, the final gate (reproducing everything from a brand-new session) was actually attempted 4 times.</strong> In the process, 3 real defects that had never surfaced before were found and fixed during genuine live use.</li>
-<li><strong>① Screenshots being saved outside the project folder entirely (in an unrelated folder on the user&#39;s computer)</strong>: when the screenshot save path was given as a relative path, it could resolve to the wrong location depending on &quot;which folder the process happened to be running from.&quot; The report correctly said &quot;success,&quot; but the actual file wasn&#39;t inside the project at all. This is now always recalculated relative to the project folder.</li>
-<li><strong>② Screenshots being saved inside the project, but outside the <code>.design-kit/</code> folder this kit manages</strong>: a subtler issue found right after fixing ① — the files landed inside the project folder, but outside the <code>.design-kit/</code> folder this kit officially manages, so they were skipped by automatic cleanup and left somewhere that could accidentally get committed to git. Fixed by anchoring the save location to the <code>.design-kit/</code> folder itself.</li>
-<li><strong>③ Being asked for a Figma file link again even for an already-mapped component</strong>: the &quot;reuse&quot; path (reusing a component that&#39;s already linked) was designed to never need to call Figma again — but one step in the run procedure asked for a Figma link unconditionally, without checking whether a mapping already existed, so execution would stall even for components that were already fully connected. Fixed by adding a check at the very start of the procedure: &quot;if it&#39;s already mapped, skip straight past this.&quot;</li>
+<summary><b>▶ 2026-08-10 — Phase 3 launched: detail-page pipeline (click to collapse)</b></summary>
+
+<ul>
+<li>The precondition for Phase 3 (marketing assets + detail pages + a public-release review) — "Phase 1 and 2 are stable under the maintainer's own real-world use" — was confirmed through actual live testing (dashboard screenshots visibly rendering, and the re-verify button working correctly). With that confirmed, the <strong>detail-page pipeline</strong> was built as the first Phase 3 feature.</li>
+<li><strong>What it does</strong>: pick a product out of one product-data file (CSV or JSON), write marketing copy for it (title, key benefits, description, FAQ), wire that copy into detail-page code, and require the same verification gate (real-browser + accessibility + 3 viewport sizes) to pass before it's considered done.</li>
+<li><strong>Design principle</strong>: rather than creating a new page file per product, exactly one page template is created, and each product's data is stored separately — this kit had already flagged this phase, by its own design docs, as "the step most likely to create the most new files, and therefore the riskiest for regressions," so the design specifically avoids growing the file count.</li>
+<li><strong>Verified by real testing</strong>: dummy product data was added to a real fixture project and the whole flow was run end-to-end to confirm PASS; an accessibility defect (an image missing alt text) was deliberately injected to confirm the gate genuinely produces a FAIL; then it was reverted and confirmed to return to PASS.</li>
+<li>22 new automated tests were added (178 → 200), all passing. No new dependencies (<code>npm audit</code> stays at 0).</li>
+<li>A feature that automatically logs AI-generation history (AI-GENERATION-LOG.md) and the marketing-image pipeline are left for a future increment (out of scope this round).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-10 — First genuine live-usage test completed (click to expand)</b></summary>
+
+<ul>
+<li>For the first time, Phase 2 was tested not by "an AI checking against a fixture," but by <strong>the maintainer actually opening a fresh chat session and using it themselves</strong>: opening the dashboard with <code>/sodam-design-kit:open</code>, reading a report, clicking the re-verify button, and asking natural-language questions about the font and visual-regression features — all done directly, first-hand.</li>
+<li>In the process, one real defect was found: a report written by the self-check (<code>e2e-selftest</code>) never recorded which screen (route) it had originally checked, so the dashboard's "re-verify" button could never work on it again. It was fixed immediately and re-verified.</li>
+<li>Opening the dashboard and clicking through a report can now genuinely be called "confirmed by real use." However, the font-automation and visual-change-detection features themselves weren't switched on directly by command — they were answered about in natural language by the AI — so this doesn't yet count as a fully complete "confirmed by real use" for those two features specifically.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-10 — Fixed: dashboard screenshots were never actually visible in a real browser (click to expand)</b></summary>
+
+<ul>
+<li>The dashboard screen (declared "done" on 2026-08-09) turned out to have never properly shown its verification screenshots in a browser at all — this was only discovered this round by actually opening the real screen in a headless (invisible) browser.</li>
+<li>Two causes were stacked together: ① the image file path had a duplicated prefix, causing a "file not found (404)" error, and ② a security setting (CSP) didn't allow the special image format the screenshots used (<code>blob:</code>), so the browser blocked the image from displaying at all. Both failed "quietly" — the program didn't crash, the image just silently never appeared — which is why this had gone unnoticed until now.</li>
+<li>Before the fix (3 console errors) → each cause fixed and re-checked one at a time → after the fix (0 console errors, all 3 images confirmed showing real pixels on screen) — all confirmed directly. Automated tests grew from 175 to 178, all passing.</li>
+<li><strong>Lesson learned</strong>: a feature marked "verified complete" in the past may have only been checked at the data level, not by actually looking at real screen elements (like images) with human eyes. Going forward, anything screen-related will default to being checked with an invisible automated browser, down to real pixels.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-10 — Added: a check that automatically catches unregistered fonts (click to expand)</b></summary>
+
+<ul>
+<li>A new check was added that fails verification (FAIL) if a font file from an unknown source — one not officially registered by the project — is found mixed in (opt-in — turn it on with the <code>--fontGate</code> option when you want it).</li>
+<li><strong>Verified by real testing</strong>: an unregistered font file was deliberately added to a project and the check was run to confirm it actually produced a FAIL; the file was then removed and confirmed to return to PASS. Already-registered fonts (e.g. Pretendard) were confirmed to pass through without any false alarms.</li>
+<li>Automated tests grew from 157 to 172, all passing.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-09 — Fixed 2 real defects found during a comprehensive verification round (click to expand)</b></summary>
+
+<ul>
+<li>When the dashboard displayed a report, it was mistaking the "visual-regression" results section for an actual screenshot and trying to display it incorrectly — found and fixed.</li>
+<li>Also found and fixed: a corrupted screenshot file could crash the entire verification process. Now, one damaged file no longer halts the whole run.</li>
+<li>Automated tests grew from 155 to 157, all passing.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-09 — Added: automatically fetching and setting up Korean fonts (click to expand)</b></summary>
+
+<ul>
+<li>Previously, a Korean font had to be manually prepared and added to the project. Now this kit can pick from freely-usable, commercially-licensed open-source Korean fonts (Pretendard, Noto Sans KR), <strong>automatically download them, and set them up ready to use</strong> in the project.</li>
+<li>A ledger file (<code>ASSET-LEDGER.csv</code>) that automatically records which license each downloaded font uses was also introduced in this round — useful later if you ever need to confirm the terms under which a font was used.</li>
+<li><strong>Verified by real testing</strong>: an actual Pretendard font file (about 1.5MB) was genuinely downloaded from the internet, and running the same command again was confirmed not to re-download it (idempotent).</li>
+<li>Automated tests grew from 143 to 155, all passing.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-09 — Added: automatically detecting unintended visual changes (click to expand)</b></summary>
+
+<ul>
+<li>A feature was added that automatically compares screenshots, pixel by pixel, to catch unintended visual changes after a code edit (opt-in — turn it on with the <code>--visualRegression</code> option). It compares against a "baseline" screen a human has approved as correct; approving a baseline is only ever done by a human, deliberately (<code>--promoteBaseline</code>), and only for a screen that already passed verification (PASS).</li>
+<li><strong>Verified by real testing</strong>: after approving a baseline, making no changes correctly reported "identical"; deliberately changing a background color was correctly caught as "different" at all 3 viewport sizes, produced a FAIL, and generated a real diff image; reverting the change correctly returned it to "identical."</li>
+<li>Automated tests grew from 135 to 143, all passing.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-09 — Resolved one accessibility warning (click to expand)</b></summary>
+
+<ul>
+<li>The preview screens this kit auto-generates had a minor accessibility warning: "missing a page heading (<code>&lt;h1&gt;</code>)." A heading was added in a way that's invisible on screen but still recognized by screen readers, resolving it.</li>
+<li><strong>Verified by real testing</strong>: re-running verification confirmed the warning genuinely disappeared (1 → 0).</li>
+<li>Automated tests grew from 134 to 135, all passing.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-09 — Added the dashboard and the `/open` command (click to expand)</b></summary>
+
+<ul>
+<li>Until now, reports and run records existed only as files you had to open one at a time. Now, a single <code>/sodam-design-kit:open</code> command opens your whole verification history in a browser dashboard, and lets you trigger re-verification right there on the spot.</li>
+<li><strong>Safeguards</strong>: the dashboard is reachable only from your own computer (<code>127.0.0.1</code>) and needed no login or password to be made safe — several layers of protection (blocking path-traversal attempts, rejecting malformed requests, a lock that refuses re-verify requests while a pipeline is already running) were built alongside it, and each was tested by actually simulating the corresponding attack.</li>
+<li><strong>Verified by real testing</strong>: the full round trip was confirmed for real — starting the dashboard → the browser correctly showing the screen → reusing the existing instance instead of starting a duplicate → <code>--stop</code> genuinely shutting it down.</li>
+<li>Automated tests grew from 123 to 134, all passing.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-04 — Fixed 3 real defects found during live new-session testing + Phase 1 (MVP) officially complete (click to expand)</b></summary>
+
+<ul>
+<li><strong>Before declaring completion, the final gate (reproducing everything from a brand-new session) was actually attempted 4 times.</strong> In the process, 3 real defects that had never surfaced before were found and fixed during genuine live use:
+<ol type="1">
+<li><strong>Screenshots being saved outside the project folder entirely (in an unrelated folder on the user's computer)</strong>: when the screenshot save path was given as a relative path, it could resolve to the wrong location depending on "which folder the process happened to be running from." The report correctly said "success," but the actual file wasn't inside the project at all. This is now always recalculated relative to the project folder.</li>
+<li><strong>Screenshots being saved inside the project, but outside the <code>.design-kit/</code> folder this kit manages</strong>: a subtler issue found right after fixing #1 — the files landed inside the project folder, but outside the <code>.design-kit/</code> folder this kit officially manages, so they were skipped by automatic cleanup and left somewhere that could accidentally get committed to git. Fixed by anchoring the save location to the <code>.design-kit/</code> folder itself.</li>
+<li><strong>Being asked for a Figma file link again even for an already-mapped component</strong>: the "reuse" path (reusing a component that's already linked) was designed to never need to call Figma again — but one step in the run procedure asked for a Figma link unconditionally, without checking whether a mapping already existed, so execution would stall even for components that were already fully connected. Fixed by adding a check at the very start of the procedure: "if it's already mapped, skip straight past this."</li>
+</ol></li>
 <li><strong>After fixing all three, the fourth attempt finally succeeded completely</strong> — no throwaway glue code, no existing report deleted, and screenshots landed in exactly the right place, start to finish.</li>
 <li>With this, all 6 items in <a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 (Success Criteria) are now backed by real evidence, and <strong>Phase 1 (MVP) has been officially marked complete.</strong></li>
 <li>The automated test count remains 68 (this round was mostly documentation and procedure fixes), and all 68 pass.</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-27 — Fixed two minor issues found during a test/verification pass (click to expand)</b></summary><ul>
-<li><strong>The self-check command was silently pointing at the wrong thing</strong>: the kit maintainers&#39; <code>npm run selftest</code> command referenced an option that doesn&#39;t actually exist, so instead of running the real self-check (<code>scripts/e2e-selftest.mjs</code>) it just printed a usage message and stopped. <strong>End users never run this command themselves</strong> — this document has always instructed running <code>node scripts/e2e-selftest.mjs --fixture &lt;path&gt;</code> directly — so anyone following this document was never affected. It was still fixed immediately upon discovery, to point at the correct script.</li>
-<li><strong>A gap where screenshots could end up exposed to git if verification was run standalone, skipping the normal setup → pipeline order</strong>: following the documented order, the screenshot folder is automatically registered in <code>.gitignore</code>. But an alternate, exceptional path — running the verification step directly without ever running <code>setup</code> first (mainly used by the kit&#39;s own developers for testing) — was found, by direct reproduction, to skip that registration. The same registration logic was added to the report-writing code (<code>report-writer.mjs</code>) to close this gap. <strong>This path, too, never affected anyone following the documented order.</strong></li>
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Fixed two minor issues found during a test/verification pass (click to expand)</b></summary>
+
+<ul>
+<li><strong>The self-check command was silently pointing at the wrong thing</strong>: the kit maintainers' <code>npm run selftest</code> command referenced an option that doesn't actually exist, so instead of running the real self-check (<code>scripts/e2e-selftest.mjs</code>) it just printed a usage message and stopped. <strong>End users never run this command themselves</strong> — this document has always instructed running the correct script directly — so anyone following this document was never affected. It was still fixed immediately upon discovery, to point at the correct script.</li>
+<li><strong>A gap where screenshots could end up exposed to git if verification was run standalone, skipping the normal setup → pipeline order</strong>: following the documented order, the screenshot folder is automatically registered in <code>.gitignore</code>. But an alternate, exceptional path — running the verification step directly without ever running <code>setup</code> first (mainly used by the kit's own developers for testing) — was found, by direct reproduction, to skip that registration. The same registration logic was added to the report-writing code to close this gap. <strong>This path, too, never affected anyone following the documented order.</strong></li>
 <li>Both fixes leave the existing 66 automated tests unaffected — all 66 still pass.</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-27 — Added: more specific reasons when verification fails (click to expand)</b></summary><ul>
-<li>Previously, even when an accessibility check (axe-core) failed, the report only showed a count like &quot;1 critical violation&quot; — a person had to go dig up exactly what was wrong and why.</li>
-<li>Reports now include a &quot;violation details&quot; section with the specific rule name, description, and the exact screen element involved. This detail is also passed into the next automatic retry attempt, reducing repeated failures for the same underlying reason.</li>
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Added: more specific reasons when verification fails (click to expand)</b></summary>
+
+<ul>
+<li>Previously, even when an accessibility check (axe-core) failed, the report only showed a count like "1 critical violation" — a person had to go dig up exactly what was wrong and why.</li>
+<li>Reports now include a "violation details" section with the specific rule name, description, and the exact screen element involved. This detail is also passed into the next automatic retry attempt, reducing repeated failures for the same underlying reason.</li>
 <li>5 new automated tests were added, and all pass (61 → 66).</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-27 — Added: generating a brand-new component from scratch (click to expand)</b></summary><ul>
-<li>Until now, only the path that &quot;reuses&quot; a component already mapped from Figma had actually been verified — generating a brand-new component with no existing mapping was planned but not yet implemented.</li>
-<li>This path is now implemented and verified end-to-end. Before placing newly generated code into the project, it now <strong>automatically refuses to place it</strong> if color or spacing values are hardcoded as raw numbers (e.g. <code>#ff0000</code>, <code>12px</code>) — closing off any way for code that bypasses the project&#39;s own design tokens to sneak in.</li>
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Added: generating a brand-new component from scratch (click to expand)</b></summary>
+
+<ul>
+<li>Until now, only the path that "reuses" a component already mapped from Figma had actually been verified — generating a brand-new component with no existing mapping was planned but not yet implemented.</li>
+<li>This path is now implemented and verified end-to-end. Before placing newly generated code into the project, it now <strong>automatically refuses to place it</strong> if color or spacing values are hardcoded as raw numbers (e.g. <code>#ff0000</code>, <code>12px</code>) — closing off any way for code that bypasses the project's own design tokens to sneak in.</li>
 <li>8 new automated tests were added, and all pass (53 → 61).</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-27 — Fixed: verification could end up checking the wrong app entirely if another program was already using the same port (click to expand)</b></summary><ul>
-<li><strong>The most serious problem found — what got checked might not have been your project at all</strong>: this kit automatically avoids a busy port (e.g. 3000) and moves to the next one when starting its verification browser. However, <strong>it could mistakenly think a port was &quot;free&quot; even when another program (e.g. a dev server from a completely different project) was already using it.</strong> When that happened, the verification browser opened and checked <strong>that other program&#39;s screen instead of yours</strong>, yet still produced a report that looked exactly like it had checked your project.
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Fixed: verification could end up checking the wrong app entirely if another program was already using the same port (click to expand)</b></summary>
+
 <ul>
-<li>This was caught happening for real: an unrelated project&#39;s dev server was using port 3000, and the kit mistakenly treated that port as &quot;free&quot; and ended up checking that other program&#39;s screen.</li>
+<li><strong>The most serious problem found — what got checked might not have been your project at all</strong>: this kit automatically avoids a busy port (e.g. 3000) and moves to the next one when starting its verification browser. However, <strong>it could mistakenly think a port was "free" even when another program (e.g. a dev server from a completely different project) was already using it.</strong> When that happened, the verification browser opened and checked <strong>that other program's screen instead of yours</strong>, yet still produced a report that looked exactly like it had checked your project.
+<ul>
+<li>This was caught happening for real: an unrelated project's dev server was using port 3000, and the kit mistakenly treated that port as "free" and ended up checking that other program's screen.</li>
 <li>Fixed by switching to a more accurate way of checking whether a port is actually in use. With the other program still running on that port, a re-check confirmed the kit now correctly moves to the next port and <strong>checks only your own project</strong>.</li>
 <li>One new automated test was added so this can never quietly come back.</li>
 </ul></li>
 <li>Thanks to this fix, the automated test count is now <strong>53</strong>, with <strong>all 53 passing</strong> (verified by an actual run on 2026-07-27).</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-27 — Fixed: verification silently switched itself off when the folder path contained a space or non-English characters (click to expand)</b></summary><ul>
-<li><strong>The most important fix — &quot;completion blocking&quot; was disappearing silently</strong>: if the folder this kit is installed in contained a <strong>space</strong> (e.g. <code>My Projects</code>) or <strong>non-English characters</strong> (e.g. a Korean Windows account name, <code>C:\Users\홍길동\...</code>), the verification scripts <strong>did nothing at all and exited quietly</strong>. No error message appeared, so from the user&#39;s point of view it looked like everything had worked. When this happened in the completion-blocking hook (<code>hooks/verify-gate.mjs</code>), it meant <strong>a failing check could be reported as &quot;done&quot; with nothing to stop it</strong> — which removes the entire reason this kit exists. That is why it was fixed first.
+</details>
+
+<details>
+<summary><b>▶ 2026-07-27 — Fixed: verification silently switched itself off when the folder path contained a space or non-English characters (click to expand)</b></summary>
+
+<ul>
+<li><strong>The most important fix — "completion blocking" was disappearing silently</strong>: if the folder this kit is installed in contained a <strong>space</strong> (e.g. <code>My Projects</code>) or <strong>non-English characters</strong> (e.g. a Korean Windows account name, <code>C:\Users\홍길동\...</code>), the verification scripts <strong>did nothing at all and exited quietly</strong>. No error message appeared, so from the user's point of view it looked like everything had worked. When this happened in the completion-blocking hook (<code>hooks/verify-gate.mjs</code>), it meant <strong>a failing check could be reported as "done" with nothing to stop it</strong> — which removes the entire reason this kit exists. That is why it was fixed first.
 <ul>
 <li>Reproduced across three paths: folder with a space → off / folder with Korean characters → off / plain-English folder → working. After the fix, all three work.</li>
-<li>The pre-fix version was run directly from a Korean + space path and confirmed to print <strong>literally nothing</strong>; the fixed version prints a proper &quot;block&quot; verdict from the same location.</li>
+<li>The pre-fix version was run directly from a Korean + space path and confirmed to print <strong>literally nothing</strong>; the fixed version prints a proper "block" verdict from the same location.</li>
 <li>To make sure this can never quietly return, <strong>two new automated tests</strong> now run the real scripts from a folder that deliberately contains a space and Korean characters.</li>
 </ul></li>
-<li><strong>One automated test was actually failing</strong>: the docs claimed &quot;all 50 pass&quot;, but an actual run showed <strong>only 49 passing</strong>. The cause: one test was pinned to the date &quot;2026-07-20&quot;, so it passed <strong>only on the day it was written and broke the next day</strong>. Fixed by allowing the date to be injected (no impact on real-world usage).</li>
+<li><strong>One automated test was actually failing</strong>: the docs claimed "all 50 pass", but an actual run showed <strong>only 49 passing</strong>. The cause: one test was pinned to the date "2026-07-20", so it passed <strong>only on the day it was written and broke the next day</strong>. Fixed by allowing the date to be injected (no impact on real-world usage).</li>
 <li>Together these bring the automated test count from <strong>50 to 53</strong>, with <strong>all 53 passing</strong> (verified by an actual run on 2026-07-27).</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-20 — Unified verify+report command; fixed a data-loss bug (click to expand)</b></summary><ul>
-<li><strong>Unified verification and report-writing into a single command</strong>: Previously, the docs described &quot;run the real-browser check&quot; and &quot;record the result&quot; as separate steps, but the report-writing script had no command-line interface at all — so an AI agent had to write a throwaway glue script by hand every time. <code>verify-runner.mjs</code> now has a <code>--target</code> option so verification and report-writing complete in a single command.</li>
-<li><strong>Fixed a bug where recorded results could silently vanish</strong>: The sequence number used in report filenames was calculated as &quot;how many files currently exist,&quot; so deleting any one file in the middle of the sequence caused the next number to collide with an already-existing file — silently overwriting and destroying a different run&#39;s results (confirmed via real reproduction). It&#39;s now calculated as &quot;the actual highest existing number + 1,&quot; and two new automated tests reproduce this exact scenario to guard against regression.</li>
+</details>
+
+<details>
+<summary><b>▶ 2026-07-20 — Unified verify+report command; fixed a data-loss bug (click to expand)</b></summary>
+
+<ul>
+<li><strong>Unified verification and report-writing into a single command</strong>: Previously, the docs described "run the real-browser check" and "record the result" as separate steps, but the report-writing script had no command-line interface at all — so an AI agent had to write a throwaway glue script by hand every time. <code>verify-runner.mjs</code> now has a <code>--target</code> option so verification and report-writing complete in a single command.</li>
+<li><strong>Fixed a bug where recorded results could silently vanish</strong>: The sequence number used in report filenames was calculated as "how many files currently exist," so deleting any one file in the middle of the sequence caused the next number to collide with an already-existing file — silently overwriting and destroying a different run's results (confirmed via real reproduction). It's now calculated as "the actual highest existing number + 1," and two new automated tests reproduce this exact scenario to guard against regression.</li>
 <li>Thanks to these two fixes, the automated test count grew from 48 to 50, and all of them pass.</li>
 </ul>
-</details><details>
-<summary><b>▶ 2026-07-20 — Core Phase 1 features completed (click to expand)</b></summary><ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-07-20 — Core Phase 1 features completed (click to expand)</b></summary>
+
+<ul>
 <li>Implemented all core scripts: initial setup (setup), design-to-code generation (pipeline-codegen), automatic preview-route creation (preview-route), real-browser verification (verify-runner), report-writing (report-writer), and the completion-blocking hook (verify-gate).</li>
 <li>Verified end-to-end with a real Figma Community file (Coffee Shop Mobile App) — reading one screen, generating code from it, and passing real-browser verification (PASS).</li>
 <li>Confirmed the same install-and-run flow works starting from a completely new session (though that check happened on the version <em>before</em> the fixes above — re-confirming with the fixed version is still an open step).</li>
 </ul>
-</details><blockquote>
-<p>Future changes will keep being appended here, in date order. The authoritative full history lives in <a href="./.PRD/README.md"><code>.PRD/README.md</code></a> (audit log).</p>
+</details>
+
+<blockquote>
+<p>Future changes will keep being appended here, in date order. The authoritative full history (including internal audit records) lives in <a href="./.PRD/README.md"><code>.PRD/README.md</code></a>.</p>
 </blockquote>
-<hr>
+<hr />
 <h2 id="8-workflow">8. Workflow</h2>
 <pre><code>User                    Claude Code (AI)              This kit&#39;s code
   │                        │                             │
@@ -424,7 +663,7 @@ img { max-width: 100%; }
   │                        │◀── generated .tsx file(s) ──────┤
   │                        │                             │
   │                        │  Auto-start a dev server           │
-  │                        │  → open in a real browser (Playwright)
+  │                        │  → open in an automated browser (Playwright)
   │                        │  → accessibility check (axe-core)   │
   │                        │  → check at 360px, 768px, 1440px    │
   │                        │◀── PASS or FAIL verdict ────────┤
@@ -438,59 +677,63 @@ img { max-width: 100%; }
   │   │ &quot;done&quot; is       │   │   final FAIL)                      │
   │   │ blocked by the  │   │                             │
   │   │ hook            │   │                             │
-  │   └───────────────┘   │                             │
-</code></pre>
-<p>The key point is the final fork: <strong><code>hooks/verify-gate.mjs</code> mechanically prevents the word &quot;done&quot; without a PASS report</strong> — even if the AI forgets, or tries to cut corners.</p>
-<hr>
+  │   └───────────────┘   │                             │</code></pre>
+<p>The key point is the final fork: <strong><code>hooks/verify-gate.mjs</code> mechanically prevents the word "done" without a PASS report</strong> — even if the AI forgets, or tries to cut corners.</p>
+<hr />
 <h2 id="9-architecture--filedocument-locations">9. Architecture &amp; File/Document Locations</h2>
-<h3 id="this-kits-own-repository-structure">This kit&#39;s own repository structure</h3>
+<h3 id="this-kits-own-repository-structure">This kit's own repository structure</h3>
 <pre><code>SoDam-Design-Kit/                     ← this kit&#39;s repository (where this README lives)
 ├── .claude-plugin/
 │   ├── plugin.json                   ← plugin manifest (name, version)
 │   └── marketplace.json              ← marketplace registration (marketplace name: sodam)
 ├── commands/
 │   ├── setup.md                      ← the actual definition of /sodam-design-kit:setup
-│   └── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
+│   ├── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
+│   ├── open.md                       ← the actual definition of /sodam-design-kit:open
+│   └── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
 ├── hooks/
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
-├── scripts/                          ← the actual engine, all Node.js
+├── scripts/                          ← the actual engine, all Node.js (representative examples — see scripts/ for the full list)
 │   ├── setup-wizard.mjs
 │   ├── pipeline-codegen.mjs
+│   ├── detail-page-pipeline.mjs      ← detail-page pipeline engine (Phase 3)
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
-│   └── report-writer.mjs
-├── tests/                            ← automated tests (68)
+│   ├── report-writer.mjs
+│   ├── font-pipeline.mjs             ← automatic Korean font download/setup engine
+│   └── visual-regression.mjs         ← automatic visual-change detection engine
+├── tests/                            ← automated tests (206 as of 2026-08-10)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
-├── CHECKPOINT.md                     ← the next tasks to pick up
+├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
-└── package.json
-</code></pre>
+└── package.json</code></pre>
 <h3 id="what-appears-inside-the-target-project-where-code-gets-generated">What appears inside the target project (where code gets generated)</h3>
 <p>Running <code>/sodam-design-kit:setup</code> inside your <strong>target project</strong> creates exactly one new folder, <code>.design-kit/</code>:</p>
 <pre><code>(target project)/.design-kit/
 ├── config.json               ← settings like viewport sizes and retry count (deletable — `setup` recreates it)
 ├── component-map.json        ← the mapping between components and Figma nodes (deleting this loses your mapping — be careful)
+├── product-pages.json        ← 1 detail-page template + the list of product data locations (Phase 3, /sodam-design-kit:detail-page)
 ├── runs/*.json                ← run records (the machine-readable source of the verdict) — meant to be committed to git
 ├── reports/*.md                ← human-readable reports — meant to be committed to git
-└── reports/screenshots/       ← verification screenshots — only the most recent 10 runs are kept automatically (older ones are auto-deleted)
-</code></pre>
+└── reports/screenshots/       ← verification screenshots — only the most recent 10 runs are kept automatically (older ones are auto-deleted)</code></pre>
 <blockquote>
-<p><strong>Safe to delete</strong>: <code>reports/screenshots/</code> (regenerated automatically). <strong>Do not delete</strong>: <code>component-map.json</code> (recreating it means reading Figma again, and the free Figma plan only allows 6 reads a month — see <a href="#10-security--data-flow">Section 10</a>).</p>
+<p>The list above is representative (Phase 2 also added <code>fonts/</code>, <code>ASSET-LEDGER.csv</code>, <code>.api-token</code>, <code>.lock</code>, <code>.dashboard.json</code>, <code>reports/baseline/</code>, etc. — <a href="./.PRD/02_DATA_MODEL.md"><code>.PRD/02_DATA_MODEL.md</code></a> is the authoritative source). <strong>Safe to delete</strong>: <code>reports/screenshots/</code> (regenerated automatically). <strong>Do not delete</strong>: <code>component-map.json</code> (recreating it means reading Figma again, and the free Figma plan only allows 6 reads a month — see <a href="#10-security--data-flow">Section 10</a>).</p>
 </blockquote>
-<hr>
+<hr />
 <h2 id="10-security--data-flow">10. Security &amp; Data Flow</h2>
 <p><strong>No exaggeration — just the facts.</strong></p>
 <ul>
-<li><strong>What leaves your computer</strong>: read requests to Figma&#39;s servers (using your own Figma login, for only the design pages you specify). Nothing else is sent to any server by this kit. Login credentials (tokens, etc.) are never stored by the kit&#39;s own code — it reuses whatever Figma connector/official MCP login is already set up in Claude Code.</li>
+<li><strong>What leaves your computer</strong>: read requests to Figma's servers (using your own Figma login, for only the design pages you specify). Nothing else is sent to any server by this kit. Login credentials (tokens, etc.) are never stored by the kit's own code — it reuses whatever Figma connector/official MCP login is already set up in Claude Code.</li>
 <li><strong>What stays local (on your computer only)</strong>: the generated code, and everything inside <code>.design-kit/</code> — settings, mappings, run records, and screenshots. All of it lives only on your local disk and is never transmitted anywhere.</li>
 <li><strong>Figma image URLs expire after 7 days</strong>: URLs Figma returns for images/icons are temporary and break after 7 days. This kit is designed to download them locally right away instead of embedding the temporary URL directly in generated code.</li>
 <li><strong>Figma free-plan read limits</strong>: if your own Figma account is on the free (Starter/View) plan, you get only <strong>6 reads per month</strong> (paid Dev/Full plans get 200–600 per day). This kit is designed to save what it reads into <code>component-map.json</code> and reuse it, to conserve that limit.</li>
-<li><strong>No personal data or real customer data allowed</strong>: this kit&#39;s rules (the &quot;Do Not&quot; list in <a href="./.PRD/04_PROJECT_SPEC.md"><code>.PRD/04_PROJECT_SPEC.md</code></a>) prohibit connecting Figma files that contain personal information or real customer data. Only dummy/sample design data should be used.</li>
+<li><strong>No personal data or real customer data allowed</strong>: this kit's rules (the "Do Not" list in <a href="./.PRD/04_PROJECT_SPEC.md"><code>.PRD/04_PROJECT_SPEC.md</code></a>) prohibit connecting Figma files or product data that contain personal information or real customer data. Only dummy/sample data should be used, for both designs and product data.</li>
 <li><strong>How external commands are run</strong>: when running things like the dev server, this kit only spawns processes with an argument array — it never concatenates strings into a shell command (which would risk command injection).</li>
+<li><strong>The dashboard (<code>/open</code>) is only reachable from your own computer</strong>: it's bound to <code>127.0.0.1</code> (an address meaning "this computer, and only this computer"), so no one else can reach it over the internet. Path-traversal protection, rejection of malformed requests, and a lock that blocks concurrent access are all implemented, and each was confirmed by actually simulating an attack against it.</li>
 <li><strong>No sensitive data in reports</strong>: reports and run records are designed — and automated-tested — to never contain secrets (passwords, tokens) or absolute paths from your computer.</li>
-<li><strong>No API keys (currently)</strong>: the current version (Phase 1) needs no separate API keys or environment variables. If a future feature adds paid image-generation APIs (Phase 3, still just a plan), those will be managed exclusively through a <code>.env</code> file.</li>
+<li><strong>No API keys (currently)</strong>: the current version needs no separate API keys or environment variables. If a future feature adds paid image-generation APIs (later in Phase 3, still just a plan), those will be managed exclusively through a <code>.env</code> file.</li>
 </ul>
-<hr>
+<hr />
 <h2 id="11-troubleshooting">11. Troubleshooting</h2>
 <table>
 <thead>
@@ -501,15 +744,16 @@ img { max-width: 100%; }
 <th>Success looks like</th>
 </tr>
 </thead>
-<tbody><tr>
-<td>Installed, but <code>/sodam-design-kit:setup</code> doesn&#39;t show up</td>
+<tbody>
+<tr>
+<td>Installed, but <code>/sodam-design-kit:setup</code> doesn't show up</td>
 <td>Claude Code is still using a cached, stale view of installed plugins</td>
 <td><strong>Fully close and reopen</strong> Claude Code (not a refresh — a complete restart)</td>
 <td>The command appears in autocomplete when typing <code>/</code></td>
 </tr>
 <tr>
-<td>&quot;Completion has been blocked&quot; appears</td>
-<td><strong>This is expected behavior.</strong> The verification gate detected a <code>FAIL</code> and is deliberately preventing a report of &quot;done&quot;</td>
+<td>"Completion has been blocked" appears</td>
+<td><strong>This is expected behavior.</strong> The verification gate detected a <code>FAIL</code> and is deliberately preventing a report of "done"</td>
 <td>Open the latest report in <code>.design-kit/reports/</code> to see why it failed → retry, or investigate manually</td>
 <td>The report clearly states a specific reason for failure</td>
 </tr>
@@ -517,24 +761,24 @@ img { max-width: 100%; }
 <td><code>FAIL</code> keeps repeating</td>
 <td>The problem may not be fixable by the automatic retries (max 3)</td>
 <td>Read the failure reason in the report (accessibility violations, console errors) yourself. <code>gateEnabled</code> should only ever be changed by you, directly, in <code>.design-kit/config.json</code></td>
-<td>A retry turns into <code>PASS</code>, or you&#39;ve identified the root cause</td>
+<td>A retry turns into <code>PASS</code>, or you've identified the root cause</td>
 </tr>
 <tr>
-<td>Figma won&#39;t connect, or reads seem insufficient</td>
+<td>Figma won't connect, or reads seem insufficient</td>
 <td>The connector login may have expired, or you may need the official MCP</td>
-<td>Check the connector&#39;s login status → switch to the official remote MCP (<code>mcp.figma.com/mcp</code>) if needed</td>
+<td>Check the connector's login status → switch to the official remote MCP (<code>mcp.figma.com/mcp</code>) if needed</td>
 <td>A Figma read request returns results normally</td>
 </tr>
 <tr>
-<td>A <code>.fig</code> file saved on my computer won&#39;t open</td>
+<td>A <code>.fig</code> file saved on my computer won't open</td>
 <td>The Figma connector/MCP can only read files <strong>saved to a Figma account</strong> — it cannot read local files directly</td>
 <td>Open that file in the Figma desktop app to save it to your account, then use its share link</td>
 <td>The share link reads successfully</td>
 </tr>
 <tr>
-<td>It says shadcn or Playwright (the verification browser) isn&#39;t installed</td>
-<td>The target project lacks shadcn/ui, or <code>npm install</code> wasn&#39;t run in this kit&#39;s own repo</td>
-<td>If it&#39;s shadcn, follow the prompt asking whether to run <code>npx shadcn init</code>; if it&#39;s Playwright, re-run <code>npm install</code> inside this kit&#39;s repository folder</td>
+<td>It says shadcn or Playwright (the verification browser) isn't installed</td>
+<td>The target project lacks shadcn/ui, or <code>npm install</code> wasn't run in this kit's own repo</td>
+<td>If it's shadcn, follow the prompt asking whether to run <code>npx shadcn init</code>; if it's Playwright, re-run <code>npm install</code> inside this kit's repository folder</td>
 <td>The command runs normally after the prompted install finishes</td>
 </tr>
 <tr>
@@ -545,44 +789,63 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td>On Windows, passing an option like <code>--route /...</code> (starting with <code>/</code>) produces a strange result</td>
-<td>A Git Bash (MSYS) environment quirk mangles values starting with <code>/</code> into file paths (not a defect in this kit&#39;s code — a note for developers)</td>
+<td>A Git Bash (MSYS) environment quirk mangles values starting with <code>/</code> into file paths (not a defect in this kit's code — a note for developers)</td>
 <td>Use PowerShell instead</td>
 <td>Verification returns a correct result</td>
 </tr>
 <tr>
 <td>Korean text (or other non-Latin text) renders as broken boxes (□)</td>
-<td>No font has been explicitly loaded yet</td>
-<td>Currently out of scope for Phase 1 (an automatic font pipeline is planned for later) — check the target project&#39;s own font setup for now</td>
-<td>(expected to be resolved automatically in a future version)</td>
+<td>The project doesn't have a Korean font set up yet</td>
+<td>Ask a developer to run the <code>font-pipeline</code> feature (auto-sets up Pretendard, etc.) — regular users only need to follow the normal setup/pipeline flow</td>
+<td>Text displays correctly</td>
 </tr>
-</tbody></table>
-<hr>
+<tr>
+<td>The dashboard (<code>/open</code>) won't start, or the page is blank</td>
+<td>Another instance is already running, or <code>npm install</code> was never run in this kit's own repo</td>
+<td>Run <code>/sodam-design-kit:open --stop</code> once to shut it down, then start it again. If that doesn't help, re-run <code>npm install</code></td>
+<td>The browser correctly shows your list of reports</td>
+</tr>
+<tr>
+<td>I'm not used to typing commands</td>
+<td>Totally understandable if computers or chat-style tools are new to you</td>
+<td>Read the <a href="#0-before-you-start-key-terms-in-5-minutes">glossary in Section 0</a> first, then follow <a href="#4-quick-start-first-success-in-5-minutes">Section 4, Quick Start</a> one line at a time, exactly as written</td>
+<td>Each step's stated "success looks like" outcome appears as described</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="12-faq">12. FAQ</h2>
-<p><strong>Q. Can I use this if I don&#39;t know how to code at all?</strong>
-A. Running the commands themselves only requires knowing two slash commands (<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>). That said, the &quot;target project&quot; (Next.js + Tailwind + shadcn/ui) needs to already exist. Everything else can be requested from the AI in plain language.</p>
-<p><strong>Q. Do I need a paid Figma plan?</strong>
-A. No, the free (Starter) plan works. It&#39;s limited to 6 reads per month (see <a href="#10-security--data-flow">Section 10</a>). This kit is built to cache what it reads and reuse it, so you can still run the pipeline multiple times within that limit.</p>
-<p><strong>Q. If verification fails (FAIL), does that mean my code is broken?</strong>
-A. Not necessarily. It could be an accessibility rule violation, a console error, a rendering failure, or something else — and the report will state the specific reason. A failure is also evidence that this kit is checking things correctly.</p>
-<p><strong>Q. Can I edit the generated code myself?</strong>
-A. Yes — the generated code becomes a regular file in your own project, and you&#39;re free to modify it. Re-running the pipeline will re-verify it.</p>
-<p><strong>Q. Can I use this commercially, or share/redistribute it?</strong>
-A. <strong>Yes, under the terms of the Apache License 2.0</strong> (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the &quot;SoDam-Design-Kit&quot; name or trademark itself. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> below carefully.</p>
-<p><strong>Q. Does this work on Windows/Mac/Linux?</strong>
-A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is <strong>Windows</strong>. Real-world verification on Mac/Linux has not yet been performed.</p>
-<hr>
+<p><strong>Q. Can I use this if I don't know how to code at all?</strong> A. Running the commands themselves only requires knowing a few slash commands (<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code>, etc.). That said, the "target project" (Next.js + Tailwind + shadcn/ui) needs to already exist. Everything else can be requested from the AI in plain language.</p>
+<p><strong>Q. I'm genuinely new to computers, messaging apps, and AI — can I still get started?</strong> A. Read the <a href="#0-before-you-start-key-terms-in-5-minutes">glossary in Section 0</a> first, then follow <a href="#4-quick-start-first-success-in-5-minutes">Section 4, Quick Start</a> exactly as written. Being honest, though: this is a developer tool, so parts of it (installing Node.js, using a terminal) still require some basic computer familiarity — it will go a lot more smoothly with someone nearby who can help, rather than going it alone with zero technical background, especially for setting up the target project mentioned in prerequisite #3.</p>
+<p><strong>Q. Do I need a paid Figma plan?</strong> A. No, the free (Starter) plan works. It's limited to 6 reads per month (see <a href="#10-security--data-flow">Section 10</a>). This kit is built to cache what it reads and reuse it, so you can still run the pipeline multiple times within that limit.</p>
+<p><strong>Q. If verification fails (FAIL), does that mean my code is broken?</strong> A. Not necessarily. It could be an accessibility rule violation, a console error, a rendering failure, or something else — and the report will state the specific reason. A failure is also evidence that this kit is checking things correctly.</p>
+<p><strong>Q. Can I edit the generated code myself?</strong> A. Yes — the generated code becomes a regular file in your own project, and you're free to modify it. Re-running the pipeline will re-verify it.</p>
+<p><strong>Q. Can I use this commercially, or share/redistribute it?</strong> A. <strong>Yes, under the terms of the Apache License 2.0</strong> (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the "SoDam-Design-Kit" name or trademark itself. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> carefully.</p>
+<p><strong>Q. Can I sell, or deliver to a client, things this kit produces (like a detail page)?</strong> A. This kit's own license doesn't stop you from doing that. But the <strong>copyright of the original Figma design</strong>, <strong>the source of any product data</strong>, and <strong>the legal status of AI-generated code/copy</strong> are separate questions from this kit's license, and are entirely your own responsibility — each is explained in detail in <a href="#13-legal-copyright-license--commercial-use">Section 13</a>.</p>
+<p><strong>Q. Does this work on Windows/Mac/Linux?</strong> A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is <strong>Windows</strong>. Real-world verification on Mac/Linux has not yet been performed.</p>
+<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.1.0 (pre-release)</strong>. The core features (Phase 1, Phase 2, and the first Phase 3 feature) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
+<hr />
 <h2 id="13-legal-copyright-license--commercial-use">13. Legal, Copyright, License &amp; Commercial Use</h2>
 <blockquote>
-<p>⚠️ This section is <strong>not legal advice and carries no legal guarantee.</strong> It is provided for reference only, and anything not yet finalized is clearly marked &quot;undecided&quot; below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.</p>
+<p>⚠️ <strong>Read this summary first</strong>: this kit itself <strong>can</strong> be used commercially and redistributed (Apache License 2.0). But legal responsibility for what you <em>produce</em> with this kit — code, copy, images — is a separate matter, and is <strong>entirely your own responsibility</strong>. This section is <strong>not legal advice and carries no legal guarantee.</strong> Anything not yet finalized is clearly marked "undecided" below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.</p>
 </blockquote>
 <h3 id="license-for-sodam-design-kit-itself--apache-license-20-finalized-2026-08-09">License for SoDam-Design-Kit itself — <strong>Apache License 2.0 (finalized 2026-08-09)</strong></h3>
 <ul>
 <li><strong>Current status (confirmed fact)</strong>: a <code>LICENSE</code> file (full text of Apache License 2.0) exists at the repository root. The copyright holder is <strong>SoDam AI Studio</strong>, year 2026.</li>
-<li><strong>What this means</strong>: Apache License 2.0 is a permissive license that allows use, copying, modification, redistribution, and commercial use of the code and documentation. It requires that you include a copy of the license, mark any modified files as changed, and preserve the original copyright/patent/trademark notices (see Section 4 of the license text). <strong>Rights to the &quot;SoDam-Design-Kit&quot; name or trademark are not granted by this license.</strong></li>
+<li><strong>What this means</strong>: Apache License 2.0 is a permissive license that allows use, copying, modification, redistribution, and commercial use of the code and documentation. It requires that you include a copy of the license, mark any modified files as changed, and preserve the original copyright/patent/trademark notices (see Section 4 of the license text). <strong>Rights to the "SoDam-Design-Kit" name or trademark are not granted by this license</strong> (see Section 6 of the license text — the trademark clause).</li>
 <li>No separate NOTICE file is included (this is a new work with no upstream NOTICE to carry forward).</li>
+<li><strong>No warranty, limited liability (license text, Sections 7–8)</strong>: this kit is provided "AS IS," with no guarantee of fitness for a particular purpose or freedom from defects. The creator is not liable for any damages (direct, indirect, special, or incidental) arising from its use.</li>
+</ul>
+<h3 id="things-you-must-not-do-strict-standard--clearly-prohibited">Things you must not do (strict standard — clearly prohibited)</h3>
+<ul>
+<li>❌ Redistributing under the <strong>"SoDam-Design-Kit" name or logo as if it were your own creation</strong> (the license permits using the code, but does not grant naming or trademark rights)</li>
+<li>❌ <strong>Removing or hiding</strong> the copyright/license notices or the <code>LICENSE</code> file when redistributing</li>
+<li>❌ Redistributing modified files <strong>without marking that they were changed</strong>, as if they were the unmodified original</li>
+<li>❌ Reading and commercially using someone else's Figma design <strong>without proper authorization</strong> (copyright in the original design belongs to whoever created it, entirely independent of this kit)</li>
+<li>❌ Connecting Figma files or product data that contain personal information or real customer data to this kit (see <a href="#10-security--data-flow">Section 10</a>)</li>
 </ul>
 <h3 id="licenses-of-open-source-components-used-internally--confirmed-by-direct-inspection">Licenses of open-source components used internally — confirmed by direct inspection</h3>
-<p>Separately from this kit&#39;s own license, the open-source libraries it uses internally for verification are governed by their own respective licenses, and <strong>this kit uses them unmodified, as installed dependencies only.</strong></p>
+<p>Separately from this kit's own license, the open-source libraries it uses internally for verification are governed by their own respective licenses, and <strong>this kit uses them unmodified, as installed dependencies only.</strong></p>
 <table>
 <thead>
 <tr>
@@ -591,10 +854,11 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 <th>Purpose</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>Playwright / playwright-core</td>
 <td>Apache License 2.0 (confirmed by direct inspection)</td>
-<td>Launches a real browser to check rendering</td>
+<td>Launches an automated browser to check rendering</td>
 </tr>
 <tr>
 <td>axe-core / @axe-core/playwright</td>
@@ -604,19 +868,24 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 <tr>
 <td>pixelmatch</td>
 <td>ISC License (confirmed by direct inspection)</td>
-<td>Pixel-level image comparison for visual regression checks</td>
+<td>Pixel-level image comparison for automatic visual-change detection</td>
 </tr>
 <tr>
 <td>pngjs</td>
 <td>MIT License (confirmed by direct inspection)</td>
-<td>PNG image read/write for visual regression checks</td>
+<td>PNG image read/write for automatic visual-change detection</td>
 </tr>
-</tbody></table>
-<p>These licenses are granted independently by their respective projects and are unrelated to this kit&#39;s own license. If you want to use these components directly yourself, check their original license text.</p>
+</tbody>
+</table>
+<p>These licenses are granted independently by their respective projects and are unrelated to this kit's own license. If you want to use these components directly yourself, check their original license text.</p>
+<h3 id="licenses-of-fonts-this-kit-downloads-automatically">Licenses of fonts this kit downloads automatically</h3>
+<p>The "Korean font automation" feature described in <a href="#7-update-summary">Section 7</a> only auto-downloads fonts from a pre-approved whitelist under the open-source <strong>OFL (SIL Open Font License)</strong> — currently Pretendard and Noto Sans KR. OFL permits modifying, redistributing, and commercially using the font, but <strong>prohibits selling the font file itself as a standalone product</strong>. The license basis for each downloaded font is automatically recorded in the target project's <code>ASSET-LEDGER.csv</code>.</p>
 <h3 id="responsibility-for-figma-design-data">Responsibility for Figma design data</h3>
 <p>This kit only reads designs you personally have access to, through your own Figma account, and never redistributes, stores, or transmits Figma design data itself elsewhere. However, <strong>whether you have the right (copyright) to turn a given design into code is entirely your own responsibility</strong> — copyright in the original design belongs to whoever created it (or their organization), and this kit does not verify or guarantee that relationship on your behalf.</p>
-<h3 id="responsibility-for-ai-generated-code">Responsibility for AI-generated code</h3>
-<p>The code this kit generates is produced by Claude (an AI). <strong>Copyright attribution and the scope of protection for AI-generated works is an area where legal interpretation still varies by country and remains unsettled.</strong> Before using generated code commercially, please seek expert confirmation at your own responsibility if needed. This kit and its documentation provide no legal guarantee regarding this.</p>
+<h3 id="responsibility-for-product-data-and-ai-written-copy-phase-3-sodam-design-kitdetail-page">Responsibility for product data and AI-written copy (Phase 3, <code>/sodam-design-kit:detail-page</code>)</h3>
+<p>The detail-page copy this feature produces (titles, descriptions, FAQs, etc.) is written by an AI, based on the product data you provide as input. <strong>This kit does not judge the factual accuracy of that product information, whether the copy is exaggerated, or whether it complies with advertising/labeling laws in your jurisdiction. Before publishing any such copy commercially, you must personally fact-check and review it.</strong></p>
+<h3 id="responsibility-for-ai-generated-code-and-copy">Responsibility for AI-generated code and copy</h3>
+<p>The code and copy this kit generates are produced by Claude (an AI). <strong>Copyright attribution and the scope of protection for AI-generated works is an area where legal interpretation still varies by country and remains unsettled.</strong> Before using generated code or copy commercially, please seek expert confirmation at your own responsibility if needed. This kit and its documentation provide no legal guarantee regarding this.</p>
 <h3 id="summary-table-apache-license-20-standard">Summary table (Apache License 2.0 standard)</h3>
 <table>
 <thead>
@@ -625,7 +894,8 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 <th>Currently allowed?</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>Personal use by the creator</td>
 <td>✅ Allowed</td>
 </tr>
@@ -646,29 +916,42 @@ A. This kit is built with Node.js scripts, so in principle it should run on all 
 <td>✅ Allowed — same conditions apply</td>
 </tr>
 <tr>
-<td>Distributing under the &quot;SoDam-Design-Kit&quot; name/trademark as-is</td>
-<td>⚠️ Not recommended — the license permits code use but does not grant naming/trademark rights</td>
+<td>Distributing under the "SoDam-Design-Kit" name/trademark as-is</td>
+<td>❌ Prohibited — the license permits code use but does not grant naming/trademark rights</td>
 </tr>
 <tr>
-<td>Using code <strong>generated by</strong> this kit in your own project</td>
-<td>✅ Allowed — but confirming the copyright of the source Figma design is your responsibility</td>
+<td>Removing copyright/license notices and redistributing</td>
+<td>❌ Prohibited (license violation)</td>
+</tr>
+<tr>
+<td>Using code/copy <strong>generated by</strong> this kit in your own project or product</td>
+<td>✅ Allowed — but confirming the source Figma design's copyright and the factual accuracy of product information is your responsibility</td>
+</tr>
+<tr>
+<td>Taking someone else's Figma design without authorization and using it commercially</td>
+<td>❌ Regardless of this kit's license, this can infringe the original designer's rights (your responsibility)</td>
 </tr>
 <tr>
 <td>Using the open-source components this kit relies on (Playwright, axe-core, pixelmatch, pngjs) directly, on your own</td>
-<td>✅ Allowed, under each project&#39;s own license (Apache-2.0 / MPL-2.0 / ISC / MIT)</td>
+<td>✅ Allowed, under each project's own license (Apache-2.0 / MPL-2.0 / ISC / MIT)</td>
 </tr>
-</tbody></table>
-<p><strong>No warranty, limited liability</strong>: this kit and its documentation are provided &quot;as-is,&quot; with no guarantee of fitness for a particular purpose or freedom from defects. All outcomes from using it are your own responsibility.</p>
-<hr>
+<tr>
+<td>Reselling a font this kit auto-downloads (e.g. Pretendard) as a standalone font product</td>
+<td>❌ Prohibited (violates the OFL license)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>No warranty, limited liability</strong>: this kit and its documentation are provided "as-is," with no guarantee of fitness for a particular purpose or freedom from defects. All outcomes from using it are your own responsibility.</p>
+<hr />
 <h2 id="appendix-full-design-documentation">Appendix: Full Design Documentation</h2>
 <p>More detailed specifications, decision rationale, and development history than this document covers live in <a href="./.PRD"><code>.PRD/</code></a>:</p>
 <ul>
-<li><a href="./.PRD/01_PRD.md"><code>01_PRD.md</code></a> — what&#39;s being built and why; UI/UX, security, legal, documentation, and success criteria</li>
+<li><a href="./.PRD/01_PRD.md"><code>01_PRD.md</code></a> — what's being built and why; UI/UX, security, legal, documentation, and success criteria</li>
 <li><a href="./.PRD/02_DATA_MODEL.md"><code>02_DATA_MODEL.md</code></a> — data structures (file schemas such as config.json)</li>
 <li><a href="./.PRD/03_PHASES.md"><code>03_PHASES.md</code></a> — the phased (1/2/3) development plan and current progress</li>
 <li><a href="./.PRD/04_PROJECT_SPEC.md"><code>04_PROJECT_SPEC.md</code></a> — tech stack, absolute rules (do-not / always-do)</li>
 <li><a href="./.PRD/README.md"><code>.PRD/README.md</code></a> — the full audit log of the development process</li>
-<li><a href="./CHECKPOINT.md"><code>CHECKPOINT.md</code></a> — the list of tasks to pick up next</li>
+<li><a href="./CHECKPOINT.md"><code>CHECKPOINT.md</code></a> — the list of tasks to pick up next (for developers)</li>
 </ul>
 
 </div>

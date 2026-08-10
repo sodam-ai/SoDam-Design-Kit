@@ -14,6 +14,7 @@
 
 [Phase 2] tokens.json ──> Tailwind/shadcn 테마 (자동 변환 산출물)
 [Phase 2] StoryIndex  ──> 컴포넌트별 Story 목록
+[Phase 3] ProductPageRegistry(product-pages.json) --1--> 템플릿 1개(코드) + --1:N--> 상품 데이터(N개, 프로젝트 소스 트리)
 ```
 
 ```
@@ -29,6 +30,7 @@
     │   └── baseline/         # [P2] 시각 회귀 기준본 (보관 정책 제외·커밋 대상)
     ├── fonts/                # [P2, 2026-08-09 완료] 폰트 + 라이선스 동반 보존 (fonts/<fontKey>/*.otf·LICENSE — 커밋 대상, gitignore 아님)
     ├── ASSET-LEDGER.csv      # [P2, 2026-08-09 완료] 자산 대장 (첫 자산인 폰트부터 최초 생성 — 실제로 이렇게 생성됨)
+    ├── product-pages.json    # [P3, 2026-08-10 완료] 상세페이지 템플릿 1개 + 상품 데이터 위치 목록(실제 코드·카피 본문은 대상 프로젝트 소스 트리에 — component-map.json과 같은 "매핑만" 원칙)
     ├── ATTRIBUTION.md        # [P3] 출처 표기 자동 생성
     ├── AI-GENERATION-LOG.md  # [P3] AI 생성 이력 자동 append
     ├── .api-token            # [P2] 대시보드 로컬 토큰 — 실행마다 재생성·0600·gitignore (커밋 금지)
@@ -105,6 +107,27 @@ Figma 컴포넌트 ↔ 코드 컴포넌트 연결. **재사용 매핑의 핵심*
 
 FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL만 진짜 FAIL**로 확정하고, 판정서에 재검 결과(recheck) 필드를 남긴다(타이밍·폰트 로딩 등 flaky 오탐 분리).
 
+### ProductPageRegistry (product-pages.json) — [Phase 3, 2026-08-10 완료]
+상세페이지 템플릿·상품 데이터의 위치만 기록하는 등록 정보. component-map.json과 같은 원칙("매핑만 담고 실제 코드는 대상 프로젝트 소스 트리에") — 실제 코드·카피 본문은 이 파일에 안 들어간다.
+
+```json
+{
+  "template": { "codePath": "src/app/products/[slug]/page.tsx", "lastVerified": "" },
+  "products": [
+    { "productId": "sample-mug", "dataPath": "src/data/products/sample-mug.json", "lastVerified": "" }
+  ]
+}
+```
+
+| 필드 | 설명 | 필수 |
+|------|------|------|
+| template.codePath | 페이지 템플릿 코드 경로(프로젝트당 1개 — 이미 있으면 재생성 거부) | template 존재 시 O |
+| products[].productId | 상품 고유 id(slug, `/^[a-z0-9-]+$/`만 허용) | O |
+| products[].dataPath | 그 상품의 카피 데이터 파일 경로(`<app디렉터리와 같은 접두어>/data/products/<id>.json`) | O |
+| products[].lastVerified | 마지막 검증 통과 실행 ID | X |
+
+**왜 템플릿과 상품 데이터를 분리했나**: `03_PHASES.md` L98이 Phase 3를 "새 파일을 가장 많이 만드는 단계 = 최대 회귀 위험"으로 스스로 지목했다. 상품 행마다 정적 `.tsx` 파일을 만들면 상품이 늘수록 그 위험이 그대로 커진다. 대신 템플릿(Next.js 동적 라우트 `[slug]/page.tsx`, Server Component가 `params.slug` 기준으로 데이터 파일을 `fs.readFileSync`로 읽음)은 1개만 만들고, 상품마다 늘어나는 건 데이터 파일뿐이다 — 폰트 파일과 `next/font/local` 모듈을 분리한 것과 같은 결의 설계.
+
 ---
 
 ## 왜 이 구조인가
@@ -179,6 +202,8 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 ---
 
 **사용자가 실제로 새 세션에서 라이브 테스트를 하다가 e2e-selftest.mjs 판정서가 재검증이 안 되는 걸 발견했다 (2026-08-10)**: 대시보드에서 e2e-selftest.mjs가 만든 판정서의 "재검증" 버튼을 눌렀더니 "이 실행 기록엔 route 정보가 없어 재검증할 수 없습니다(오래된 판정서)"라는, 방금 막 생성된 기록인데도 "오래된"이라고 오인시키는 문구가 떴다. 이 거부 자체는 정상 설계(위 2c 결정 기록 — route 없는 판정서는 추측 없이 거부)이지만, `e2e-selftest.mjs`의 `runCase()`가 `route`를 `verifyPage()`에는 넘기면서 `writeReport()`에는 빠뜨려서(당시 export 시그니처엔 이미 있었는데 이 호출부만 안 채워짐) **이 자기점검 도구가 만드는 판정서는 전부 영구히 재검증 불가 상태로 남아있었다.** route는 이미 로컬 변수로 있어 그대로 전달하는 한 줄 수정. 재실행해 `runs/*.json`에 `"route": "/"`가 실제로 들어가는 것 확인 + `reverifyRun()`을 직접 호출해 수정 전엔 400이던 게 수정 후 실제로 재검증까지 완료(새 PASS 판정서 생성)되는 것 실측 확인. **이 route 누락을 다시 방치하지 말 것** — `writeReport()`를 새로 호출하는 곳이 생기면 매번 route를 실제로 채우는지 확인할 것.
+
+**상세페이지 파이프라인이 구현됐다 (2026-08-10, Phase 3 첫 착수 항목)**: `scripts/detail-page-pipeline.mjs` 신설. 착수 전 설계 검토에서 실제로 걸렸을 문제 1건을 미리 잡았다 — `registerPageTemplate()`이 codePath 기본값을 계산할 때(`detectAppDir()` 호출) 이 계산을 함수 맨 앞에 둘 뻔했는데, 그러면 sourceFile 누락·하드코딩 값·`dangerouslySetInnerHTML` 같은 app 디렉터리와 무관한 실패가 전부 "Next.js app 디렉터리를 찾을 수 없습니다"라는 엉뚱한 에러로 가려진다(오인시키는 에러 메시지 — 이 프로젝트가 반복 경계해온 패턴, 51차 "오래된 판정서" 문구와 같은 종류). 구현 단계에서 이 순서를 바로잡아 detectAppDir 계산을 모든 검사를 통과한 뒤로 옮겼다. 단위테스트 22건 신설(178→200, 이 순서 결함을 잡아낸 테스트 포함) + **실제 픽스처로 왕복 실측**: `sample-products.csv`(더미 상품 2건)로 CLI 체인 실행 → `detectAppDir()`이 픽스처의 실제 구조(`src/app`)를 정확히 감지해 `src/app/products/[slug]/page.tsx`·`src/data/products/sample-mug.json`에 배치 → `verify-runner.mjs`(수정 없이 그대로 재사용) 실행 PASS(스크린샷 3장) → 배치된 페이지에 `alt` 없는 `<img>`를 의도적으로 주입해 재실행 → 실제 axe critical 위반(`image-alt`) 1건으로 FAIL 실측 → 원상복구 후 PASS 복귀 확인. `npm audit` 0건(새 의존성 없음 — 카피 생성은 에이전트 자신이 하므로 외부 API 불필요). **이 검사 순서(존재성·중복등록·하드코딩·XSS 검사 → codePath 계산)를 다시 앞뒤로 바꾸지 말 것** — 바꾸면 무관한 실패가 엉뚱한 에러 메시지로 가려지는 문제가 재현된다.
 
 ## [NEEDS CLARIFICATION]
 

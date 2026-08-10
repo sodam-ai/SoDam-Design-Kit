@@ -253,8 +253,9 @@ export async function scanProjectFontFiles(projectDir) {
   return found.sort();
 }
 
-/** CSV 한 줄을 필드 배열로 파싱(csvEscape의 역연산) — 따옴표로 감싼 값 안의 `,`·`\n`·이스케이프된 `""`를 처리. */
-function parseCsvLine(line) {
+/** CSV 한 줄을 필드 배열로 파싱(csvEscape의 역연산) — 따옴표로 감싼 값 안의 `,`·`\n`·이스케이프된 `""`를 처리.
+ * ASSET-LEDGER 전용 로직이 아닌 범용 파서라 detail-page-pipeline.mjs의 상품 데이터 CSV 파싱에도 재사용한다. */
+export function parseCsvLine(line) {
   const fields = [];
   let cur = '';
   let inQuotes = false;

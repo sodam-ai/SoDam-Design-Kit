@@ -12,6 +12,8 @@
     "@axe-core/playwright": "^4.12.1",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.61.1",
-    "pngjs": "^7.0.0"
+    "pngjs": "^7.0.0",
+    "satori": "^0.29.0",
+    "sharp": "^0.35.3"
   }
 }

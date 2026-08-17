@@ -29,7 +29,9 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 ├── commands/
 │   ├── setup.md                # /design-kit 설정 마법사
 │   ├── pipeline.md             # 디자인→코드→검증 파이프라인
-│   └── open.md                 # [P2] open 대시보드 진입점 — 2026-08-09 신설(엔진은 있었으나 진입점이 없던 공백 해소)
+│   ├── open.md                 # [P2] open 대시보드 진입점 — 2026-08-09 신설(엔진은 있었으나 진입점이 없던 공백 해소)
+│   ├── detail-page.md          # [P3] 상세페이지 파이프라인 — 2026-08-10 신설
+│   └── marketing-asset.md      # [P3, og 1종만] 마케팅 소재 파이프라인 진입점 — 2026-08-17 신설
 ├── skills/
 │   └── design-pipeline/SKILL.md
 ├── hooks/
@@ -39,6 +41,8 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   ├── visual-regression.mjs   # [P2, 2026-08-09 완료] 로컬 시각 회귀 감지 — opt-in(--visualRegression), pixelmatch+pngjs
 │   ├── font-pipeline.mjs       # [P2] 폰트 파이프라인 A(전자동, 2026-08-09)+게이트 C(opt-in, 2026-08-10) — OFL 화이트리스트 다운로드+ASSET-LEDGER+next/font/local 모듈+미등록 폰트 스캔(--fontGate)
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
+│   ├── ai-generation-log.mjs   # [P3, 2026-08-17] AI 생성 이력 자동 기록 — 시크릿 필터(redactSecrets) 후 AI-GENERATION-LOG.md에 append(커밋 대상)
+│   ├── marketing-asset-pipeline.mjs # [P3, 2026-08-17, og 1종만] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
 │   │   ├── index.html          #      GET / — 토큰 없이 서빙(셸만, 데이터는 /api/*가 보호)

@@ -108,6 +108,24 @@ test('judge: 미등록 폰트가 0건이면(빈 배열) PASS 유지', () => {
   assert.equal(result.verdict, 'PASS');
 });
 
+// 자산(이미지) 게이트(opt-in, 2026-08-18) — 폰트 게이트와 동일한 하위 호환 원칙.
+test('judge: assetGateViolations를 안 넘기면 기존 판정과 동일 (하위 호환)', () => {
+  const result = judge(baseResult());
+  assert.equal(result.verdict, 'PASS');
+  assert.deepEqual(result.reasons, []);
+});
+
+test('judge: 미등록 이미지가 있으면 FAIL, 사유에 파일 목록이 포함된다', () => {
+  const result = judge(baseResult(), { assetGateViolations: [{ file: 'public/images/unknown.png' }] });
+  assert.equal(result.verdict, 'FAIL');
+  assert.ok(result.reasons.some((r) => r.includes('미등록 이미지') && r.includes('unknown.png')));
+});
+
+test('judge: 미등록 이미지가 0건이면(빈 배열) PASS 유지', () => {
+  const result = judge(baseResult(), { assetGateViolations: [] });
+  assert.equal(result.verdict, 'PASS');
+});
+
 // summarizeAxeViolations: 2026-07-27 신설(M5) — axe-core 원시 violations를 카운트(기존과 동일)
 // + 상세 목록(신규)으로 요약. 실제 axe-core가 돌려주는 violation 객체 모양(id/impact/description/
 // nodes[].target)을 그대로 합성 입력으로 사용 — 브라우저 없이도 변환 로직만 정직하게 검증 가능.

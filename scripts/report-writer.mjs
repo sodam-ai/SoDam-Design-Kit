@@ -113,7 +113,7 @@ export async function nextRunId(designKitDir, date = new Date()) {
 }
 
 function renderReportMarkdown({ runId, target, verifyResult, judgement, devServerInfo, recheck }) {
-  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression, fontGate } = verifyResult;
+  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression, fontGate, assetGate } = verifyResult;
   const lines = [];
   lines.push(`# 판정서 — ${runId}`);
   lines.push('');
@@ -163,6 +163,17 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
     } else {
       lines.push(`- **미등록 폰트 ${fontGate.violations.length}건** (ASSET-LEDGER.csv에 출처·라이선스를 기록해야 통과):`);
       for (const v of fontGate.violations) lines.push(`  - ${v.file}`);
+    }
+  }
+  if (assetGate) {
+    lines.push('');
+    lines.push('## 자산 게이트 (미등록 이미지 검사, opt-in)');
+    lines.push(`- 스캔한 이미지 파일: ${assetGate.scannedCount}개 / 대장(ASSET-LEDGER) 등록: ${assetGate.registeredCount}개`);
+    if (assetGate.violations.length === 0) {
+      lines.push('- 미등록 이미지 없음');
+    } else {
+      lines.push(`- **미등록 이미지 ${assetGate.violations.length}건** (ASSET-LEDGER.csv에 출처·라이선스를 기록해야 통과):`);
+      for (const v of assetGate.violations) lines.push(`  - ${v.file}`);
     }
   }
   lines.push('');

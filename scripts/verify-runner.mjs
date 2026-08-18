@@ -15,6 +15,7 @@ import { writeReport } from './report-writer.mjs';
 import { acquireLock, releaseLock } from './execution-lock.mjs';
 import { compareRunToBaseline, promoteBaseline } from './visual-regression.mjs';
 import { checkFontGate } from './font-pipeline.mjs';
+import { checkAssetGate } from './asset-ledger.mjs';
 
 export const VIEWPORTS = [
   { width: 360, height: 800, label: '360' },
@@ -225,11 +226,11 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
 
 /**
  * PASS 조건 (단일 출처: .PRD/02_DATA_MODEL.md VerifyReport 섹션 — 기본 4가지 + 시각 회귀·폰트
- * 게이트는 opt-in). `visualRegressions`·`fontGateViolations`를 안 넘기면(기본값 둘 다 [])
- * 기존 4조건 판정과 완전히 동일하게 동작한다 — 하위 호환 유지(--visualRegression·--fontGate
- * 플래그를 안 쓰는 기존 호출부는 전혀 영향 없음).
+ * 게이트·자산 게이트는 opt-in). `visualRegressions`·`fontGateViolations`·`assetGateViolations`를
+ * 안 넘기면(기본값 전부 []) 기존 4조건 판정과 완전히 동일하게 동작한다 — 하위 호환 유지
+ * (--visualRegression·--fontGate·--assetGate 플래그를 안 쓰는 기존 호출부는 전혀 영향 없음).
  */
-export function judge(result, { visualRegressions = [], fontGateViolations = [] } = {}) {
+export function judge(result, { visualRegressions = [], fontGateViolations = [], assetGateViolations = [] } = {}) {
   const reasons = [];
   if (!result.renderOk) reasons.push('렌더 실패 (대상 URL 정상 로드 안 됨)');
   if (result.consoleErrors.length > 0) reasons.push(`콘솔 에러 ${result.consoleErrors.length}건`);
@@ -244,6 +245,10 @@ export function judge(result, { visualRegressions = [], fontGateViolations = [] 
 
   if (fontGateViolations.length > 0) {
     reasons.push(`미등록 폰트 감지 ${fontGateViolations.length}건 (${fontGateViolations.map((v) => v.file).join(', ')})`);
+  }
+
+  if (assetGateViolations.length > 0) {
+    reasons.push(`미등록 이미지 자산 감지 ${assetGateViolations.length}건 (${assetGateViolations.map((v) => v.file).join(', ')})`);
   }
 
   return { verdict: reasons.length === 0 ? 'PASS' : 'FAIL', reasons };
@@ -293,6 +298,9 @@ async function main() {
   // 폰트 게이트도 시각 회귀와 같은 이유로 opt-in이다 — judge() 주석·font-pipeline.mjs의
   // "폰트 게이트 C" 절 참조(P1 픽스처·기존 프로젝트를 예고 없이 FAIL로 뒤집지 않기 위함).
   const fontGateEnabled = args.includes('--fontGate');
+  // 자산(이미지) 게이트도 같은 이유로 opt-in — asset-ledger.mjs 파일 상단 경계 설명 참조
+  // (marketing-asset-pipeline.mjs 산출물·.design-kit/ 내부 스크린샷은 스캔 대상에서 제외됨).
+  const assetGateEnabled = args.includes('--assetGate');
 
   let devServer = null;
   let baseUrl = explicitUrl;
@@ -308,7 +316,7 @@ async function main() {
 
     if (!baseUrl) {
       if (!projectDir) {
-        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]] [--fontGate]');
+        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]] [--fontGate] [--assetGate]');
         process.exit(2);
       }
       devServer = await startDevServer(path.resolve(projectDir));
@@ -329,9 +337,16 @@ async function main() {
       fontGate = await checkFontGate({ projectDir: path.resolve(projectDir), designKitDir: designKitDirForFonts });
     }
 
+    let assetGate = null;
+    if (assetGateEnabled && projectDir) {
+      const designKitDirForAssets = path.join(path.resolve(projectDir), '.design-kit');
+      assetGate = await checkAssetGate({ projectDir: path.resolve(projectDir), designKitDir: designKitDirForAssets });
+    }
+
     const judgement = judge(result, {
       visualRegressions: visualRegression,
       fontGateViolations: fontGate ? fontGate.violations : [],
+      assetGateViolations: assetGate ? assetGate.violations : [],
     });
 
     // 기준본 승격은 PASS일 때만 허용 — 깨진 화면을 "정상"으로 못박는 걸 막는다(04 DO NOT
@@ -348,6 +363,7 @@ async function main() {
       ...(visualRegressionEnabled ? { visualRegression } : {}),
       ...(baselinePromotion ? { baselinePromotion } : {}),
       ...(fontGate ? { fontGate } : {}),
+      ...(assetGate ? { assetGate } : {}),
       ...judgement,
     };
 

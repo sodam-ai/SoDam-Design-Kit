@@ -31,7 +31,7 @@
     ├── fonts/                # [P2, 2026-08-09 완료] 폰트 + 라이선스 동반 보존 (fonts/<fontKey>/*.otf·LICENSE — 커밋 대상, gitignore 아님)
     ├── ASSET-LEDGER.csv      # [P2, 2026-08-09 완료] 자산 대장 (첫 자산인 폰트부터 최초 생성 — 실제로 이렇게 생성됨)
     ├── product-pages.json    # [P3, 2026-08-10 완료] 상세페이지 템플릿 1개 + 상품 데이터 위치 목록(실제 코드·카피 본문은 대상 프로젝트 소스 트리에 — component-map.json과 같은 "매핑만" 원칙)
-    ├── ATTRIBUTION.md        # [P3] 출처 표기 자동 생성
+    ├── ATTRIBUTION.md        # [P3, 2026-08-18 완료] 출처 표기 자동 생성(scripts/asset-ledger.mjs --generateAttribution — 커밋 대상, .gitignore 아님)
     ├── AI-GENERATION-LOG.md  # [P3, 2026-08-17 완료] AI 생성 이력 자동 append (커밋 대상 — .gitignore 아님, scripts/ai-generation-log.mjs)
     ├── .api-token            # [P2] 대시보드 로컬 토큰 — 실행마다 재생성·0600·gitignore (커밋 금지)
     ├── .lock                 # [P2] 실행 잠금 — 파이프라인·재검증 동시 실행 방지 (실행 1개 원칙·완료 시 삭제·gitignore)
@@ -233,3 +233,15 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 단위테스트 17건 신설(`npm test` 224→241) — `renderAsset`/`validateAsset`(실제 Pretendard 폰트로 렌더, 규격·포맷·용량 위반 각각 재현) + `writeMarketingAsset`(경로 탈출 방지·slug 변환·멱등성·AI-GENERATION-LOG 연동) + CLI 프로세스 회귀 테스트. **CLI 테스트에서 기존 패턴과 다른 점 하나**: satori/sharp는 npm 의존성이라(상대경로 import가 아님) 스크립트를 OS 임시폴더로 복사하면 node_modules를 못 찾아 조용히 실패한다 — 대신 이 저장소 루트 밑에 임시 폴더를 만들어(Node의 상위 디렉터리 탐색이 실제 `node_modules`를 그대로 찾음) 대상 프로젝트 경로만 공백·한글로 구성해 04 ALWAYS DO 취지(조용한 실패 방지)를 지켰다. **실제 픽스처 CLI 실행**으로 실제 PNG(제목·부제 한글 포함)가 생성되고 1200x630 규격을 정확히 만족하는 것, `AI-GENERATION-LOG.md`에 `image` 항목이 실제로 기록되는 것을 이미지 자체를 열어 육안으로 확인했다. `npm audit` 0건. README.md 의존성 라이선스 표에 satori(MPL-2.0)·sharp(Apache-2.0) 추가 완료(README.en.md·HTML 4종 동기화는 이번 라운드에 안 함 — 알려진 잔여 항목, CHECKPOINT.md에 기록).
 
 **이 증분을 포스터·배너·명함으로 임의로 확장하지 말 것** — 각 규격은 실제 텍스트 오버플로우·레이아웃 요구가 다를 수 있어(예: 명함은 여러 필드가 구조화돼 있음) og 하나의 검증 결과를 근거로 일반화하면 안 된다. 확장할 땐 이번과 같은 방식(스파이크 없이도 되지만 최소 1건은 실제 픽스처 검증)으로 각각 독립적으로 확인할 것.
+
+---
+
+**라이선스 게이트가 이미지·아이콘류 자산으로 확장됐다 (2026-08-18, Phase 3 승인 순서 ④번)**: `scripts/asset-ledger.mjs` 신설. `font-pipeline.mjs`가 폰트 게이트(C)를 만들 때 이미 종류(kind) 무관 범용으로 설계해둔 `appendAssetLedger`·`parseCsvLine`을 재사용하고, 스캔→대장 대조→위반 목록(opt-in, 대소문자 무관 비교) 패턴을 이미지에 그대로 미러링했다(`scanProjectImageFiles`·`checkAssetGate`, `verify-runner.mjs --assetGate`). 여기 더해 `generateAttribution()`이 `ASSET-LEDGER.csv` 전체를 종류별로 그룹핑해 사람이 읽는 `ATTRIBUTION.md`를 자동 생성한다(01_PRD.md §7·03_PHASES.md가 요구한 "라이선스 게이트(자산 대장 확장) + ATTRIBUTION.md 자동 생성"의 구현).
+
+**핵심 경계 — 1m 결정과 충돌하지 않도록 설계 단계에서 명시적으로 반영**: `marketing-asset-pipeline.mjs`가 만드는 이미지(`public/design-kit-assets/`)는 이 게이트 대상이 아니다(위 1m 결정문 그대로 — 그건 외부 출처 자산이 아니라 이 킷 코드의 산출물이고 `AI-GENERATION-LOG.md`가 그 정본 이력이다). `.design-kit/`(검증 스크린샷·시각회귀 기준본) 전체도 프로젝트가 가져온 외부 자산이 아니므로 스캔에서 제외한다. `scanProjectImageFiles()`가 이 두 경로를 명시적으로 건너뛴다 — **실제 픽스처로 이 경계 자체를 실측 검증**: 픽스처의 실제 `public/design-kit-assets/og-머그컵-신상품-출시.png`(1m 세션 산출물)와 `.design-kit/reports/screenshots/`가 스캔 결과에 전혀 안 잡히는 것을 확인, 반대로 진짜 미등록 이미지(`create-next-app` 기본 스캐폴딩 SVG 5종 + `favicon.ico`, 픽스처에 원래부터 있던 것 — 합성 테스트 파일이 아님)는 정확히 6건 잡히는 것을 확인했다.
+
+**TDD로 잡은 실제 결함 1건**: 최초 구현이 재사용 원칙을 지나치게 문자 그대로 따라 `font-pipeline.mjs`의 `loadAssetLedgerFilenames()`까지 그대로 재사용했는데, 그 함수는 대장의 filename을 항상 `.design-kit/` 기준으로 재해석한다(폰트가 실제로 `.design-kit/fonts/` 안에 저장되기 때문에 성립하는 폰트 전용 관례). 이미지 자산은 `public/images/` 같은 프로젝트 트리 안에 있지 `.design-kit/` 안에 있지 않아서, 이 함수를 쓰면 정확히 등록된 이미지("public/images/x.jpg")까지 항상 미등록으로 오판했다 — 자체 단위테스트(`checkAssetGate: 등록·미등록이 섞여 있으면 미등록분만 골라낸다`)가 구현 직후 이 결함을 바로 잡아냈다. 수정: 이미지 게이트는 `loadAssetLedgerFilenames`를 쓰지 않고, 신설한 `loadAssetLedgerRows()`(전체 8필드 반환)로 원본 filename을 프로젝트 루트 기준 그대로 비교한다. **재사용 원칙("중복 구현 금지")이 이 케이스에선 함수 시그니처가 아니라 의도까지 재사용하면 안 됐던 사례** — 앞으로 다른 자산 종류를 게이트에 추가할 때도 그 자산이 실제로 어디에 저장되는지(`.design-kit/` 안인지 프로젝트 트리 안인지)부터 확인할 것.
+
+단위테스트 20건 신설(`asset-ledger.test.mjs`, `npm test` 241→246→272 — 246은 1n 검증 라운드 완료 시점, 여기서 26건 추가: asset-ledger 20건 + verify-runner/report-writer 회귀 각 3건) + `verify-runner.mjs`/`report-writer.mjs`에 `--fontGate`와 동일한 하위 호환 패턴(`assetGateViolations` 기본값 `[]`)으로 배선. **실제 픽스처 CLI 왕복 실측**(PowerShell, `--route /design-kit-preview/button`): 등록 전 FAIL(미등록 6건 정확히 나열) → `public/file.svg` 1건 등록 후 재실행 FAIL(5건으로 감소, 등록한 파일만 정확히 빠짐) → `generateAttribution` 실행해 실제 `ATTRIBUTION.md` 생성·육안 확인. 검증 후 픽스처는 등록 테스트용으로 추가한 1행과 생성된 `ATTRIBUTION.md`를 제거해 원래 상태로 원복(드라이런 원칙 — M4/M5와 동일). `e2e-selftest.mjs` 전체 왕복(PASS/FAIL/훅 차단·재개방)으로 `verify-runner.mjs`·`report-writer.mjs` 공유 코드 무회귀 확인(`--assetGate` 미사용 시 완전히 기존과 동일하게 동작). `npm audit` 0건(새 의존성 없음).
+
+**`main` 개념 없음 — 슬래시 명령 없이 CLI 전용**: `font-pipeline.mjs`가 `commands/`에 대응 슬래시 명령이 없는 채로 README 아키텍처 섹션·트러블슈팅에서만 안내되는 기존 관례를 그대로 따랐다(`asset-ledger.mjs`도 동일 — 개발자용 CLI, `--generateAttribution`).

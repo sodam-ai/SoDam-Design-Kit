@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-08-10, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>the first Phase 3 (advanced) feature — the "detail-page pipeline" — is also complete</strong>. All <strong>206 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>4 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>✅ <strong>Current status (as of 2026-08-18, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation, and the license-gate extension</strong>. All <strong>272 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
 <p>⚠️ This kit is still <strong>version 0.1.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
@@ -355,6 +355,13 @@ img { max-width: 100%; }
 <li><strong>How it behaves</strong>: instead of creating a brand-new page file for every product, it builds exactly one page template and stores each product's data separately (to prevent the file count from growing without bound).</li>
 <li><strong>Success looks like</strong>: same as the other commands — a report in <code>.design-kit/reports/</code> containing <code>**PASS**</code>.</li>
 </ul>
+<h3 id="sodam-design-kitmarketing-asset--marketing-image-og-image-generation-phase-3-og-spec-only"><code>/sodam-design-kit:marketing-asset</code> — marketing image (OG image) generation (Phase 3, og spec only)</h3>
+<ul>
+<li><strong>Input</strong>: a title (required) + a subtitle (optional)</li>
+<li><strong>What it does</strong>: automatically renders your title/subtitle into a social-share image (1200×630, an Open Graph image). If the result fails the dimension/format/size checks, no file is written at all.</li>
+<li><strong>How it behaves</strong>: reuses the Korean font (Pretendard) already set up by the font pipeline so text never renders as broken boxes, and automatically records the generated image in the AI-generation history (<code>AI-GENERATION-LOG.md</code>).</li>
+<li><strong>Success looks like</strong>: a file appears at <code>public/design-kit-assets/og-&lt;title&gt;.png</code>. Other formats (poster, banner, business card) aren't supported yet (a future increment).</li>
+</ul>
 <h3 id="p1-completion-verification-procedure-for-the-project-maintainer">P1 Completion Verification Procedure (for the project maintainer)</h3>
 <blockquote>
 <p>This is not something you do on every regular use — it's the <strong>final check that the kit actually works the same way from a brand-new session, from scratch</strong> (<a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9, Success Criteria 5 and 6). Follow these steps in a new Claude Code session, and this document alone is enough to reproduce it.</p>
@@ -417,6 +424,13 @@ Provide the target project's path and the Figma node (or let it use the existing
 <td>inside the target (Next.js) project</td>
 <td>✅ verified PASS → FAIL (deliberate a11y violation) → back to PASS round-trip</td>
 </tr>
+<tr>
+<td><code>/sodam-design-kit:marketing-asset</code></td>
+<td>Title/subtitle → auto-generates a social-share image (OG, 1200x630) (Phase 3, og spec only)</td>
+<td>title (required) · subtitle (optional)</td>
+<td>inside the target project (<code>public/design-kit-assets/</code>)</td>
+<td>✅ verified PASS (Korean rendering, dimensions confirmed); poster/banner/business-card are a future increment</td>
+</tr>
 </tbody>
 </table>
 <p>Commands for kit developers only (end users don't need these):</p>
@@ -436,7 +450,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit's own automated tests (206 as of 2026-08-10; the count may grow over time)</td>
+<td>Runs the kit's own automated tests (272 as of 2026-08-18; the count may grow over time)</td>
 <td>this kit's own repository folder</td>
 </tr>
 <tr>
@@ -452,7 +466,53 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-10 — Phase 3 launched: detail-page pipeline (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-18 — License gate extended: image/icon assets now scanned too (click to collapse)</b></summary>
+
+<ul>
+<li>Completed the fourth item in the Phase 3 sequence. Until now only fonts got "where did this come from, what license is it under" automatic tracking and checking — now image and icon files can be checked the same way (opt-in — off unless you turn it on).</li>
+<li>Images produced by the marketing-image generator (see the item just below) and verification screenshots are <strong>not</strong> in scope for this check — those already have their own record (the AI-generation history). This boundary was designed in deliberately from the start and confirmed against a real project.</li>
+<li>Also added automatic generation of a source-attribution document (<code>ATTRIBUTION.md</code>).</li>
+<li><strong>Verified by direct testing</strong>: confirmed that unregistered image files already sitting in the real fixture project (5 default icons + 1 favicon) were correctly flagged, then confirmed that registering one of them in the ledger made exactly that one file drop out of the list.</li>
+<li>Added 26 new automated tests (246 → 272), all passing. No new dependencies (<code>npm audit</code> still 0).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-17 — Verification round found and fixed 3 real bugs (click to expand)</b></summary>
+
+<ul>
+<li>While re-testing the newly built features (AI-generation history logging, marketing-asset generation) across normal, edge-case, and failure scenarios, found and fixed 3 genuine problems.</li>
+<li>① Passing a project path that doesn't exist silently created a new folder instead of failing → now fails with a clear error message.</li>
+<li>② A prompt containing a code block (three backticks) could corrupt the formatting of the log file → now always wraps it safely.</li>
+<li>③ Two similar titles differing only in punctuation could silently overwrite the first generated image with the second → now automatically disambiguated.</li>
+<li>Added 5 regression tests, all passing (241 → 246).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-17 — Added marketing image (OG image) auto-generation (click to expand)</b></summary>
+
+<ul>
+<li>Added a feature that turns a title and subtitle into a social-share image (1200×630, the Open Graph spec) automatically.</li>
+<li>Verified the Korean font renders correctly (no broken-box glyphs) by actually installing it on this machine before starting the work.</li>
+<li>If the generated image fails the dimension/format/size checks, no file is written at all — the same "nothing ships without passing verification" principle this kit applies everywhere, now applied to images too.</li>
+<li>Other formats (poster, banner, business card, etc.) are out of scope for this round; each will get its own real verification when added later.</li>
+<li>Added 17 new automated tests, all passing (224 → 241).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-17 — AI-written copy is now logged automatically (click to expand)</b></summary>
+
+<ul>
+<li>Added a feature that automatically records when, with which model, and how freeform content the agent writes (currently: detail-page copy) was generated.</li>
+<li>Unlike verification screenshots, this log file is actually committed to the repository — so if the project is public, secrets (passwords, API keys, etc.) accidentally included in a prompt could end up permanently exposed. A filter that strips out secret-looking patterns is now always applied before anything is written, to close that risk.</li>
+<li>Added 18 new automated tests, all passing (206 → 224).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-10 — Phase 3 launched: detail-page pipeline (click to expand)</b></summary>
 
 <ul>
 <li>The precondition for Phase 3 (marketing assets + detail pages + a public-release review) — "Phase 1 and 2 are stable under the maintainer's own real-world use" — was confirmed through actual live testing (dashboard screenshots visibly rendering, and the re-verify button working correctly). With that confirmed, the <strong>detail-page pipeline</strong> was built as the first Phase 3 feature.</li>
@@ -690,7 +750,8 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── setup.md                      ← the actual definition of /sodam-design-kit:setup
 │   ├── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
 │   ├── open.md                       ← the actual definition of /sodam-design-kit:open
-│   └── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
+│   ├── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
+│   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og spec only)
 ├── hooks/
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
 ├── scripts/                          ← the actual engine, all Node.js (representative examples — see scripts/ for the full list)
@@ -701,8 +762,11 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── verify-runner.mjs
 │   ├── report-writer.mjs
 │   ├── font-pipeline.mjs             ← automatic Korean font download/setup engine
-│   └── visual-regression.mjs         ← automatic visual-change detection engine
-├── tests/                            ← automated tests (206 as of 2026-08-10)
+│   ├── visual-regression.mjs         ← automatic visual-change detection engine
+│   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
+│   ├── marketing-asset-pipeline.mjs  ← marketing image (OG) auto-generation engine (Phase 3, og spec only)
+│   └── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
+├── tests/                            ← automated tests (272 as of 2026-08-18)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -963,7 +1027,6 @@ Provide the target project's path and the Figma node (or let it use the existing
 <li><a href="./.PRD/README.md"><code>.PRD/README.md</code></a> — the full audit log of the development process</li>
 <li><a href="./CHECKPOINT.md"><code>CHECKPOINT.md</code></a> — the list of tasks to pick up next (for developers)</li>
 </ul>
-
 </div>
 </body>
 </html>

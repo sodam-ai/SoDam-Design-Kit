@@ -43,6 +43,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
 │   ├── ai-generation-log.mjs   # [P3, 2026-08-17] AI 생성 이력 자동 기록 — 시크릿 필터(redactSecrets) 후 AI-GENERATION-LOG.md에 append(커밋 대상)
 │   ├── marketing-asset-pipeline.mjs # [P3, 2026-08-17, og 1종만] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
+│   ├── asset-ledger.mjs        # [P3, 2026-08-18] 라이선스 게이트 확장 — ASSET-LEDGER.csv를 이미지·아이콘으로 확장(opt-in 게이트, font-pipeline.mjs 폰트 게이트 패턴 재사용) + ATTRIBUTION.md 자동 생성. public/design-kit-assets/·.design-kit/는 스캔 제외(1m 경계)
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
 │   │   ├── index.html          #      GET / — 토큰 없이 서빙(셸만, 데이터는 /api/*가 보호)

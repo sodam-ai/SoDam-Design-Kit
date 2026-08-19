@@ -1,0 +1,35 @@
+{
+  "manifest_version": "0.2",
+  "name": "sodam-design-kit",
+  "version": "0.3.0",
+  "display_name": "SoDam Design Kit",
+  "description": "Figma 디자인을 shadcn/ui 코드로 만들고 실제 브라우저 검증을 통과해야만 완료로 인정하는 디자인 자동화 킷 — 검증 이력 열람 + 재검증 도구 (Claude Desktop용)",
+  "author": {
+    "name": "SoDam AI Studio"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sodam-ai/SoDam-Design-Kit.git"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "scripts/mcp-server.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/scripts/mcp-server.mjs"
+      ],
+      "env": {}
+    }
+  },
+  "tools": [
+    { "name": "list_runs", "description": "검증 실행 이력을 최신순으로 조회합니다" },
+    { "name": "get_report", "description": "판정서(PASS/FAIL·근거)와 스크린샷 목록을 조회합니다" },
+    { "name": "get_screenshot", "description": "검증 스크린샷 이미지를 조회합니다" },
+    { "name": "reverify", "description": "저장된 실행 기록을 다시 검증하고 판정을 받습니다 (완료를 자동으로 막지는 않습니다)" }
+  ],
+  "compatibility": {
+    "platforms": ["win32", "darwin"]
+  },
+  "license": "Apache-2.0"
+}

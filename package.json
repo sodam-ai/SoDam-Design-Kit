@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.61.1",
     "pngjs": "^7.0.0",
     "satori": "^0.29.0",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "zod": "^4.4.3"
   }
 }

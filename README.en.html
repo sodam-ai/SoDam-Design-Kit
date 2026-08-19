@@ -120,8 +120,8 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-08-18, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation, and the license-gate extension</strong>. All <strong>272 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
-<p>⚠️ This kit is still <strong>version 0.1.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
+<p>✅ <strong>Current status (as of 2026-08-20, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), and the license-gate extension</strong> (only the MCP wrapper remains). All <strong>289 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>⚠️ This kit is still <strong>version 0.3.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -355,12 +355,12 @@ img { max-width: 100%; }
 <li><strong>How it behaves</strong>: instead of creating a brand-new page file for every product, it builds exactly one page template and stores each product's data separately (to prevent the file count from growing without bound).</li>
 <li><strong>Success looks like</strong>: same as the other commands — a report in <code>.design-kit/reports/</code> containing <code>**PASS**</code>.</li>
 </ul>
-<h3 id="sodam-design-kitmarketing-asset--marketing-image-og-image-generation-phase-3-og-spec-only"><code>/sodam-design-kit:marketing-asset</code> — marketing image (OG image) generation (Phase 3, og spec only)</h3>
+<h3 id="sodam-design-kitmarketing-asset--marketing-image-og--poster--banner--business-card-generation-phase-3"><code>/sodam-design-kit:marketing-asset</code> — marketing image (OG · poster · banner · business card) generation (Phase 3)</h3>
 <ul>
-<li><strong>Input</strong>: a title (required) + a subtitle (optional)</li>
-<li><strong>What it does</strong>: automatically renders your title/subtitle into a social-share image (1200×630, an Open Graph image). If the result fails the dimension/format/size checks, no file is written at all.</li>
+<li><strong>Input</strong>: a title (required) + a subtitle (optional); business cards also accept extra lines (company, phone, email, etc., optional)</li>
+<li><strong>What it does</strong>: automatically renders one of 4 formats — OG (1200×630, social-share) · poster (1080×1350, Instagram-portrait) · banner (1200×400, wide) · business card (1050×600, real print standard at 3.5×2 inches). If the result fails the dimension/format/size checks, no file is written at all.</li>
 <li><strong>How it behaves</strong>: reuses the Korean font (Pretendard) already set up by the font pipeline so text never renders as broken boxes, and automatically records the generated image in the AI-generation history (<code>AI-GENERATION-LOG.md</code>).</li>
-<li><strong>Success looks like</strong>: a file appears at <code>public/design-kit-assets/og-&lt;title&gt;.png</code>. Other formats (poster, banner, business card) aren't supported yet (a future increment).</li>
+<li><strong>Success looks like</strong>: a file appears at <code>public/design-kit-assets/&lt;format&gt;-&lt;title&gt;.png</code>. Other formats (SNS cards, etc.) aren't supported yet.</li>
 </ul>
 <h3 id="p1-completion-verification-procedure-for-the-project-maintainer">P1 Completion Verification Procedure (for the project maintainer)</h3>
 <blockquote>
@@ -426,10 +426,10 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>/sodam-design-kit:marketing-asset</code></td>
-<td>Title/subtitle → auto-generates a social-share image (OG, 1200x630) (Phase 3, og spec only)</td>
-<td>title (required) · subtitle (optional)</td>
+<td>Title/subtitle (+extra info for business cards) → auto-generates OG/poster/banner/business-card images (Phase 3)</td>
+<td>title (required) · subtitle (optional) · business-card extra info (optional)</td>
 <td>inside the target project (<code>public/design-kit-assets/</code>)</td>
-<td>✅ verified PASS (Korean rendering, dimensions confirmed); poster/banner/business-card are a future increment</td>
+<td>✅ all 4 formats verified PASS (Korean rendering, dimensions confirmed)</td>
 </tr>
 </tbody>
 </table>
@@ -450,7 +450,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit's own automated tests (279 as of 2026-08-19; the count may grow over time)</td>
+<td>Runs the kit's own automated tests (289 as of 2026-08-20; the count may grow over time)</td>
 <td>this kit's own repository folder</td>
 </tr>
 <tr>
@@ -466,7 +466,18 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-18 — License gate extended: image/icon assets now scanned too (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Added poster/banner/business-card formats to marketing images (click to collapse)</b></summary>
+
+<ul>
+<li>Previously only one format (OG, 1200×630, social-share) could be generated. Now poster (1080×1350, Instagram-portrait) · banner (1200×400, wide) · business card (1050×600, real print size) are also available.</li>
+<li>A business card needs more than a name and title — company, phone, email, etc. — so a new <code>--extraLines</code> option was added to include extra lines of information.</li>
+<li>The earlier OG-image feature had already warned that verifying one format doesn't prove the others work, so each of the 3 new formats was actually generated and visually checked by eye (no clipped text, no broken Korean characters).</li>
+<li>Added 10 new automated tests (279 → 289), all passing. No new dependencies (<code>npm audit</code> still 0).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-18 — License gate extended: image/icon assets now scanned too (click to expand)</b></summary>
 
 <ul>
 <li>Completed the fourth item in the Phase 3 sequence. Until now only fonts got "where did this come from, what license is it under" automatic tracking and checking — now image and icon files can be checked the same way (opt-in — off unless you turn it on).</li>
@@ -751,7 +762,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
 │   ├── open.md                       ← the actual definition of /sodam-design-kit:open
 │   ├── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
-│   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og spec only)
+│   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og/poster/banner/business-card)
 ├── hooks/
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
 ├── scripts/                          ← the actual engine, all Node.js (representative examples — see scripts/ for the full list)
@@ -764,9 +775,9 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── font-pipeline.mjs             ← automatic Korean font download/setup engine
 │   ├── visual-regression.mjs         ← automatic visual-change detection engine
 │   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
-│   ├── marketing-asset-pipeline.mjs  ← marketing image (OG) auto-generation engine (Phase 3, og spec only)
+│   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   └── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
-├── tests/                            ← automated tests (279 as of 2026-08-19)
+├── tests/                            ← automated tests (289 as of 2026-08-20)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -887,7 +898,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p><strong>Q. Can I use this commercially, or share/redistribute it?</strong> A. <strong>Yes, under the terms of the Apache License 2.0</strong> (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the "SoDam-Design-Kit" name or trademark itself. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> carefully.</p>
 <p><strong>Q. Can I sell, or deliver to a client, things this kit produces (like a detail page)?</strong> A. This kit's own license doesn't stop you from doing that. But the <strong>copyright of the original Figma design</strong>, <strong>the source of any product data</strong>, and <strong>the legal status of AI-generated code/copy</strong> are separate questions from this kit's license, and are entirely your own responsibility — each is explained in detail in <a href="#13-legal-copyright-license--commercial-use">Section 13</a>.</p>
 <p><strong>Q. Does this work on Windows/Mac/Linux?</strong> A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is <strong>Windows</strong>. Real-world verification on Mac/Linux has not yet been performed.</p>
-<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.1.0 (pre-release)</strong>. The core features (Phase 1, Phase 2, and the first Phase 3 feature) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
+<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.3.0 (pre-release)</strong>. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
 <hr />
 <h2 id="13-legal-copyright-license--commercial-use">13. Legal, Copyright, License &amp; Commercial Use</h2>
 <blockquote>

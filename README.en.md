@@ -4,9 +4,9 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-18, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation, and the license-gate extension**. All **272 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), and the license-gate extension** (only the MCP wrapper remains). All **289 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
-> ⚠️ This kit is still **version 0.1.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
+> ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
 ---
 
@@ -191,11 +191,11 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 - **How it behaves**: instead of creating a brand-new page file for every product, it builds exactly one page template and stores each product's data separately (to prevent the file count from growing without bound).
 - **Success looks like**: same as the other commands — a report in `.design-kit/reports/` containing `**PASS**`.
 
-### `/sodam-design-kit:marketing-asset` — marketing image (OG image) generation (Phase 3, og spec only)
-- **Input**: a title (required) + a subtitle (optional)
-- **What it does**: automatically renders your title/subtitle into a social-share image (1200×630, an Open Graph image). If the result fails the dimension/format/size checks, no file is written at all.
+### `/sodam-design-kit:marketing-asset` — marketing image (OG · poster · banner · business card) generation (Phase 3)
+- **Input**: a title (required) + a subtitle (optional); business cards also accept extra lines (company, phone, email, etc., optional)
+- **What it does**: automatically renders one of 4 formats — OG (1200×630, social-share) · poster (1080×1350, Instagram-portrait) · banner (1200×400, wide) · business card (1050×600, real print standard at 3.5×2 inches). If the result fails the dimension/format/size checks, no file is written at all.
 - **How it behaves**: reuses the Korean font (Pretendard) already set up by the font pipeline so text never renders as broken boxes, and automatically records the generated image in the AI-generation history (`AI-GENERATION-LOG.md`).
-- **Success looks like**: a file appears at `public/design-kit-assets/og-<title>.png`. Other formats (poster, banner, business card) aren't supported yet (a future increment).
+- **Success looks like**: a file appears at `public/design-kit-assets/<format>-<title>.png`. Other formats (SNS cards, etc.) aren't supported yet.
 
 ### P1 Completion Verification Procedure (for the project maintainer)
 
@@ -229,14 +229,14 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 | `/sodam-design-kit:pipeline` | Figma read → mapping → shadcn/ui code generation → verification gate | Figma page/node link | inside the target (Next.js) project | ✅ both the reuse (mapped-component) path and the new-component generation path verified PASS |
 | `/sodam-design-kit:open` | Opens a browser dashboard to review verification history, reports, and screenshots + trigger re-verification (127.0.0.1 only; stop with `--stop`) | none | inside the target project | ✅ real background start/reuse/stop round-trip verified PASS |
 | `/sodam-design-kit:detail-page` | Product data (CSV/JSON) → copy generation → detail-page code → the same verification gate (Phase 3) | a product data file (CSV or JSON) | inside the target (Next.js) project | ✅ verified PASS → FAIL (deliberate a11y violation) → back to PASS round-trip |
-| `/sodam-design-kit:marketing-asset` | Title/subtitle → auto-generates a social-share image (OG, 1200x630) (Phase 3, og spec only) | title (required) · subtitle (optional) | inside the target project (`public/design-kit-assets/`) | ✅ verified PASS (Korean rendering, dimensions confirmed); poster/banner/business-card are a future increment |
+| `/sodam-design-kit:marketing-asset` | Title/subtitle (+extra info for business cards) → auto-generates OG/poster/banner/business-card images (Phase 3) | title (required) · subtitle (optional) · business-card extra info (optional) | inside the target project (`public/design-kit-assets/`) | ✅ all 4 formats verified PASS (Korean rendering, dimensions confirmed) |
 
 Commands for kit developers only (end users don't need these):
 
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (279 as of 2026-08-19; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (289 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -246,7 +246,17 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-18 — License gate extended: image/icon assets now scanned too (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Added poster/banner/business-card formats to marketing images (click to collapse)</b></summary>
+
+- Previously only one format (OG, 1200×630, social-share) could be generated. Now poster (1080×1350, Instagram-portrait) · banner (1200×400, wide) · business card (1050×600, real print size) are also available.
+- A business card needs more than a name and title — company, phone, email, etc. — so a new `--extraLines` option was added to include extra lines of information.
+- The earlier OG-image feature had already warned that verifying one format doesn't prove the others work, so each of the 3 new formats was actually generated and visually checked by eye (no clipped text, no broken Korean characters).
+- Added 10 new automated tests (279 → 289), all passing. No new dependencies (`npm audit` still 0).
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-18 — License gate extended: image/icon assets now scanned too (click to expand)</b></summary>
 
 - Completed the fourth item in the Phase 3 sequence. Until now only fonts got "where did this come from, what license is it under" automatic tracking and checking — now image and icon files can be checked the same way (opt-in — off unless you turn it on).
 - Images produced by the marketing-image generator (see the item just below) and verification screenshots are **not** in scope for this check — those already have their own record (the AI-generation history). This boundary was designed in deliberately from the start and confirmed against a real project.
@@ -512,7 +522,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
 │   ├── open.md                       ← the actual definition of /sodam-design-kit:open
 │   ├── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
-│   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og spec only)
+│   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og/poster/banner/business-card)
 ├── hooks/
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
 ├── scripts/                          ← the actual engine, all Node.js (representative examples — see scripts/ for the full list)
@@ -525,9 +535,9 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── font-pipeline.mjs             ← automatic Korean font download/setup engine
 │   ├── visual-regression.mjs         ← automatic visual-change detection engine
 │   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
-│   ├── marketing-asset-pipeline.mjs  ← marketing image (OG) auto-generation engine (Phase 3, og spec only)
+│   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   └── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
-├── tests/                            ← automated tests (279 as of 2026-08-19)
+├── tests/                            ← automated tests (289 as of 2026-08-20)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -611,7 +621,7 @@ A. This kit's own license doesn't stop you from doing that. But the **copyright 
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed.
 
 **Q. Is this a stable, finished release?**
-A. No. The current version is **0.1.0 (pre-release)**. The core features (Phase 1, Phase 2, and the first Phase 3 feature) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
+A. No. The current version is **0.3.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
 
 ---
 

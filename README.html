@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>Figma 디자인을 shadcn/ui 코드로 만들고, <strong>실제 브라우저 검증(Playwright + axe-core + 3개 화면 크기)을 통과해야만 "완료"로 인정되는</strong> Claude Code 디자인 자동화 킷입니다.</p>
 <p><a href="./README.md">한국어(현재 문서)</a> | <a href="./README.en.md">English</a></p>
 <blockquote>
-<p>✅ <strong>현재 상태 (2026-08-20 기준, 실측 확인)</strong>: **Phase 1(MVP)**과 **Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)**가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장까지 완료</strong>되었습니다(남은 항목은 MCP 래퍼뿐). 자동 테스트 <strong>289개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
+<p>✅ <strong>현재 상태 (2026-08-20 기준, 실측 확인)</strong>: **Phase 1(MVP)**과 **Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)**가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트 <strong>305개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
 <p>⚠️ 이 킷은 아직 **버전 0.3.0(정식 출시 전, 개발 진행 중)**입니다. 명령어 이름·동작 방식·파일 구조가 앞으로 바뀔 수 있습니다 — 바뀔 때마다 이 문서도 함께 갱신됩니다.</p>
 </blockquote>
 <hr />
@@ -306,6 +306,23 @@ img { max-width: 100%; }
 <p>이 명령이 자동완성 목록에 뜨고 정상 실행되면 설치 성공입니다.</p></li>
 </ol>
 <p><strong>설치가 안 됐다는 걸 어떻게 아나요?</strong>: 4번째 글자까지 입력했는데(<code>/sod</code>) 자동완성 목록에 아무것도 안 뜨면 설치가 안 된 것입니다. <a href="#11-문제오류-대처-트러블슈팅">11장</a>의 첫 번째 항목을 확인하세요.</p>
+<h3 id="3장-보충--claude-desktop에서도-검증-이력을-보고-싶다면-선택-2026-08-20-추가">3장 보충 — Claude Desktop에서도 검증 이력을 보고 싶다면 (선택, 2026-08-20 추가)</h3>
+<blockquote>
+<p>위 1~5번은 <strong>Claude Code</strong>(터미널형 채팅) 전용입니다. <strong>Claude Desktop</strong>(일반 데스크톱 앱)에서도 이 킷이 만든 검증 이력·판정서·스크린샷을 보고 재검증을 실행하고 싶다면 아래 확장을 추가로 설치할 수 있습니다 — 둘은 서로 다른 앱이고, 이 확장은 선택 사항입니다.</p>
+</blockquote>
+<ol type="1">
+<li>이 저장소 폴더에서 다음 명령으로 확장 파일(<code>.mcpb</code>)을 만듭니다(터미널, 이 저장소 폴더 안에서):
+<pre><code>npx @anthropic-ai/mcpb pack .</code></pre>
+<code>sodam-design-kit-0.3.0.mcpb</code> 파일이 생성됩니다(약 70MB — 실제 브라우저로 재검증하는 기능이 들어있어 다른 확장보다 큽니다).</li>
+<li>생성된 <code>.mcpb</code> 파일을 <strong>더블클릭</strong>하면 Claude Desktop이 설치 화면을 띄웁니다. 내용을 확인하고 설치를 승인하세요.</li>
+<li><strong>설치 확인</strong>: Claude Desktop에서 "최근 검증 이력을 보여줘"처럼 물어봤을 때 이 킷의 도구(<code>list_runs</code> 등)가 호출되면 성공입니다.</li>
+</ol>
+<p><strong>이 확장으로 할 수 있는 것 / 못 하는 것 (정직 고지)</strong>:</p>
+<ul>
+<li>할 수 있음: 검증 이력 열람, 판정서·스크린샷 확인, 재검증 실행 — Claude Code의 <code>/sodam-design-kit:open</code> 대시보드와 같은 데이터입니다.</li>
+<li>못 함: <strong>완료를 기계적으로 차단하는 것</strong>은 Claude Code 훅 전용 기능입니다. Claude Desktop에서는 재검증 결과(PASS/FAIL)를 보여줄 뿐, FAIL이어도 작업을 강제로 멈추지 않습니다.</li>
+<li>이 확장의 재검증 기능은 내부적으로 실제 브라우저(Playwright)를 실행합니다 — 이 저장소에서 <code>npm install</code>을 이미 한 번 했다면 준비가 끝난 상태입니다. 이 확장만 단독으로 받은 경우라면 별도로 <code>npx playwright install</code>이 필요할 수 있습니다.</li>
+</ul>
 <hr />
 <h2 id="4-빠른-시작-5분-안에-첫-성공-보기">4. 빠른 시작 (5분 안에 첫 성공 보기)</h2>
 <p>준비물이 다 있고 설치까지 마쳤다면, 아래 순서로 첫 결과를 5분 안에 볼 수 있습니다.</p>
@@ -369,7 +386,7 @@ img { max-width: 100%; }
 <ol type="1">
 <li><strong>대상 프로젝트를 정합니다</strong> — 이미 <code>/sodam-design-kit:setup</code>을 마치고 Figma 매핑도 있는 프로젝트가 이상적입니다(Figma를 다시 호출하지 않아도 되어 무료 월 6회 한도를 쓰지 않습니다).</li>
 <li><strong>실행 직전, 판정서 폴더의 현재 상태를 먼저 확인해 기준으로 삼습니다</strong> (PowerShell):
-<div class="sourceCode" id="cb10"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;대상 프로젝트 경로&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;대상 프로젝트 경로&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
 여기 나온 파일 목록을 잠깐 기억해둡니다 — 나중에 "기존 파일이 안 지워졌는지" 비교할 기준입니다.</li>
 <li>Claude Code에서 아래를 실행합니다.
 <pre><code>/sodam-design-kit:pipeline</code></pre>
@@ -450,7 +467,7 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>킷 자체의 자동 테스트 실행(2026-08-20 기준 289개, 실행 시점에 따라 늘어날 수 있음)</td>
+<td>킷 자체의 자동 테스트 실행(2026-08-20 기준 305개, 실행 시점에 따라 늘어날 수 있음)</td>
 <td>이 킷 저장소 폴더</td>
 </tr>
 <tr>
@@ -466,7 +483,19 @@ img { max-width: 100%; }
 <p>아래 항목들은 접었다 펼 수 있는 "토글" 형태입니다 — 제목(▶ 표시가 있는 줄)을 클릭하면 자세한 내용이 펼쳐집니다. 가장 최근 것이 맨 위에 있습니다.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-20 — 마케팅 이미지에 포스터·배너·명함 규격 추가 (클릭해서 접기)</b></summary>
+<summary><b>▶ 2026-08-20 — Claude Desktop용 확장(MCP) 추가: 검증 이력 열람 + 재검증 (클릭해서 접기)</b></summary>
+
+<ul>
+<li>지금까지는 Claude Code(터미널형 채팅)에서만 이 킷을 쓸 수 있었는데, 이제 Claude Desktop(일반 데스크톱 앱)에서도 검증 이력·판정서·스크린샷을 보고 재검증을 실행할 수 있는 확장(<code>.mcpb</code> 파일)을 만들 수 있습니다.</li>
+<li>설계 도중 중요한 사실을 하나 발견했습니다 — 원래 계획은 "이미 있는 대시보드(웹 서버)를 그대로 같이 쓴다"였는데, 실제로 Claude Desktop의 이런 확장은 웹 서버 방식이 아니라 완전히 다른 방식(프로그램을 직접 실행해서 대화하는 방식)으로 동작한다는 걸 공식 문서를 직접 찾아보고 알게 됐습니다. 그래서 "서버를 같이 쓴다"가 아니라 "이미 만들어둔 기능을 그대로 재사용한다"는 더 간단한 방식으로 다시 설계했습니다.</li>
+<li>정직하게 밝혀둘 점: 이 확장은 "검증 결과를 보여주는 것"까지만 하고, Claude Code처럼 실패했을 때 작업을 강제로 멈추는 기능은 없습니다(Claude Code 전용 기능이라 기술적으로 다른 프로그램에서는 안 됩니다). 이 사실을 도구 설명 자체에 명시해뒀습니다.</li>
+<li>신규 자동 테스트 16개 추가(289→305개), 전부 통과. 새 의존성 2개(공식 MCP 도구 · 입력값 검증 도구) 추가, <code>npm audit</code> 0건 유지.</li>
+<li>다음 범위(Figma 데이터를 받아 코드를 직접 생성하는 기능)는 이번엔 포함하지 않았습니다 — 이번엔 "검증 이력을 보고 재검증하는 기능"까지만 먼저 확실하게 만들었습니다.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — 마케팅 이미지에 포스터·배너·명함 규격 추가 (클릭해서 펼치기)</b></summary>
 
 <ul>
 <li>지금까지는 SNS 공유용 이미지(OG, 1200×630) 1가지만 만들 수 있었는데, 이제 포스터(1080×1350, 인스타그램 세로형) · 배너(1200×400, 가로형) · 명함(1050×600, 실제 명함 인쇄 규격) 3가지를 더 만들 수 있습니다.</li>
@@ -753,6 +782,7 @@ img { max-width: 100%; }
 ├── .claude-plugin/
 │   ├── plugin.json                   ← 플러그인 설명서(이름 · 버전)
 │   └── marketplace.json              ← 마켓플레이스 등록 정보(마켓 이름: sodam)
+├── manifest.json                     ← Claude Desktop용 확장(.mcpb) 설명서 — plugin.json과는 별개 파일 (Phase 3)
 ├── commands/
 │   ├── setup.md                      ← /sodam-design-kit:setup 명령의 실제 정의
 │   ├── pipeline.md                   ← /sodam-design-kit:pipeline 명령의 실제 정의
@@ -772,8 +802,9 @@ img { max-width: 100%; }
 │   ├── visual-regression.mjs         ← 화면 변경 자동 감지 엔진
 │   ├── ai-generation-log.mjs         ← AI 생성 이력 자동 기록 엔진 (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← 마케팅 이미지 자동 생성 엔진 (Phase 3, og·포스터·배너·명함)
-│   └── asset-ledger.mjs              ← 라이선스 게이트 확장(이미지·아이콘 자산) + 출처 정리 문서 자동 생성 (Phase 3)
-├── tests/                            ← 자동 테스트(2026-08-20 기준 289개)
+│   ├── asset-ledger.mjs              ← 라이선스 게이트 확장(이미지·아이콘 자산) + 출처 정리 문서 자동 생성 (Phase 3)
+│   └── mcp-server.mjs                ← Claude Desktop용 확장 엔진 — 검증 이력 열람 · 재검증 (Phase 3)
+├── tests/                            ← 자동 테스트(2026-08-20 기준 305개)
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록(개발자용, git에는 올라가지 않음)
 ├── README.md / README.en.md          ← 지금 이 문서
@@ -955,6 +986,16 @@ img { max-width: 100%; }
 <td>sharp</td>
 <td>Apache License 2.0 (실측 확인됨)</td>
 <td>마케팅 이미지 소재를 SVG에서 PNG로 변환(Phase 3)</td>
+</tr>
+<tr>
+<td>@modelcontextprotocol/sdk</td>
+<td>MIT License (실측 확인됨)</td>
+<td>Claude Desktop용 확장(MCP) 공식 SDK(Phase 3)</td>
+</tr>
+<tr>
+<td>zod</td>
+<td>MIT License (실측 확인됨)</td>
+<td>MCP 도구 입력값 형식 검증(Phase 3)</td>
 </tr>
 </tbody>
 </table>

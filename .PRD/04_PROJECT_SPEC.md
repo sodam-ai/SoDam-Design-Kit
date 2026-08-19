@@ -15,7 +15,8 @@
 | 접근성 검사 | @axe-core/playwright (게이트 판정 기준) + Lighthouse (세션 내 chrome-devtools lighthouse_audit, 참고 지표) | 무료. 정정 사유: 게이트는 Node 스크립트에서 결정적으로 재현돼야 하는데 MCP 도구는 스크립트에서 호출 불가 — 판정은 axe로 단일화, Lighthouse는 참고 병행(원천 자료 15번 "단일 도구 의존 금지" 취지 유지) |
 | 생성 대상 코드 | Next.js + Tailwind + shadcn/ui — **P1은 Next.js 전용 고정** (타 프레임워크 지원은 백로그) | 원천 자료 1·6번 핵심 조합. 프리뷰 라우트·시드 스캔·검증이 전부 프레임워크 결합 코드라 "변경 가능" 문구가 P1 복잡도를 배로 만듦 — 스코프 크립 차단 |
 | Codex 대응 | AGENTS.md 동봉 (원천 자료 19번 형식) | 원래 목적("Claude Code, Codex 등")을 플러그인 미지원 환경에서도 규칙 수준으로 유지 |
-| open 대시보드 [P2]·MCP 래퍼 [P3] | Node 로컬 서버 (127.0.0.1 전용·실행별 토큰·CSP — O-Brain server.mjs 실측 패턴 이식, **2026-08-09 완료** — `scripts/dashboard-server.mjs` + `commands/open.md` 진입점, 백그라운드 기동·재사용·`--stop` 종료까지 실측) + MCP 서버(.mcpb로 Claude Desktop 지원) | 본인 코드로 검증된 보안 패턴 재사용(실제 소스 읽고 이식, timing-safe 비교는 개선 추가), 대시보드와 MCP가 같은 서버 공유(O-Brain 동거 구조) — 2026-07-19 사용자 결정 |
+| open 대시보드 [P2] | Node 로컬 HTTP 서버 (127.0.0.1 전용·실행별 토큰·CSP — O-Brain server.mjs 실측 패턴 이식, **2026-08-09 완료** — `scripts/dashboard-server.mjs` + `commands/open.md` 진입점, 백그라운드 기동·재사용·`--stop` 종료까지 실측) | 본인 코드로 검증된 보안 패턴 재사용(실제 소스 읽고 이식, timing-safe 비교는 개선 추가) — 2026-07-19 사용자 결정 |
+| MCP 래퍼 [P3, T1 완료 2026-08-20] | **stdio 전송**(Claude Desktop `.mcpb` 확장 — `scripts/mcp-server.mjs` + `manifest.json`). **정정(2026-08-20 스파이크 발견)**: 원안은 "대시보드 HTTP 서버를 MCP와 공유"(O-Brain 동거 구조)였으나, 공식 문서(claude.com/docs/connectors/building/mcpb) 확인 결과 Claude Desktop의 로컬 MCP 확장은 HTTP가 아니라 stdio(서브프로세스+stdin/stdout JSON-RPC)로 동작 — 네트워크 포트를 열지 않는다. "서버 공유"가 아니라 **"함수 공유"**로 구현: `dashboard-server.mjs`가 이미 export한 4개 함수(`listRuns`·`readReportContent`·`readScreenshotFile`·`reverifyRun`)를 HTTP를 거치지 않고 그대로 in-process import | `@modelcontextprotocol/sdk`(MIT) 공식 SDK, 패키징은 `@anthropic-ai/mcpb`(npx로만 사용, 런타임 의존성 아님) — stdio는 리스닝 포트가 없어 01 §6의 "유일한 네트워크 면" 위험이 이 경로엔 없음 |
 | 배포 | sodam-ai marketplace (추천, 이름 확정 후) | `add` 한 줄 설치, 기존 관리 일원화 |
 
 ---
@@ -26,12 +27,13 @@
 SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-design-kit, 명령은 콜론형 /sodam-design-kit:*)
 ├── .claude-plugin/
 │   └── plugin.json             # agents는 개별 .md 파일 경로! (디렉터리 지정 거부됨)
+├── manifest.json                # [P3, 2026-08-20] MCPB(Claude Desktop 확장) 매니페스트 — plugin.json과 별개 배포 단위, `npx @anthropic-ai/mcpb pack .`로 .mcpb 생성
 ├── commands/
 │   ├── setup.md                # /design-kit 설정 마법사
 │   ├── pipeline.md             # 디자인→코드→검증 파이프라인
 │   ├── open.md                 # [P2] open 대시보드 진입점 — 2026-08-09 신설(엔진은 있었으나 진입점이 없던 공백 해소)
 │   ├── detail-page.md          # [P3] 상세페이지 파이프라인 — 2026-08-10 신설
-│   └── marketing-asset.md      # [P3, og 1종만] 마케팅 소재 파이프라인 진입점 — 2026-08-17 신설
+│   └── marketing-asset.md      # [P3] 마케팅 소재 파이프라인 진입점 — og(2026-08-17)+포스터·배너·명함(2026-08-20)
 ├── skills/
 │   └── design-pipeline/SKILL.md
 ├── hooks/
@@ -42,13 +44,13 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   ├── font-pipeline.mjs       # [P2] 폰트 파이프라인 A(전자동, 2026-08-09)+게이트 C(opt-in, 2026-08-10) — OFL 화이트리스트 다운로드+ASSET-LEDGER+next/font/local 모듈+미등록 폰트 스캔(--fontGate)
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
 │   ├── ai-generation-log.mjs   # [P3, 2026-08-17] AI 생성 이력 자동 기록 — 시크릿 필터(redactSecrets) 후 AI-GENERATION-LOG.md에 append(커밋 대상)
-│   ├── marketing-asset-pipeline.mjs # [P3, 2026-08-17, og 1종만] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
+│   ├── marketing-asset-pipeline.mjs # [P3, og·포스터·배너·명함] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
 │   ├── asset-ledger.mjs        # [P3, 2026-08-18] 라이선스 게이트 확장 — ASSET-LEDGER.csv를 이미지·아이콘으로 확장(opt-in 게이트, font-pipeline.mjs 폰트 게이트 패턴 재사용) + ATTRIBUTION.md 자동 생성. public/design-kit-assets/·.design-kit/는 스캔 제외(1m 경계)
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
 │   │   ├── index.html          #      GET / — 토큰 없이 서빙(셸만, 데이터는 /api/*가 보호)
 │   │   └── dashboard.js        #      GET /dashboard.js — innerHTML 사용 금지, textContent만
-│   └── mcp-server.mjs          # [P3] MCP 래퍼 — 대시보드 서버와 공유 (Claude Desktop .mcpb)
+│   └── mcp-server.mjs          # [P3, T1 완료 2026-08-20] MCP 래퍼 — stdio 전송, dashboard-server.mjs 함수 in-process 재사용 (Claude Desktop .mcpb)
 ├── AGENTS.md                   # Codex용 규칙 (원천 자료 19번 기반)
 └── README.md
 ```

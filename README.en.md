@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), and the license-gate extension** (only the MCP wrapper remains). All **289 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **305 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
@@ -128,6 +128,23 @@ All 4 of the following must be ready. If even one is missing, you cannot proceed
 
 **How do you know it failed?**: if you type the first few letters (`/sod`) and nothing appears in autocomplete, the install didn't take. See the first row of [Section 11](#11-troubleshooting).
 
+### Section 3 addendum — Want verification history in Claude Desktop too? (optional, added 2026-08-20)
+
+> The steps 1-5 above are for **Claude Code** (the terminal-style chat) only. If you also want **Claude Desktop** (the regular desktop app) to show this kit's verification history, reports, and screenshots, and let you trigger re-verification, you can install an additional extension below — the two are separate apps, and this extension is optional.
+
+1. From this repository folder, generate the extension file (`.mcpb`) with (terminal, inside this repo folder):
+   ```
+   npx @anthropic-ai/mcpb pack .
+   ```
+   This produces `sodam-design-kit-0.3.0.mcpb` (about 70MB — larger than most extensions because it includes real-browser re-verification).
+2. **Double-click** the generated `.mcpb` file — Claude Desktop will show an install screen. Review the details and approve.
+3. **Success looks like**: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (`list_runs`, etc.).
+
+**What this extension can and can't do (honest disclosure)**:
+- Can: browse verification history, view reports/screenshots, trigger re-verification — the same data as the `/sodam-design-kit:open` dashboard in Claude Code.
+- Can't: **mechanically block completion**. That's a Claude Code hook-only feature. Claude Desktop only shows the re-verify result (PASS/FAIL); it won't forcibly stop work on a FAIL.
+- The re-verify feature runs a real browser (Playwright) internally — if you've already run `npm install` in this repo, you're set. If you installed only this extension standalone, you may separately need `npx playwright install`.
+
 ---
 
 ## 4. Quick Start (first success in 5 minutes)
@@ -236,7 +253,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (289 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (305 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -246,7 +263,18 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-20 — Added poster/banner/business-card formats to marketing images (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Added a Claude Desktop extension (MCP): browse verification history + re-verify (click to collapse)</b></summary>
+
+- Until now this kit could only be used from Claude Code (the terminal-style chat). Now Claude Desktop (the regular desktop app) can also browse verification history, reports, and screenshots, and trigger re-verification, via an extension (`.mcpb` file).
+- An important discovery came up during design — the original plan was "reuse the existing dashboard (a web server) as-is," but checking the official documentation directly showed that this kind of Claude Desktop extension doesn't work as a web server at all; it works a completely different way (Claude Desktop runs the program directly and talks to it). So instead of "sharing a server," the design was reworked to the simpler "reuse the functions that already exist."
+- Honest disclosure: this extension only goes as far as "showing the verification result" — it does not have the feature that forcibly stops work on failure, the way Claude Code does (that's a Claude Code-only capability, technically unavailable from other programs). This fact is spelled out directly in the tool descriptions themselves.
+- Added 16 new automated tests (289 → 305), all passing. Two new dependencies (the official MCP toolkit and an input-validation library), `npm audit` still 0.
+- The next piece (generating code directly from Figma data) was intentionally left out this round — this round only covers "browse verification history and re-verify," built solidly first.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Added poster/banner/business-card formats to marketing images (click to expand)</b></summary>
 
 - Previously only one format (OG, 1200×630, social-share) could be generated. Now poster (1080×1350, Instagram-portrait) · banner (1200×400, wide) · business card (1050×600, real print size) are also available.
 - A business card needs more than a name and title — company, phone, email, etc. — so a new `--extraLines` option was added to include extra lines of information.
@@ -517,6 +545,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 ├── .claude-plugin/
 │   ├── plugin.json                   ← plugin manifest (name, version)
 │   └── marketplace.json              ← marketplace registration (marketplace name: sodam)
+├── manifest.json                     ← Claude Desktop extension (.mcpb) manifest — a separate file from plugin.json (Phase 3)
 ├── commands/
 │   ├── setup.md                      ← the actual definition of /sodam-design-kit:setup
 │   ├── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
@@ -536,8 +565,9 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── visual-regression.mjs         ← automatic visual-change detection engine
 │   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
-│   └── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
-├── tests/                            ← automated tests (289 as of 2026-08-20)
+│   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
+│   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
+├── tests/                            ← automated tests (305 as of 2026-08-20)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -653,6 +683,8 @@ Separately from this kit's own license, the open-source libraries it uses intern
 | pngjs | MIT License (confirmed by direct inspection) | PNG image read/write for automatic visual-change detection |
 | satori | Mozilla Public License 2.0 (confirmed by direct inspection) | Renders marketing-image text layout (e.g. OG images) to SVG (Phase 3) |
 | sharp | Apache License 2.0 (confirmed by direct inspection) | Converts marketing-image SVG output to PNG (Phase 3) |
+| @modelcontextprotocol/sdk | MIT License (confirmed by direct inspection) | Official SDK for the Claude Desktop extension (MCP) (Phase 3) |
+| zod | MIT License (confirmed by direct inspection) | Input validation for MCP tools (Phase 3) |
 
 These licenses are granted independently by their respective projects and are unrelated to this kit's own license. If you want to use these components directly yourself, check their original license text.
 

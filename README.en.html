@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-08-20, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), and the license-gate extension</strong> (only the MCP wrapper remains). All <strong>289 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>✅ <strong>Current status (as of 2026-08-20, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>305 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
 <p>⚠️ This kit is still <strong>version 0.3.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
@@ -306,6 +306,23 @@ img { max-width: 100%; }
 <p>If this command appears in autocomplete and runs without error, the install succeeded.</p></li>
 </ol>
 <p><strong>How do you know it failed?</strong>: if you type the first few letters (<code>/sod</code>) and nothing appears in autocomplete, the install didn't take. See the first row of <a href="#11-troubleshooting">Section 11</a>.</p>
+<h3 id="section-3-addendum--want-verification-history-in-claude-desktop-too-optional-added-2026-08-20">Section 3 addendum — Want verification history in Claude Desktop too? (optional, added 2026-08-20)</h3>
+<blockquote>
+<p>The steps 1-5 above are for <strong>Claude Code</strong> (the terminal-style chat) only. If you also want <strong>Claude Desktop</strong> (the regular desktop app) to show this kit's verification history, reports, and screenshots, and let you trigger re-verification, you can install an additional extension below — the two are separate apps, and this extension is optional.</p>
+</blockquote>
+<ol type="1">
+<li>From this repository folder, generate the extension file (<code>.mcpb</code>) with (terminal, inside this repo folder):
+<pre><code>npx @anthropic-ai/mcpb pack .</code></pre>
+This produces <code>sodam-design-kit-0.3.0.mcpb</code> (about 70MB — larger than most extensions because it includes real-browser re-verification).</li>
+<li><strong>Double-click</strong> the generated <code>.mcpb</code> file — Claude Desktop will show an install screen. Review the details and approve.</li>
+<li><strong>Success looks like</strong>: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (<code>list_runs</code>, etc.).</li>
+</ol>
+<p><strong>What this extension can and can't do (honest disclosure)</strong>:</p>
+<ul>
+<li>Can: browse verification history, view reports/screenshots, trigger re-verification — the same data as the <code>/sodam-design-kit:open</code> dashboard in Claude Code.</li>
+<li>Can't: <strong>mechanically block completion</strong>. That's a Claude Code hook-only feature. Claude Desktop only shows the re-verify result (PASS/FAIL); it won't forcibly stop work on a FAIL.</li>
+<li>The re-verify feature runs a real browser (Playwright) internally — if you've already run <code>npm install</code> in this repo, you're set. If you installed only this extension standalone, you may separately need <code>npx playwright install</code>.</li>
+</ul>
 <hr />
 <h2 id="4-quick-start-first-success-in-5-minutes">4. Quick Start (first success in 5 minutes)</h2>
 <p>Once prerequisites and installation are done, here's the fastest path to seeing a real result.</p>
@@ -369,7 +386,7 @@ img { max-width: 100%; }
 <ol type="1">
 <li><strong>Pick a target project</strong> — ideally one that has already run <code>/sodam-design-kit:setup</code> and already has a Figma mapping (so no fresh Figma call is needed, and the free 6-calls-per-month limit isn't touched).</li>
 <li><strong>Before running anything, check the current state of the reports folder</strong> and keep it as your baseline (PowerShell):
-<div class="sourceCode" id="cb10"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;target project path&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;target project path&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
 Remember this file list — you'll compare against it afterward to confirm nothing was deleted.</li>
 <li>In Claude Code, run:
 <pre><code>/sodam-design-kit:pipeline</code></pre>
@@ -450,7 +467,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit's own automated tests (289 as of 2026-08-20; the count may grow over time)</td>
+<td>Runs the kit's own automated tests (305 as of 2026-08-20; the count may grow over time)</td>
 <td>this kit's own repository folder</td>
 </tr>
 <tr>
@@ -466,7 +483,19 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-20 — Added poster/banner/business-card formats to marketing images (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Added a Claude Desktop extension (MCP): browse verification history + re-verify (click to collapse)</b></summary>
+
+<ul>
+<li>Until now this kit could only be used from Claude Code (the terminal-style chat). Now Claude Desktop (the regular desktop app) can also browse verification history, reports, and screenshots, and trigger re-verification, via an extension (<code>.mcpb</code> file).</li>
+<li>An important discovery came up during design — the original plan was "reuse the existing dashboard (a web server) as-is," but checking the official documentation directly showed that this kind of Claude Desktop extension doesn't work as a web server at all; it works a completely different way (Claude Desktop runs the program directly and talks to it). So instead of "sharing a server," the design was reworked to the simpler "reuse the functions that already exist."</li>
+<li>Honest disclosure: this extension only goes as far as "showing the verification result" — it does not have the feature that forcibly stops work on failure, the way Claude Code does (that's a Claude Code-only capability, technically unavailable from other programs). This fact is spelled out directly in the tool descriptions themselves.</li>
+<li>Added 16 new automated tests (289 → 305), all passing. Two new dependencies (the official MCP toolkit and an input-validation library), <code>npm audit</code> still 0.</li>
+<li>The next piece (generating code directly from Figma data) was intentionally left out this round — this round only covers "browse verification history and re-verify," built solidly first.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Added poster/banner/business-card formats to marketing images (click to expand)</b></summary>
 
 <ul>
 <li>Previously only one format (OG, 1200×630, social-share) could be generated. Now poster (1080×1350, Instagram-portrait) · banner (1200×400, wide) · business card (1050×600, real print size) are also available.</li>
@@ -757,6 +786,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 ├── .claude-plugin/
 │   ├── plugin.json                   ← plugin manifest (name, version)
 │   └── marketplace.json              ← marketplace registration (marketplace name: sodam)
+├── manifest.json                     ← Claude Desktop extension (.mcpb) manifest — a separate file from plugin.json (Phase 3)
 ├── commands/
 │   ├── setup.md                      ← the actual definition of /sodam-design-kit:setup
 │   ├── pipeline.md                   ← the actual definition of /sodam-design-kit:pipeline
@@ -776,8 +806,9 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── visual-regression.mjs         ← automatic visual-change detection engine
 │   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
-│   └── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
-├── tests/                            ← automated tests (289 as of 2026-08-20)
+│   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
+│   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
+├── tests/                            ← automated tests (305 as of 2026-08-20)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -959,6 +990,16 @@ Provide the target project's path and the Figma node (or let it use the existing
 <td>sharp</td>
 <td>Apache License 2.0 (confirmed by direct inspection)</td>
 <td>Converts marketing-image SVG output to PNG (Phase 3)</td>
+</tr>
+<tr>
+<td>@modelcontextprotocol/sdk</td>
+<td>MIT License (confirmed by direct inspection)</td>
+<td>Official SDK for the Claude Desktop extension (MCP) (Phase 3)</td>
+</tr>
+<tr>
+<td>zod</td>
+<td>MIT License (confirmed by direct inspection)</td>
+<td>Input validation for MCP tools (Phase 3)</td>
 </tr>
 </tbody>
 </table>

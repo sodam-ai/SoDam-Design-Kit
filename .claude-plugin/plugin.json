@@ -1,5 +1,5 @@
 {
   "name": "sodam-design-kit",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Figma 디자인을 shadcn/ui 코드로 만들고, 실제 브라우저 검증(Playwright+axe-core+3뷰포트)을 통과해야만 완료가 되는 Claude Code 디자인 자동화 킷"
 }

@@ -35,8 +35,20 @@ const PROJECT_DIR_SCHEMA = z.string().describe('대상 프로젝트의 절대경
  * 동일한 가드다. existsSync만으로는 파일과 디렉터리를 구분하지 못해, 잘못된 경로가 이
  * 가드를 통과하면 Node 내부 에러(ENOTDIR 등)가 MCP 응답에 그대로 노출될 수 있다
  * (2026-08-19 실측 발견 패턴 재사용 — 새로 발명하지 않음).
+ *
+ * 빈 문자열은 먼저 걸러낸다(2026-08-20 검증 라운드 실측 발견) — CLI 스크립트의
+ * `getArg('project') || process.cwd()`와 달리, MCP 도구의 projectDir은 항상 명시돼야
+ * 하는 필수 인자다(호출자가 "현재 디렉터리"라는 개념을 가질 이유가 없음 — Claude Desktop이
+ * 어느 프로젝트를 말하는지는 매번 명시로만 알 수 있다). 그런데 `path.resolve('')`는 조용히
+ * `process.cwd()`(MCP 서버 프로세스 자신의 실행 위치, 사용자가 의도한 프로젝트가 아님)로
+ * 풀려버려 existsSync 검사를 항상 통과한다 — 빈 문자열을 주면 엉뚱한 위치(서버 실행 위치)를
+ * 조용히 대상으로 삼는 결함이 됐다. `list_runs`에 `projectDir: ''`를 실제로 넘겨 빈 배열이
+ * 아무 에러 없이 반환되는 것으로 재현·확인했다.
  */
 function assertProjectDir(projectDir) {
+  if (!projectDir || typeof projectDir !== 'string' || projectDir.trim().length === 0) {
+    throw new Error('projectDir은 비어있지 않은 문자열이어야 합니다.');
+  }
   const resolved = path.resolve(projectDir);
   if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
     throw new Error(`프로젝트 디렉터리를 찾을 수 없습니다: ${resolved}`);

@@ -82,6 +82,20 @@ test('list_runs: 존재하지 않는 projectDir은 isError + Node 내부 에러 
   }
 });
 
+test('list_runs: projectDir이 빈 문자열이면 isError (서버 프로세스의 cwd로 조용히 대체되면 안 됨 — 2026-08-20 검증 라운드 실측 발견 결함 회귀 방지)', async () => {
+  const client = await connectedClient();
+  const result = await client.callTool({ name: 'list_runs', arguments: { projectDir: '' } });
+  assert.equal(result.isError, true);
+  assert.match(result.content[0].text, /비어있지 않은 문자열이어야 합니다/);
+});
+
+test('list_runs: projectDir이 공백만 있는 문자열이면 isError', async () => {
+  const client = await connectedClient();
+  const result = await client.callTool({ name: 'list_runs', arguments: { projectDir: '   ' } });
+  assert.equal(result.isError, true);
+  assert.match(result.content[0].text, /비어있지 않은 문자열이어야 합니다/);
+});
+
 test('list_runs: projectDir이 디렉터리가 아니라 파일이면 isError + 같은 안내 문구 (2026-08-19 실측 패턴 재사용)', async () => {
   const client = await connectedClient();
   const base = await mkdtemp(path.join(tmpdir(), 'design-kit-mcp-'));

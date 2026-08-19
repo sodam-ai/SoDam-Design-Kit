@@ -186,6 +186,15 @@ export async function writeMarketingAsset({
   if (!spec) {
     throw new Error(`지원하지 않는 assetType입니다: ${assetType} (지원: ${Object.keys(ASSET_SPECS).join(', ')})`);
   }
+  // extraLines는 배열이어야 한다 — 문자열을 넘기면 자바스크립트가 문자 단위로 순회해버려
+  // (배열이 아니어도 문자열은 순회 가능하므로) renderAsset()이 크래시 없이 글자 하나하나를
+  // 각각 별도 줄로 렌더한 "조용히 잘못된" 이미지를 만들고, 그 뒤 로그 기록 단계의
+  // `.join()` 호출에서야 뒤늦게 원인을 알 수 없는 에러로 죽는 결함을 2026-08-20 검증
+  // 라운드에서 실측 발견했다(문자열 `'전화번호'` 실제 입력으로 재현). 렌더 전에 빠르고
+  // 명확하게 거부한다.
+  if (!Array.isArray(extraLines)) {
+    throw new Error('extraLines는 문자열 배열이어야 합니다.');
+  }
 
   const resolvedProjectDir = path.resolve(projectDir);
   // setup-wizard.mjs가 2026-07-20에 이미 겪고 고친 결함과 같은 패턴 방지 — 존재하지 않는

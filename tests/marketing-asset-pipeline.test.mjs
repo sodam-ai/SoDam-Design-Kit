@@ -251,6 +251,20 @@ test('writeMarketingAsset: 재실행해도 폰트는 네트워크를 다시 타�
   }
 });
 
+test('writeMarketingAsset: extraLines가 배열이 아니면(문자열 등) 명확히 거부한다 (2026-08-20 검증 라운드 실측 발견 결함 회귀 방지 — 문자열은 순회 가능해 조용히 글자 단위로 렌더된 뒤 로그 기록 단계에서야 원인불명 에러로 죽던 결함)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-marketing-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await seedFont(designKitDir);
+    await assert.rejects(
+      () => writeMarketingAsset({ projectDir: dir, assetType: 'businessCard', title: '홍길동', extraLines: '전화번호' }),
+      /extraLines는 문자열 배열이어야 합니다/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('writeMarketingAsset: outputPath로 프로젝트 밖 탈출 시도는 거부', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-marketing-'));
   try {

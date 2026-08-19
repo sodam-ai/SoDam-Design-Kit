@@ -16,7 +16,7 @@
 // 기준본)도 같은 이유로 제외한다 — 프로젝트가 가져온 외부 자산이 아니라 이 킷 자신의 검증
 // 산출물이다.
 
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -170,7 +170,12 @@ async function main() {
   };
 
   const projectDir = path.resolve(getArg('project') || process.cwd());
-  if (!existsSync(projectDir)) {
+  // existsSync만으로는 파일과 디렉터리를 구분하지 못한다 — --project가 실수로 파일을
+  // 가리키면(예: 오타로 파일명까지 붙임) 이 가드를 통과한 뒤 mkdir()이 Node 내부 에러
+  // (ENOTDIR)를 그대로 던져 왕초보에게는 원인을 알 수 없는 스택 트레이스만 보였다
+  // (2026-08-19 실측 발견 — 04 "왕초보 눈높이" 원칙 위반, 조용한 실패는 아니지만 불친절한
+  // 실패였다). 존재 여부와 디렉터리 여부를 함께 확인해 같은 안내 문구로 통일한다.
+  if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
     console.error(`프로젝트 디렉터리를 찾을 수 없습니다: ${projectDir}`);
     process.exit(1);
   }

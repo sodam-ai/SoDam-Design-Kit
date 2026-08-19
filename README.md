@@ -236,7 +236,7 @@ Figma 디자인 ──▶ 코드 생성 ──▶ 실제 브라우저에서 검�
 | 명령 | 설명 | 실행 위치 |
 |---|---|---|
 | `npm install` | 검증용 브라우저 · 접근성 도구 설치(최초 1회) | 이 킷 저장소 폴더 |
-| `npm test` | 킷 자체의 자동 테스트 실행(2026-08-18 기준 272개, 실행 시점에 따라 늘어날 수 있음) | 이 킷 저장소 폴더 |
+| `npm test` | 킷 자체의 자동 테스트 실행(2026-08-19 기준 279개, 실행 시점에 따라 늘어날 수 있음) | 이 킷 저장소 폴더 |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | 전체 파이프라인 왕복(PASS/FAIL/재검증) 자체 점검 | 이 킷 저장소 폴더 |
 
 ---
@@ -523,7 +523,7 @@ SoDam-Design-Kit/                     ← 이 킷의 저장소(지금 이 README
 │   ├── ai-generation-log.mjs         ← AI 생성 이력 자동 기록 엔진 (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← 마케팅 이미지(OG) 자동 생성 엔진 (Phase 3, og 규격만)
 │   └── asset-ledger.mjs              ← 라이선스 게이트 확장(이미지·아이콘 자산) + 출처 정리 문서 자동 생성 (Phase 3)
-├── tests/                            ← 자동 테스트(2026-08-18 기준 272개)
+├── tests/                            ← 자동 테스트(2026-08-19 기준 279개)
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록(개발자용, git에는 올라가지 않음)
 ├── README.md / README.en.md          ← 지금 이 문서

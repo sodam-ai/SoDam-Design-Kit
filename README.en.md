@@ -236,7 +236,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (272 as of 2026-08-18; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (279 as of 2026-08-19; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -527,7 +527,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← marketing image (OG) auto-generation engine (Phase 3, og spec only)
 │   └── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
-├── tests/                            ← automated tests (272 as of 2026-08-18)
+├── tests/                            ← automated tests (279 as of 2026-08-19)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

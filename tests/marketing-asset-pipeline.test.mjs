@@ -38,6 +38,21 @@ test('ASSET_SPECS: og는 1200x630 (OG 이미지 표준 규격)', () => {
   assert.deepEqual(ASSET_SPECS.og, { width: 1200, height: 630, label: ASSET_SPECS.og.label });
 });
 
+test('ASSET_SPECS: poster는 1080x1350 (인스타그램 세로형 4:5)', () => {
+  assert.equal(ASSET_SPECS.poster.width, 1080);
+  assert.equal(ASSET_SPECS.poster.height, 1350);
+});
+
+test('ASSET_SPECS: banner는 1200x400 (og와 구분되는 3:1 가로형)', () => {
+  assert.equal(ASSET_SPECS.banner.width, 1200);
+  assert.equal(ASSET_SPECS.banner.height, 400);
+});
+
+test('ASSET_SPECS: businessCard는 1050x600 (3.5x2인치 @300dpi 실제 명함 인쇄 표준)', () => {
+  assert.equal(ASSET_SPECS.businessCard.width, 1050);
+  assert.equal(ASSET_SPECS.businessCard.height, 600);
+});
+
 // --- renderAsset ---
 
 test('renderAsset: title만으로 지정 규격의 PNG를 실제로 생성한다', async () => {
@@ -83,6 +98,44 @@ test('renderAsset: title 없이 호출하면 거부', async () => {
 
 test('renderAsset: fontPath 없이 호출하면 거부', async () => {
   await assert.rejects(() => renderAsset({ title: '제목', width: 1200, height: 630 }), /fontPath가 필요/);
+});
+
+test('renderAsset: extraLines가 있으면 함께 렌더된다(명함 용도, 별도 크래시 없음)', async () => {
+  const { png, width, height } = await renderAsset({
+    title: '홍길동',
+    subtitle: '대표이사',
+    extraLines: ['소담 스튜디오', '010-1234-5678', 'hong@example.com'],
+    fontPath: CACHED_FONT_PATH,
+    width: 1050,
+    height: 600,
+  });
+  assert.equal(width, 1050);
+  assert.equal(height, 600);
+  const meta = await sharp(png).metadata();
+  assert.equal(meta.format, 'png');
+});
+
+test('renderAsset: extraLines의 빈 문자열·공백 항목은 건너뛴다(크래시 없음)', async () => {
+  const { png } = await renderAsset({
+    title: '홍길동',
+    extraLines: ['', '   ', '소담 스튜디오'],
+    fontPath: CACHED_FONT_PATH,
+    width: 1050,
+    height: 600,
+  });
+  const meta = await sharp(png).metadata();
+  assert.equal(meta.format, 'png');
+});
+
+test('renderAsset: extraLines 없이 호출해도 기존과 동일하게 동작한다(하위 호환)', async () => {
+  const { png } = await renderAsset({
+    title: '제목만',
+    fontPath: CACHED_FONT_PATH,
+    width: 1200,
+    height: 630,
+  });
+  const meta = await sharp(png).metadata();
+  assert.equal(meta.format, 'png');
 });
 
 // --- validateAsset ---
@@ -256,9 +309,72 @@ test('writeMarketingAsset: 지원하지 않는 assetType은 거부', async () =>
     const designKitDir = path.join(dir, '.design-kit');
     await seedFont(designKitDir);
     await assert.rejects(
-      () => writeMarketingAsset({ projectDir: dir, assetType: 'poster', title: '제목' }),
+      () => writeMarketingAsset({ projectDir: dir, assetType: 'flyer', title: '제목' }),
       /지원하지 않는 assetType/
     );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// --- 2차 증분(포스터·배너·명함) 왕복 — 56차 자신의 경고("og 검증 결과를 일반화하지 말 것")를
+// 지켜 각 규격을 개별적으로 실제 렌더+검증까지 확인한다 ---
+
+test('writeMarketingAsset: poster는 1080x1350 실제 파일을 생성한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-marketing-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await seedFont(designKitDir);
+    const result = await writeMarketingAsset({ projectDir: dir, assetType: 'poster', title: '가을 신상품' });
+    assert.equal(result.width, 1080);
+    assert.equal(result.height, 1350);
+    const written = await readFile(path.join(dir, result.outputPath));
+    const meta = await sharp(written).metadata();
+    assert.equal(meta.width, 1080);
+    assert.equal(meta.height, 1350);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeMarketingAsset: banner는 1200x400 실제 파일을 생성한다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-marketing-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await seedFont(designKitDir);
+    const result = await writeMarketingAsset({ projectDir: dir, assetType: 'banner', title: '봄맞이 세일' });
+    assert.equal(result.width, 1200);
+    assert.equal(result.height, 400);
+    const written = await readFile(path.join(dir, result.outputPath));
+    const meta = await sharp(written).metadata();
+    assert.equal(meta.width, 1200);
+    assert.equal(meta.height, 400);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeMarketingAsset: businessCard는 1050x600 + extraLines가 AI-GENERATION-LOG에 기록된다', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-marketing-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    await seedFont(designKitDir);
+    const result = await writeMarketingAsset({
+      projectDir: dir,
+      assetType: 'businessCard',
+      title: '홍길동',
+      subtitle: '대표이사',
+      extraLines: ['소담 스튜디오', '010-1234-5678'],
+    });
+    assert.equal(result.width, 1050);
+    assert.equal(result.height, 600);
+    const written = await readFile(path.join(dir, result.outputPath));
+    const meta = await sharp(written).metadata();
+    assert.equal(meta.width, 1050);
+    assert.equal(meta.height, 600);
+
+    const logContent = await readFile(result.logPath, 'utf-8');
+    assert.match(logContent, /소담 스튜디오 \/ 010-1234-5678/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -294,6 +410,39 @@ test('CLI: 대상 프로젝트 경로에 공백·한글이 있어도 실제로 �
     const written = await readFile(path.join(projectDir, parsed.outputPath));
     const meta = await sharp(written).metadata();
     assert.equal(meta.width, 1200);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('CLI: --extraLines가 "|" 구분자로 파싱돼 businessCard에 반영된다', async () => {
+  const base = await mkdtemp(path.join(PROJECT_ROOT, 'tmp-cli-marketing-'));
+  try {
+    const projectDir = path.join(base, 'project');
+    await mkdir(projectDir, { recursive: true });
+    const designKitDir = path.join(projectDir, '.design-kit');
+    await seedFont(designKitDir);
+
+    const { stdout } = await execFileAsync(process.execPath, [
+      path.join(SCRIPTS_DIR, 'marketing-asset-pipeline.mjs'),
+      '--project',
+      projectDir,
+      '--assetType',
+      'businessCard',
+      '--title',
+      '홍길동',
+      '--subtitle',
+      '대표이사',
+      '--extraLines',
+      '소담 스튜디오|010-1234-5678',
+    ]);
+
+    const parsed = JSON.parse(stdout);
+    assert.equal(parsed.width, 1050);
+    assert.equal(parsed.height, 600);
+    const written = await readFile(path.join(projectDir, parsed.outputPath));
+    const meta = await sharp(written).metadata();
+    assert.equal(meta.width, 1050);
   } finally {
     await rm(base, { recursive: true, force: true });
   }

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
-// SoDam-Design-Kit — 마케팅 소재 파이프라인 (Phase 3, 03_PHASES.md L104) — 1차 증분
-// 범위(2026-08-17 결정, 스파이크 후 착수): OG 이미지 1종만. 포스터·배너·명함·SNS 카드 등
-// 나머지 규격과 ASSET-LEDGER.csv 이미지 확장(④번, 별도 증분)은 의도적으로 범위 밖.
+// SoDam-Design-Kit — 마케팅 소재 파이프라인 (Phase 3, 03_PHASES.md L104)
+// 1차 증분(2026-08-17): OG 이미지만. 2차 증분(2026-08-20): 포스터·배너·명함 추가
+// — og 1종의 검증 결과를 일반화하지 말라던 1차 증분 자신의 경고(56차)를 지켜, 각 규격을
+// 실제 픽스처 CLI 실행으로 개별 검증했다(아래 ASSET_SPECS·renderAsset 참조).
+// ASSET-LEDGER.csv 이미지 확장(=④번, asset-ledger.mjs)은 별도 증분으로 이미 완료돼 있다
+// — 이 파일과는 무관(1m 결정 경계, 02_DATA_MODEL.md 참조).
 //
 // 착수 전 실측 스파이크(코드 미포함, 대화 기록 참조): satori(JSX→SVG)+sharp(SVG→PNG)를
 // 이 PC에서 실제로 설치·실행해 한글 렌더까지 확인 완료. 이 과정에서 satori의 실제
@@ -24,11 +27,21 @@ import { downloadFont } from './font-pipeline.mjs';
 import { appendGenerationLog } from './ai-generation-log.mjs';
 
 /**
- * 지원 자산 규격 — 이번 증분은 og 1종뿐. 새 규격을 추가할 땐 여기 항목만 늘리면 된다
- * (렌더·검증 로직은 규격에 의존하지 않는 범용 구조).
+ * 지원 자산 규격. 새 규격을 추가할 땐 여기 항목만 늘리면 된다(렌더·검증 로직은 규격에
+ * 의존하지 않는 범용 구조 — 56차 설계 그대로).
+ * - og: Open Graph 표준 규격(1200x630)
+ * - poster: 인스타그램 세로형 포스트/포스터 표준 비율(1080x1350, 4:5)
+ * - banner: 가로형 프로모션 배너(1200x400, 3:1 — og와 구분되는 더 납작한 비율)
+ * - businessCard: 실제 명함 인쇄 표준(3.5x2인치 @300dpi = 1050x600px) — title(이름)·
+ *   subtitle(직함)에 더해 `extraLines`(회사·연락처 등 구조화된 추가 줄)를 지원한다
+ *   (56차가 남긴 경고: "명함은 필드 구조가 og와 다름" — title/subtitle만으론 부족해
+ *   renderAsset()에 extraLines를 별도로 추가했다, 아래 참조).
  */
 export const ASSET_SPECS = {
   og: { width: 1200, height: 630, label: 'OG 이미지 (Open Graph, 1200x630)' },
+  poster: { width: 1080, height: 1350, label: '포스터 (인스타그램 세로형, 1080x1350)' },
+  banner: { width: 1200, height: 400, label: '배너 (가로형, 1200x400)' },
+  businessCard: { width: 1050, height: 600, label: '명함 (3.5x2인치 @300dpi, 1050x600)' },
 };
 
 /** registerNewComponent()·writeProductData()와 동일한 경로 탈출 방지 패턴(04 DO NOT). */
@@ -48,6 +61,8 @@ function resolveSafePath(projectDir, relativePath) {
  * @param {object} opts
  * @param {string} opts.title - 필수, 빈 문자열 금지
  * @param {string} [opts.subtitle]
+ * @param {string[]} [opts.extraLines] - 명함 등 구조화된 추가 정보 줄(회사·전화·이메일 등).
+ *   빈 배열이면 og/poster/banner와 동일하게 title+subtitle만 렌더된다(하위 호환).
  * @param {string} opts.fontPath - 로컬 폰트 파일 절대경로(font-pipeline.downloadFont 결과 재사용)
  * @param {string} [opts.fontName] - Satori에 등록할 폰트 이름(기본 'Pretendard')
  * @param {number} opts.width
@@ -58,6 +73,7 @@ function resolveSafePath(projectDir, relativePath) {
 export async function renderAsset({
   title,
   subtitle = '',
+  extraLines = [],
   fontPath,
   fontName = 'Pretendard',
   width,
@@ -84,6 +100,16 @@ export async function renderAsset({
     children.push({
       type: 'div',
       props: { style: { fontSize: 30, marginTop: 24, opacity: 0.85 }, children: subtitle },
+    });
+  }
+  // extraLines는 title/subtitle과 시각적으로 구분되는 더 작은 글씨로, 각각 별도 줄에
+  // 렌더한다(명함의 회사·전화·이메일처럼 여러 항목을 나열하는 용도 — Satori는 children을
+  // 텍스트 노드로만 다뤄 각 문자열이 그대로 이스케이프된다, renderAsset 상단 주석 참조).
+  for (const line of extraLines) {
+    if (!line || typeof line !== 'string' || line.trim().length === 0) continue;
+    children.push({
+      type: 'div',
+      props: { style: { fontSize: 22, marginTop: 12, opacity: 0.75 }, children: line },
     });
   }
 
@@ -138,9 +164,10 @@ export async function validateAsset(pngBuffer, spec, { maxBytes = 5 * 1024 * 102
  * 동일한 통합 원칙 — "검증과 기록은 별개"로 만들지 말 것, 02_DATA_MODEL.md 결정 기록 참조).
  * @param {object} opts
  * @param {string} opts.projectDir
- * @param {string} opts.assetType - ASSET_SPECS 키 (현재 'og'만)
+ * @param {string} opts.assetType - ASSET_SPECS 키 ('og'|'poster'|'banner'|'businessCard')
  * @param {string} opts.title
  * @param {string} [opts.subtitle]
+ * @param {string[]} [opts.extraLines] - 명함 등 구조화된 추가 정보 줄(회사·전화·이메일 등)
  * @param {string} [opts.outputPath] - 기본값 "public/design-kit-assets/<assetType>-<slug>.png"
  * @param {string} [opts.fontKey] - font-pipeline.FONT_WHITELIST 키, 기본 'pretendard'
  * @param {string} [opts.model] - AI-GENERATION-LOG에 남길 모델명
@@ -150,6 +177,7 @@ export async function writeMarketingAsset({
   assetType,
   title,
   subtitle = '',
+  extraLines = [],
   outputPath,
   fontKey = 'pretendard',
   model = 'Claude (Claude Code)',
@@ -176,7 +204,14 @@ export async function writeMarketingAsset({
   const fontFile = font.files.find((f) => !f.skipped) || font.files[0];
   const fontPath = fontFile.path;
 
-  const { png, width, height } = await renderAsset({ title, subtitle, fontPath, width: spec.width, height: spec.height });
+  const { png, width, height } = await renderAsset({
+    title,
+    subtitle,
+    extraLines,
+    fontPath,
+    width: spec.width,
+    height: spec.height,
+  });
 
   const validation = await validateAsset(png, spec);
   if (!validation.valid) {
@@ -212,7 +247,9 @@ export async function writeMarketingAsset({
     designKitDir,
     assetType: 'image',
     model,
-    prompt: `제목: ${title}${subtitle ? `\n부제: ${subtitle}` : ''}`,
+    prompt: `제목: ${title}${subtitle ? `\n부제: ${subtitle}` : ''}${
+      extraLines.length > 0 ? `\n추가 정보: ${extraLines.join(' / ')}` : ''
+    }`,
     humanEdits: '',
     generatedFiles: [resolvedOutputPath],
   });
@@ -233,16 +270,22 @@ async function main() {
 
   if (!assetType || !title) {
     console.error(
-      `사용법: marketing-asset-pipeline.mjs --project <경로> --assetType <${Object.keys(ASSET_SPECS).join('|')}> --title <제목> [--subtitle <부제>] [--output <상대경로>] [--fontKey <pretendard|noto-sans-kr>]`
+      `사용법: marketing-asset-pipeline.mjs --project <경로> --assetType <${Object.keys(ASSET_SPECS).join('|')}> --title <제목> [--subtitle <부제>] [--extraLines "<줄1>|<줄2>|..."] [--output <상대경로>] [--fontKey <pretendard|noto-sans-kr>]`
     );
     process.exit(2);
   }
+
+  const extraLinesArg = getArg('extraLines');
+  // "|"로 구분 — 회사명·전화·이메일 등에 흔한 콤마(,)와 겹치지 않게 하기 위한 선택
+  // (04 ALWAYS DO: Windows/Git Bash 인자 오염 함정과 별개로, 구분자 자체는 CLI 관례 유지).
+  const extraLines = extraLinesArg ? extraLinesArg.split('|').map((s) => s.trim()).filter(Boolean) : [];
 
   const result = await writeMarketingAsset({
     projectDir,
     assetType,
     title,
     subtitle: getArg('subtitle') || '',
+    extraLines,
     outputPath: getArg('output'),
     fontKey: getArg('fontKey') || 'pretendard',
   });

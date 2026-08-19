@@ -4,6 +4,9 @@ import { existsSync } from 'node:fs';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import {
   matchComponent,
   codePathToImportPath,
@@ -12,6 +15,9 @@ import {
   findHardcodedStyleViolations,
   registerNewComponent,
 } from '../scripts/pipeline-codegen.mjs';
+
+const execFileAsync = promisify(execFile);
+const SCRIPTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts');
 
 test('matchComponent: figmaNodeId로 매핑을 찾음', () => {
   const map = [
@@ -242,5 +248,44 @@ test('registerNewComponent: 이미 등록된 codePath면 거부 (재사용 경�
     );
   } finally {
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// --- CLI: 실제 프로세스 실행 (이 스크립트엔 프로젝트 경로 확인 가드 자체가 없었다 — 2026-08-19) ---
+
+test('CLI: --project가 디렉터리가 아니라 파일을 가리키면 Node 내부 에러 대신 안내 문구로 거부한다 (2026-08-19 실측 발견 결함 회귀 방지 — 이 스크립트엔 원래 가드 자체가 없었음)', async () => {
+  const base = await mkdtemp(path.join(tmpdir(), 'design-kit-pipelinecodegen-'));
+  const filePath = path.join(base, 'not-a-directory.txt');
+  try {
+    await writeFile(filePath, '이건 프로젝트 폴더가 아니라 파일입니다', 'utf-8');
+    await assert.rejects(
+      () => execFileAsync(process.execPath, [path.join(SCRIPTS_DIR, 'pipeline-codegen.mjs'), '--project', filePath, '--figmaNodeId', '421:3078']),
+      (err) => {
+        assert.equal(err.code, 1);
+        assert.match(err.stderr, /프로젝트 디렉터리를 찾을 수 없습니다/);
+        assert.doesNotMatch(err.stderr, /ENOENT/, 'Node 내부 에러 메시지가 그대로 노출되면 안 됨');
+        return true;
+      }
+    );
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('CLI: --project가 존재하지 않으면 거부한다 (같은 가드의 존재하지 않는 경로 케이스)', async () => {
+  const base = await mkdtemp(path.join(tmpdir(), 'design-kit-pipelinecodegen-'));
+  const nonexistent = path.join(base, 'does-not-exist');
+  try {
+    await assert.rejects(
+      () => execFileAsync(process.execPath, [path.join(SCRIPTS_DIR, 'pipeline-codegen.mjs'), '--project', nonexistent, '--figmaNodeId', '421:3078']),
+      (err) => {
+        assert.equal(err.code, 1);
+        assert.match(err.stderr, /프로젝트 디렉터리를 찾을 수 없습니다/);
+        return true;
+      }
+    );
+    assert.equal(existsSync(nonexistent), false, '존재하지 않던 경로가 조용히 생성되면 안 됨');
+  } finally {
+    await rm(base, { recursive: true, force: true });
   }
 });

@@ -189,6 +189,21 @@ async function withStaticServer(fn) {
   }
 }
 
+test('CLI: --project가 디렉터리가 아니라 파일을 가리키면 Node 내부 에러 대신 같은 안내 문구로 거부한다 (2026-08-19 실측 발견 결함 회귀 방지 — 이 스크립트엔 원래 이 가드 자체가 없었음)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'verify-runner-cli-'));
+  const filePath = path.join(dir, 'not-a-directory.txt');
+  try {
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile(filePath, '이건 프로젝트 폴더가 아니라 파일입니다', 'utf-8');
+    const proc = await runCli(['--project', filePath, '--route', '/']);
+    assert.equal(proc.code, 1);
+    assert.match(proc.stderr, /프로젝트 디렉터리를 찾을 수 없습니다/);
+    assert.doesNotMatch(proc.stderr, /ENOTDIR/, 'Node 내부 에러 메시지가 그대로 노출되면 안 됨');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('CLI: --target 없이 실행하면 기존과 동일하게 판정서를 기록하지 않는다 (하위 호환)', async () => {
   await withStaticServer(async (port) => {
     const dir = await mkdtemp(path.join(tmpdir(), 'verify-runner-cli-'));

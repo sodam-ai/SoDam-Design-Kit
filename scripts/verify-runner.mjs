@@ -5,6 +5,7 @@
 
 import { spawn } from 'node:child_process';
 import { Socket } from 'node:net';
+import { existsSync, statSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -263,6 +264,18 @@ async function main() {
 
   const explicitUrl = getArg('url');
   const projectDir = getArg('project');
+  // --project는 선택 인자(--url 단독 사용도 유효)라 주어졌을 때만 확인한다. 이 스크립트엔
+  // 프로젝트 경로 확인 가드가 아예 없었다 — 존재하지 않거나 파일을 가리키는 경로를 주면
+  // dev server 기동(mkdir 등)에서 Node 내부 에러(ENOTDIR 등)가 그대로 노출됐다(2026-08-19
+  // 실측 발견). 이 스크립트는 --target 등으로 --project 없이도 여러 갈래에서 이르게
+  // projectDir를 쓰므로(잠금 획득 등) 가능한 한 앞에서 확인한다.
+  if (projectDir) {
+    const resolvedProjectDir = path.resolve(projectDir);
+    if (!existsSync(resolvedProjectDir) || !statSync(resolvedProjectDir).isDirectory()) {
+      console.error(`프로젝트 디렉터리를 찾을 수 없습니다: ${resolvedProjectDir}`);
+      process.exit(1);
+    }
+  }
   const route = getArg('route') || '/';
   let screenshotDir = getArg('screenshotDir');
   // 스크린샷 저장 경로는 .design-kit/ 기준으로 정규화한다 (2026-08-04 실측 발견·수정 — 결정 기록,

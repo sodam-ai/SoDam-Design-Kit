@@ -6,7 +6,7 @@
 // (04 ALWAYS DO: "재시도 중 같은 노드 재호출 금지" — 재시도가 이 스크립트만 다시 부르면
 // Figma 호출이 자동으로 0회가 되는 구조. 무료 월 6회 예산 보호가 목적)
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -174,6 +174,14 @@ async function main() {
     return i >= 0 ? args[i + 1] : undefined;
   };
   const projectDir = path.resolve(getArg('project') || process.cwd());
+  // 이 스크립트엔 프로젝트 경로 확인 가드가 아예 없었다 — 존재하지 않거나 파일을 가리키는
+  // 경로를 주면 하위 파일 접근에서 Node 내부 에러(ENOENT 등)가 그대로 노출됐다(2026-08-19
+  // 실측 발견 — asset-ledger.mjs 등 다른 4개 스크립트에 이미 적용한 것과 동일한 가드를
+  // 여기 처음 추가한다).
+  if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
+    console.error(`프로젝트 디렉터리를 찾을 수 없습니다: ${projectDir}`);
+    process.exit(1);
+  }
   const designKitDir = path.join(projectDir, '.design-kit');
   const figmaNodeId = getArg('figmaNodeId');
   const figmaName = getArg('figmaName');

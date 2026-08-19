@@ -3,7 +3,7 @@
 // .design-kit/config.json 생성 + shadcn 설치 컴포넌트 스캔 → component-map.json 초기 시드
 // 스키마 정본: .PRD/02_DATA_MODEL.md (KitConfig, ComponentMap)
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -88,7 +88,10 @@ export async function runSetup(projectDir, opts = {}) {
   // (mkdir recursive:true가 없는 경로도 다 만들어버려서, 예전엔 "0개 컴포넌트 시드됨"으로
   // 조용히 "성공" 취급됐다 — pipeline-codegen.mjs/preview-route.mjs는 이미 명확히 실패하는데
   // setup-wizard.mjs만 그러지 않던 불일치를 실측으로 발견·수정).
-  if (!existsSync(projectDir)) {
+  // existsSync만으로는 파일과 디렉터리를 구분 못 해 --project가 파일을 가리키면 이 가드를
+  // 통과한 뒤 하위에서 Node 내부 에러(ENOTDIR)가 그대로 노출됐다(asset-ledger.mjs에서
+  // 2026-08-19 실측 발견 — 같은 패턴 회귀 방지).
+  if (!existsSync(projectDir) || !statSync(projectDir).isDirectory()) {
     throw new Error(`프로젝트 디렉터리를 찾을 수 없습니다: ${projectDir}`);
   }
 

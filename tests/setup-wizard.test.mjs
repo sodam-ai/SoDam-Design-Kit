@@ -146,6 +146,21 @@ test('runSetup: 존재하지 않는 프로젝트 경로면 조용히 성공하�
   }
 });
 
+test('runSetup: 프로젝트 경로가 디렉터리가 아니라 파일이면 Node 내부 에러 대신 같은 안내 문구로 거부한다 (2026-08-19 실측 발견 결함 회귀 방지)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-setup-'));
+  const filePath = path.join(dir, 'not-a-directory.txt');
+  try {
+    await writeFile(filePath, '이건 프로젝트 폴더가 아니라 파일입니다', 'utf-8');
+    await assert.rejects(() => runSetup(filePath), (err) => {
+      assert.match(err.message, /프로젝트 디렉터리를 찾을 수 없습니다/);
+      assert.doesNotMatch(err.message, /ENOTDIR/, 'Node 내부 에러 메시지가 그대로 노출되면 안 됨');
+      return true;
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('runSetup: .design-kit/reports/screenshots/를 .gitignore에 등록한다 (02 문서화됐지만 미구현이던 결함 방지)', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-setup-'));
   try {

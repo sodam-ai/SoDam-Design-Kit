@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readdir, copyFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, copyFile, readFile, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -227,6 +227,24 @@ test('writeMarketingAsset: 존재하지 않는 프로젝트 경로는 거부(202
       /프로젝트 디렉터리를 찾을 수 없습니다/
     );
     assert.equal(existsSync(nonexistent), false, '존재하지 않던 경로가 조용히 생성되면 안 됨');
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('writeMarketingAsset: 프로젝트 경로가 디렉터리가 아니라 파일이면 Node 내부 에러 대신 같은 안내 문구로 거부한다 (2026-08-19 실측 발견 결함 회귀 방지)', async () => {
+  const base = await mkdtemp(path.join(tmpdir(), 'design-kit-marketing-'));
+  const filePath = path.join(base, 'not-a-directory.txt');
+  try {
+    await writeFile(filePath, '이건 프로젝트 폴더가 아니라 파일입니다', 'utf-8');
+    await assert.rejects(
+      () => writeMarketingAsset({ projectDir: filePath, assetType: 'og', title: '테스트' }),
+      (err) => {
+        assert.match(err.message, /프로젝트 디렉터리를 찾을 수 없습니다/);
+        assert.doesNotMatch(err.message, /ENOTDIR/, 'Node 내부 에러 메시지가 그대로 노출되면 안 됨');
+        return true;
+      }
+    );
   } finally {
     await rm(base, { recursive: true, force: true });
   }

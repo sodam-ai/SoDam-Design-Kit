@@ -16,7 +16,7 @@
 
 import satori from 'satori';
 import sharp from 'sharp';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -162,7 +162,10 @@ export async function writeMarketingAsset({
   const resolvedProjectDir = path.resolve(projectDir);
   // setup-wizard.mjs가 2026-07-20에 이미 겪고 고친 결함과 같은 패턴 방지 — 존재하지 않는
   // 프로젝트 경로(오타 등)를 조용히 새로 만들어버리면 사용자가 "성공"으로 오인할 수 있다.
-  if (!existsSync(resolvedProjectDir)) {
+  // existsSync만으로는 파일과 디렉터리를 구분 못 해 --project가 파일을 가리키면 이 가드를
+  // 통과한 뒤 하위에서 Node 내부 에러(ENOTDIR)가 그대로 노출됐다(asset-ledger.mjs에서
+  // 2026-08-19 실측 발견 — 같은 패턴 회귀 방지).
+  if (!existsSync(resolvedProjectDir) || !statSync(resolvedProjectDir).isDirectory()) {
     throw new Error(`프로젝트 디렉터리를 찾을 수 없습니다: ${resolvedProjectDir}`);
   }
   const designKitDir = path.join(resolvedProjectDir, '.design-kit');

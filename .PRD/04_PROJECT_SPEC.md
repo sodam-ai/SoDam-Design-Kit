@@ -39,22 +39,29 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 ├── hooks/
 │   └── verify-gate.mjs         # runs/에 verifying·fail 상태가 있을 때만 발동 (오탐 방지 스코핑)
 ├── scripts/
+│   ├── setup-wizard.mjs        # [P1] /sodam-design-kit:setup 엔진 — config.json 생성 + shadcn/ui 컴포넌트 스캔으로 component-map 초기 시드
+│   ├── pipeline-codegen.mjs    # [P1] 코드 생성 엔진 — runCodegen(기존 매핑 재사용)·registerNewComponent(신규 컴포넌트 배치+하드코딩 값 가드)
+│   ├── preview-route.mjs       # [P1] 컴포넌트 단위 검증용 dev 전용 프리뷰 라우트 생성기(generatePreviewRoute)
 │   ├── verify-runner.mjs       # dev server 자동 기동(포트 자동 우회)+Playwright+axe 실행기
 │   ├── asset-downloader.mjs    # [P1, 2026-08-20 완료] Figma 이미지·SVG 자산 다운로드 — https 전용+경로 조작 방어+콘텐츠 기반 형식 검증(sharp/SVG 패턴 스캔), public/design-kit-assets/는 미사용(라이선스 게이트 사각지대 방지)
+│   ├── report-writer.mjs       # runs/·reports/ 생성기
+│   ├── execution-lock.mjs      # [P2, 2026-08-09] .design-kit/.lock 실행 잠금(acquireLock/releaseLock) — 파이프라인·대시보드 재검증·MCP 호출 동시 실행 방지(04 연결/동기화 스펙 2번)
 │   ├── visual-regression.mjs   # [P2, 2026-08-09 완료] 로컬 시각 회귀 감지 — opt-in(--visualRegression), pixelmatch+pngjs
 │   ├── font-pipeline.mjs       # [P2] 폰트 파이프라인 A(전자동, 2026-08-09)+게이트 C(opt-in, 2026-08-10) — OFL 화이트리스트 다운로드+ASSET-LEDGER+next/font/local 모듈+미등록 폰트 스캔(--fontGate)
-│   ├── report-writer.mjs       # runs/·reports/ 생성기
-│   ├── ai-generation-log.mjs   # [P3, 2026-08-17] AI 생성 이력 자동 기록 — 시크릿 필터(redactSecrets) 후 AI-GENERATION-LOG.md에 append(커밋 대상)
-│   ├── marketing-asset-pipeline.mjs # [P3, og·포스터·배너·명함] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
-│   ├── asset-ledger.mjs        # [P3, 2026-08-18] 라이선스 게이트 확장 — ASSET-LEDGER.csv를 이미지·아이콘으로 확장(opt-in 게이트, font-pipeline.mjs 폰트 게이트 패턴 재사용) + ATTRIBUTION.md 자동 생성. public/design-kit-assets/·.design-kit/는 스캔 제외(1m 경계)
 │   ├── dashboard-server.mjs    # [P2] open 대시보드 — 127.0.0.1 전용·열람+T1 트리거(상태 직접 쓰기 금지 — O-Brain 패턴)
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
 │   │   ├── index.html          #      GET / — 토큰 없이 서빙(셸만, 데이터는 /api/*가 보호)
 │   │   └── dashboard.js        #      GET /dashboard.js — innerHTML 사용 금지, textContent만
+│   ├── ai-generation-log.mjs   # [P3, 2026-08-17] AI 생성 이력 자동 기록 — 시크릿 필터(redactSecrets) 후 AI-GENERATION-LOG.md에 append(커밋 대상)
+│   ├── marketing-asset-pipeline.mjs # [P3, og·포스터·배너·명함] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
+│   ├── asset-ledger.mjs        # [P3, 2026-08-18] 라이선스 게이트 확장 — ASSET-LEDGER.csv를 이미지·아이콘으로 확장(opt-in 게이트, font-pipeline.mjs 폰트 게이트 패턴 재사용) + ATTRIBUTION.md 자동 생성. public/design-kit-assets/·.design-kit/는 스캔 제외(1m 경계)
+│   ├── detail-page-pipeline.mjs # [P3, 2026-08-10] 상세페이지 파이프라인 — 상품 데이터 파싱(parseProductData)+페이지 템플릿 1개(registerPageTemplate)+상품별 데이터 파일 분리
 │   └── mcp-server.mjs          # [P3, T1+T2a 완료 2026-08-20] MCP 래퍼 — stdio 전송, dashboard-server.mjs·pipeline-codegen.mjs 함수 in-process 재사용 (Claude Desktop .mcpb)
 ├── AGENTS.md                   # Codex용 규칙 (원천 자료 19번 기반)
 └── README.md
 ```
+
+`scripts/e2e-selftest.mjs`(위 트리엔 없음 — 슬래시 명령이 아니라 `node`로 직접 실행하는 자기 점검 스크립트라 "테스트 방법" 절에서만 다룸): PASS/FAIL/재검증 전체 왕복을 픽스처 프로젝트 대상으로 자동 검증한다.
 
 사용자 프로젝트 쪽에는 `.design-kit/` 폴더만 생성 (02_DATA_MODEL.md 참조).
 

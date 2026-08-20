@@ -1041,6 +1041,55 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tbody>
 </table>
 <p>These licenses are granted independently by their respective projects and are unrelated to this kit's own license. If you want to use these components directly yourself, check their original license text.</p>
+<h3 id="full-audit-of-all-126-packages-including-transitive-dependencies-2026-08-21">Full audit of all 126 packages, including transitive dependencies (2026-08-21)</h3>
+<p>The table above only covers the 8 packages this kit installs directly. Counting the transitive dependencies those 8 pull in, <strong>126 packages</strong> are actually installed — this was the first time all 126 were checked. We initially tried <code>ScanCode Toolkit</code> (a standard license scanner), but it only supports Python 3.12 or earlier and is incompatible with this environment's Python 3.14, so we achieved the same goal with a small Node.js script that reads the <code>license</code> field from every installed package's <code>package.json</code>.</p>
+<table>
+<thead>
+<tr>
+<th>License</th>
+<th>Package count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MIT</td>
+<td>103</td>
+</tr>
+<tr>
+<td>ISC</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Apache-2.0</td>
+<td>4</td>
+</tr>
+<tr>
+<td>MPL-2.0</td>
+<td>3</td>
+</tr>
+<tr>
+<td>BSD-3-Clause</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Apache-2.0 AND LGPL-3.0-or-later (some also MIT)</td>
+<td>2</td>
+</tr>
+<tr>
+<td>BSD-2-Clause</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0BSD</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Packages with no license field</strong>: 0</li>
+<li><strong>Strong copyleft licenses (GPL, AGPL, etc.)</strong>: 0</li>
+<li><strong>One finding worth flagging separately</strong>: two platform-specific native binary packages that <code>sharp</code> (in the table above) installs alongside itself — <code>@img/sharp-win32-x64</code> and <code>@img/sharp-wasm32</code> — include <strong>LGPL-3.0-or-later</strong> (because they dynamically link the <code>libvips</code> library internally). <strong>This is not a legal problem</strong> — LGPL explicitly permits dynamic linking (without copying or modifying the code directly) without that license propagating to the linking program as a whole, and this kit uses <code>sharp</code> unmodified, as an installed dependency only, which satisfies that condition.</li>
+</ul>
 <h3 id="licenses-of-fonts-this-kit-downloads-automatically">Licenses of fonts this kit downloads automatically</h3>
 <p>The "Korean font automation" feature described in <a href="#7-update-summary">Section 7</a> only auto-downloads fonts from a pre-approved whitelist under the open-source <strong>OFL (SIL Open Font License)</strong> — currently Pretendard and Noto Sans KR. OFL permits modifying, redistributing, and commercially using the font, but <strong>prohibits selling the font file itself as a standalone product</strong>. The license basis for each downloaded font is automatically recorded in the target project's <code>ASSET-LEDGER.csv</code>.</p>
 <h3 id="responsibility-for-figma-design-data">Responsibility for Figma design data</h3>

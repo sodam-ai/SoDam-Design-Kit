@@ -722,6 +722,24 @@ Separately from this kit's own license, the open-source libraries it uses intern
 
 These licenses are granted independently by their respective projects and are unrelated to this kit's own license. If you want to use these components directly yourself, check their original license text.
 
+### Full audit of all 126 packages, including transitive dependencies (2026-08-21)
+The table above only covers the 8 packages this kit installs directly. Counting the transitive dependencies those 8 pull in, **126 packages** are actually installed — this was the first time all 126 were checked. We initially tried `ScanCode Toolkit` (a standard license scanner), but it only supports Python 3.12 or earlier and is incompatible with this environment's Python 3.14, so we achieved the same goal with a small Node.js script that reads the `license` field from every installed package's `package.json`.
+
+| License | Package count |
+|---|---|
+| MIT | 103 |
+| ISC | 10 |
+| Apache-2.0 | 4 |
+| MPL-2.0 | 3 |
+| BSD-3-Clause | 2 |
+| Apache-2.0 AND LGPL-3.0-or-later (some also MIT) | 2 |
+| BSD-2-Clause | 1 |
+| 0BSD | 1 |
+
+- **Packages with no license field**: 0
+- **Strong copyleft licenses (GPL, AGPL, etc.)**: 0
+- **One finding worth flagging separately**: two platform-specific native binary packages that `sharp` (in the table above) installs alongside itself — `@img/sharp-win32-x64` and `@img/sharp-wasm32` — include **LGPL-3.0-or-later** (because they dynamically link the `libvips` library internally). **This is not a legal problem** — LGPL explicitly permits dynamic linking (without copying or modifying the code directly) without that license propagating to the linking program as a whole, and this kit uses `sharp` unmodified, as an installed dependency only, which satisfies that condition.
+
 ### Licenses of fonts this kit downloads automatically
 The "Korean font automation" feature described in [Section 7](#7-update-summary) only auto-downloads fonts from a pre-approved whitelist under the open-source **OFL (SIL Open Font License)** — currently Pretendard and Noto Sans KR. OFL permits modifying, redistributing, and commercially using the font, but **prohibits selling the font file itself as a standalone product**. The license basis for each downloaded font is automatically recorded in the target project's `ASSET-LEDGER.csv`.
 

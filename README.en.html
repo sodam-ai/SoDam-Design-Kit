@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-08-20, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>330 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>✅ <strong>Current status (as of 2026-08-21, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>330 automated tests pass</strong>, there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>), and a full license audit of all <strong>126 packages including transitive dependencies is complete</strong> (zero copyleft). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
 <p>⚠️ This kit is still <strong>version 0.3.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
@@ -166,7 +166,7 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td><strong>Command / slash command</strong></td>
-<td>A pre-defined instruction that starts with <code>/</code> (a "slash"). If you've ever used a <code>/</code>-prefixed command in a chat app like Discord or Slack (e.g. <code>/remind</code>), it's the exact same idea. This kit uses 4 such commands, e.g. <code>/sodam-design-kit:setup</code>.</td>
+<td>A pre-defined instruction that starts with <code>/</code> (a "slash"). If you've ever used a <code>/</code>-prefixed command in a chat app like Discord or Slack (e.g. <code>/remind</code>), it's the exact same idea. This kit uses 5 such commands, e.g. <code>/sodam-design-kit:setup</code>.</td>
 </tr>
 <tr>
 <td><strong>Plugin</strong></td>
@@ -313,7 +313,7 @@ img { max-width: 100%; }
 <ol type="1">
 <li>From this repository folder, generate the extension file (<code>.mcpb</code>) with (terminal, inside this repo folder):
 <pre><code>npx @anthropic-ai/mcpb pack .</code></pre>
-This produces <code>sodam-design-kit-0.3.0.mcpb</code> (about 70MB — larger than most extensions because it includes real-browser re-verification).</li>
+A <code>.mcpb</code> file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (as of 2026-08-21 — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed, and it now packages only what's needed).</li>
 <li><strong>Double-click</strong> the generated <code>.mcpb</code> file — Claude Desktop will show an install screen. Review the details and approve.</li>
 <li><strong>Success looks like</strong>: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (<code>list_runs</code>, etc.).</li>
 </ol>
@@ -483,7 +483,18 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-20 — Fixed designs with photos/icons breaking after 7 days (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-21 — Hardened repo security, audited every dependency license, fixed a data-leak bug in the packaged extension (click to collapse)</b></summary>
+
+<ul>
+<li>Found that 3 GitHub repository security features (secret detection, push blocking, and outdated-dependency alerts) had been off for over a week on this public repo, and turned them on.</li>
+<li>Until now only the 8 packages installed directly had their licenses checked. This time we checked all 126 packages, including everything those 8 pull in indirectly. Nothing concerning turned up, but we discovered that a native component bundled inside the image-conversion library (sharp) carries a different kind of license (LGPL) — documented honestly in <a href="#13-legal-copyright-license--commercial-use">Section 13</a> (there is no legal problem).</li>
+<li><strong>A real bug we found</strong>: when building the Claude Desktop extension file (<code>.mcpb</code>), it should only contain the code needed to run — but by mistake, internal development-only files (like <code>CHECKPOINT.md</code>) and an unrelated large test file were being bundled in as well. Fixed the root cause immediately; the extension file shrank from about 70MB to <strong>about 20MB</strong>, and confirmed the problem files are no longer included.</li>
+<li>The automated test count stays at 330 (this round was documentation and repo-configuration only), and all 330 still pass. No new dependencies were added.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Fixed designs with photos/icons breaking after 7 days (click to expand)</b></summary>
 
 <ul>
 <li>When a Figma design contains a photo or icon and gets turned into code, this kit used to put that image's temporary URL directly into the generated code. That URL is one <strong>Figma deletes after 7 days</strong>, so the picture would suddenly vanish from the page once time passed.</li>

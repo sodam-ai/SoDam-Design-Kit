@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **330 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-08-21, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **330 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit`), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
@@ -38,7 +38,7 @@ This document is written so that **someone who has barely used a computer, an AI
 | **AI (artificial intelligence)** | Software that understands plain human language and does the work for you. In this document, "AI" always means "Claude Code." |
 | **Claude Code** | A program by Anthropic that you talk to, in a chat window, to get computer work done (like writing code) on your behalf. It has a "chat window" much like a messaging app — you type what you want in plain sentences. |
 | **Terminal** | A text-based window where you type commands instead of clicking things. Once Claude Code is installed, the same chat window you type into *is* the terminal — there's nothing extra to learn or install. |
-| **Command / slash command** | A pre-defined instruction that starts with `/` (a "slash"). If you've ever used a `/`-prefixed command in a chat app like Discord or Slack (e.g. `/remind`), it's the exact same idea. This kit uses 4 such commands, e.g. `/sodam-design-kit:setup`. |
+| **Command / slash command** | A pre-defined instruction that starts with `/` (a "slash"). If you've ever used a `/`-prefixed command in a chat app like Discord or Slack (e.g. `/remind`), it's the exact same idea. This kit uses 5 such commands, e.g. `/sodam-design-kit:setup`. |
 | **Plugin** | An "add-on bundle" you attach to an existing program (here, Claude Code). It's similar to installing a new app on your phone — this kit itself is one such plugin. |
 | **Folder / path** | A "folder" is a drawer that holds files; a "path" is the address that says where that drawer lives inside your computer (e.g. `D:\MyDocuments\Project`). |
 | **Download / install** | "Download" means bringing a file from the internet onto your computer; "install" means setting that file up so your computer can actually use it. |
@@ -136,7 +136,7 @@ All 4 of the following must be ready. If even one is missing, you cannot proceed
    ```
    npx @anthropic-ai/mcpb pack .
    ```
-   This produces `sodam-design-kit-0.3.0.mcpb` (about 70MB — larger than most extensions because it includes real-browser re-verification).
+   A `.mcpb` file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (as of 2026-08-21 — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed, and it now packages only what's needed).
 2. **Double-click** the generated `.mcpb` file — Claude Desktop will show an install screen. Review the details and approve.
 3. **Success looks like**: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (`list_runs`, etc.).
 
@@ -263,7 +263,17 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-20 — Fixed designs with photos/icons breaking after 7 days (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-21 — Hardened repo security, audited every dependency license, fixed a data-leak bug in the packaged extension (click to collapse)</b></summary>
+
+- Found that 3 GitHub repository security features (secret detection, push blocking, and outdated-dependency alerts) had been off for over a week on this public repo, and turned them on.
+- Until now only the 8 packages installed directly had their licenses checked. This time we checked all 126 packages, including everything those 8 pull in indirectly. Nothing concerning turned up, but we discovered that a native component bundled inside the image-conversion library (sharp) carries a different kind of license (LGPL) — documented honestly in [Section 13](#13-legal-copyright-license--commercial-use) (there is no legal problem).
+- **A real bug we found**: when building the Claude Desktop extension file (`.mcpb`), it should only contain the code needed to run — but by mistake, internal development-only files (like `CHECKPOINT.md`) and an unrelated large test file were being bundled in as well. Fixed the root cause immediately; the extension file shrank from about 70MB to **about 20MB**, and confirmed the problem files are no longer included.
+- The automated test count stays at 330 (this round was documentation and repo-configuration only), and all 330 still pass. No new dependencies were added.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Fixed designs with photos/icons breaking after 7 days (click to expand)</b></summary>
 
 - When a Figma design contains a photo or icon and gets turned into code, this kit used to put that image's temporary URL directly into the generated code. That URL is one **Figma deletes after 7 days**, so the picture would suddenly vanish from the page once time passed.
 - This risk had been written down in the docs from the very start, but nothing actually enforced it — it relied purely on "remembering to handle it carefully." Re-auditing the docs surfaced that gap and it's now fixed.

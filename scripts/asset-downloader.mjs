@@ -53,6 +53,14 @@ export async function downloadAsset({ projectDir, url, targetPath }, { fetchFn =
   }
 
   const res = await fetchFn(url);
+  // fetch는 기본적으로 리다이렉트를 자동으로 따라간다 — 최초 URL이 https://였어도
+  // 서버가 http://나 다른 호스트로 302를 보내면 실제로 받아오는 응답은 그 스킴 검사를
+  // 거치지 않은 곳에서 온 것이다(2026-08-20 검증 라운드에서 로컬 서버로 res.url이
+  // 최종 목적지를 반영함을 실측 확인). 최초 문자열 검사만으로는 이 우회를 못 잡으므로
+  // 응답을 받은 뒤 최종 도달 URL도 다시 검사한다.
+  if (res.url && !res.url.startsWith('https://')) {
+    throw new Error(`리다이렉트된 최종 주소가 https://가 아닙니다 — 저장하지 않음: ${res.url}`);
+  }
   if (!res.ok) {
     throw Object.assign(new Error(`다운로드 실패: ${url} (HTTP ${res.status})`), { statusCode: 502 });
   }

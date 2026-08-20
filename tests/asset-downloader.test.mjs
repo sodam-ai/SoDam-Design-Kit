@@ -14,11 +14,12 @@ const SCRIPTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..'
 
 const SAFE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><circle cx="5" cy="5" r="4" /></svg>';
 
-function fakeFetch(status, body) {
+function fakeFetch(status, body, { url } = {}) {
   const buf = Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf-8');
   return async () => ({
     ok: status >= 200 && status < 300,
     status,
+    url,
     arrayBuffer: async () => buf,
   });
 }
@@ -74,6 +75,24 @@ test('downloadAsset: targetPath가 프로젝트 루트 밖이면 거부 (06 경�
         ),
       /프로젝트 루트 밖을 가리킵니다/
     );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('downloadAsset: https:// URL이어도 리다이렉트 최종 목적지가 https가 아니면 거부 (2026-08-20 검증 라운드 실측 발견 — 실제 로컬 서버로 fetch의 res.url이 최종 도달 주소를 반영함을 확인 후 회귀 방지 추가)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'design-kit-assetdl-'));
+  try {
+    const png = await tinyPngBuffer();
+    await assert.rejects(
+      () =>
+        downloadAsset(
+          { projectDir: dir, url: 'https://example.com/redirect-me.png', targetPath: 'public/x.png' },
+          { fetchFn: fakeFetch(200, png, { url: 'http://internal.example.com/final.png' }) }
+        ),
+      /리다이렉트된 최종 주소가 https:\/\/가 아닙니다/
+    );
+    await assert.rejects(() => readFile(path.join(dir, 'public', 'x.png')));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

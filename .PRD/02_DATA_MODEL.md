@@ -331,3 +331,17 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 README 4종(md/en/html/en.html)에 이 감사 결과와 방법론(ScanCode 대체 사유 포함)을 반영해 `03_PHASES.md`의 "ScanCode 1회 스캔" 항목을 이 방법으로 완료 처리했다. 코드 변경 없음(문서 갱신뿐), `npm test` 330/330 무회귀 재확인.
 
 **이 감사 결과를 재사용할 때 주의**: 이건 설치 시점(2026-08-21)의 `node_modules` 스냅샷 기준이다 — 의존성 버전이 바뀌거나 새 패키지가 추가되면 라이선스 구성도 바뀔 수 있어, 다음에 의존성을 추가·업그레이드할 때는 이 결과를 그대로 믿지 말고 재확인해야 한다(04 ALWAYS DO "새 의존성 추가 시 license 필드 실측 확인" 원칙과 동일선상).
+
+---
+
+**`.mcpb` 패키징에 `.mcpbignore`가 없어 `CHECKPOINT.md`·세션 상태·무관한 48MB Figma 테스트 파일까지 통째로 배포 패키지에 포함되던 결함을 발견·수정했다(2026-08-21, 사용자가 "실제로 써보려면 만들어야 하지 않냐"고 지적해 `.mcpb`를 실제로 다시 만들어보다가 발견)**: 65차(MCP T1)에서 `npx @anthropic-ai/mcpb pack .`으로 `.mcpb` 생성을 실측 확인했을 당시엔 "68.7MB — Playwright·Sharp가 필수라 축소 불가"로만 기록했고, 아카이브 안에 실제로 뭐가 들어갔는지 파일 목록을 자세히 들여다본 적이 없었다. 이번에 `.mcpb`를 다시 생성해 목록을 직접 확인한 결과, 다음이 전부 포함돼 있었다:
+- `CHECKPOINT.md`(70.1kB) — 이 세션 내내 "로컬 전용, 절대 배포·노출 안 함"으로 취급해온 파일이 그대로 패키지 안에 들어가 있었다.
+- `.omc/sessions/*.json`(세션 UUID 27개)·`.failure-tracker.jsonl`·`.active-agents*` — 이 개발 환경(하네스)의 내부 상태 파일들.
+- `figma-test-file/`의 서드파티 Figma 커뮤니티 샘플 파일 2개(합계 약 48MB) — 이 킷의 기능과 무관, 재배포권도 불확실.
+- `.PRD/`(9개 문서, README.md만 113.6kB)·`tests/`·`commands/`·`skills/`·`hooks/`·최상위 `README*`·`AGENTS.md` — 전부 정상적인 저장소 파일이지만 Claude Desktop이 이 확장을 **실행하는 데는** 전혀 필요 없는 것들.
+
+**원인**: `mcpb pack`은 git과 완전히 별개의 도구라 `.gitignore`를 전혀 읽지 않는다. `.gitignore`는 `CHECKPOINT.md`·`.omc/`·`figma-test-file/` 등을 정확히 이미 제외해두고 있었지만(58차 이전부터), `.mcpb` 패키징 전용 제외 목록(`.mcpbignore`)은 한 번도 만들어진 적이 없어 "기본값 = 전부 포함"으로 동작한 것이다. git 커밋 이력에는 전혀 영향 없다(이건 git과 무관한, mcpb pack이 로컬에 생성하는 별도 산출물 파일일 뿐이라, 저장소 자체가 오염된 건 아니다) — 다만 이 `.mcpb` 파일 자체를 만약 누군가에게 전달했다면 그 안에 `CHECKPOINT.md` 전체(과거 라운드의 모든 판단·실측 기록 포함)가 그대로 딸려 갔을 것이다.
+
+**수정**: 저장소 루트에 `.mcpbignore` 신설 — `.gitignore`가 이미 제외해온 항목(하네스 상태·Figma 샘플)에 더해, git엔 정상 추적되지만 실행에 불필요한 것들(`.PRD/`·`tests/`·`commands/`·`skills/`·`hooks/`·`.claude-plugin/`·README 4종·`AGENTS.md`)을 추가로 제외했다. `scripts/`는 통째로 남겨뒀다(전부 정당한 제품 코드, `mcp-server.mjs`가 실제로 안 쓰는 파일 몇 개가 섞여 있어도 민감하지 않고 용량도 미미해 개별 트리밍은 하지 않음 — "필요한 것만 정밀하게"보다 "민감·무관 대용량만 확실히 제외"가 이 상황의 핵심이라는 판단). 재생성 결과 68.8MB(3111개 파일)→**20.0MB(2608개 파일)** — `CHECKPOINT.md`·세션 상태·`.PRD/`·Figma 샘플·`tests/`·`commands/` 전부 제외 확인(재생성 후 아카이브 목록 재검사로 실측 확인). 남은 대용량(`@img/sharp-*` 네이티브 바이너리 27MB·Playwright 14.5MB 등)은 65차가 이미 판단한 대로 실제 실행에 필요한 의존성이라 정당하다. `*.mcpb`를 `.gitignore`에 추가(빌드 산출물, 필요 시 `npx @anthropic-ai/mcpb pack .`로 재생성).
+
+**앞으로 새 파일을 저장소 루트에 추가할 때 주의**: `.gitignore`에 추가하는 것과 `.mcpbignore`에 추가하는 것은 별개의 결정이다 — git에 커밋하고 싶지 않은 것(`.gitignore`)과 Claude Desktop 확장에 포함하고 싶지 않은 것(`.mcpbignore`)은 목적이 다르므로, 새로운 민감·대용량·무관 파일을 추가할 땐 두 파일 모두 검토할 것.

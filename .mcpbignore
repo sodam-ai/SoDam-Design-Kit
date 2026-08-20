@@ -1,0 +1,31 @@
+# .gitignore와 동일한 이유로 제외 (로컬 전용 도구/세션 상태 — 이 킷의 실행에 불필요, 배포 대상 아님)
+*.log
+.DS_Store
+.design-kit-test/
+.design-kit/
+CHECKPOINT.md
+.omc/
+.plugin-config/
+.remember/
+.todos-report.md/
+.complexity-log.md
+.pair-programming-session.md
+.active-agents
+.active-agents.lock
+.active-agents.tmp
+.failure-tracker.jsonl
+
+# git엔 추적되지만(정상) Claude Desktop MCP 확장 실행엔 불필요한 것들
+# (Claude Code 플러그인 전용 파일 · 대용량 서드파티 Figma 테스트 샘플 · 내부 문서)
+figma-test-file/
+.claude-plugin/
+.PRD/
+commands/
+skills/
+hooks/
+tests/
+README.md
+README.en.md
+README.html
+README.en.html
+AGENTS.md

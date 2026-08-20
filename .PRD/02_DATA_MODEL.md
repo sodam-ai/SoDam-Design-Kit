@@ -271,3 +271,15 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 **MCPB 패키징(2026-08-20 실측)**: `npx @anthropic-ai/mcpb init -y .`로 저장소 루트에 `manifest.json` 생성(자동으로 `package.json`의 name·version·description을 가져옴 — 04 "버전 단일화" 원칙이 도구 차원에서 이미 지켜짐), `author`(SoDam AI Studio)·`license`(Apache-2.0, 자동 생성값 MIT는 이 킷의 실제 라이선스와 달라 수정)·`tools`(4개 선언)·`compatibility.platforms`(`win32`·`darwin` — Claude Desktop이 공식 지원하는 두 플랫폼만, 검증 안 된 linux는 명시 안 함)를 보강. `mcpb validate manifest.json` 통과, `mcpb pack .`으로 실제 `.mcpb` 생성 확인(68.7MB — Playwright·Sharp가 `reverify`의 실제 브라우저 재검증에 필수라 축소 불가, `mcpb clean`으로도 68.3MB까지만 감소). **정직하게 남겨둔 한계**: `reverify`는 내부적으로 실제 Playwright 브라우저를 실행하므로, Claude Desktop에서 이 확장만 단독 설치한 사용자는 별도로 Playwright 브라우저 바이너리가 설치돼 있어야 동작한다(이 킷을 Claude Code로 이미 써본 사용자는 `npm install` 시점에 이미 준비됨 — 신규 단독 설치자는 사전 준비 필요, README에 명시).
 
 **AI 대행 불가로 남겨둔 것**: 실제 Claude Desktop 앱에 `.mcpb`를 더블클릭 설치해 도구 목록이 뜨는지, `list_runs` 등을 실제로 호출했을 때 Claude Desktop UI에서 정상 동작하는지는 이 세션(Claude Desktop 앱 자체가 없음)에서 확인 불가 — `CHECKPOINT.md`에 사용자 확인 대기 항목으로 기록.
+
+---
+
+**검증 라운드에서 MCP 래퍼·마케팅 소재 확장 대상 실제 결함 2건을 발견·수정했다(2026-08-20, 위 MCP 서버 래퍼 완료 직후)**: 사용자 요청으로 이번 세션에서 가장 최근 추가된 두 기능(마케팅 소재 확장·MCP 서버 래퍼)을 정상/예외/경계값/실패 시나리오로 재검증했다.
+
+① **`assertProjectDir()`이 빈 문자열을 조용히 받아들였다**: `mcp-server.mjs`의 `assertProjectDir(projectDir)`은 `path.resolve(projectDir)` 후 `existsSync`·`isDirectory()`만 검사했는데, `path.resolve('')`는 Node 표준 동작으로 조용히 `process.cwd()`(MCP 서버 프로세스 자신의 실행 위치, 사용자가 의도한 프로젝트가 아님)로 풀린다. `list_runs`에 `projectDir: ''`을 실제로 넘겨 에러 없이 빈 배열이 반환되는 것으로 재현했다 — 프로젝트 경로가 아니라 서버 자신의 위치를 조용히 대상으로 삼는 결함이었다. **수정**: `path.resolve()` 호출 전에 원시 입력이 비어있는 문자열이거나 문자열이 아닌지 먼저 거부하는 가드를 추가했다. 재검증: `list_runs`·`get_report`·`get_screenshot`·`reverify` 4개 도구 전부 빈 문자열에 동일하게 거부(`isError: true`)하는 것을 실제 MCP 프로토콜 왕복(`InMemoryTransport`)으로 확인, 정상 경로(실제 픽스처, 유효한 `projectDir`)는 영향 없음을 재확인(114건 정상 조회).
+
+② **`extraLines`가 배열이 아니면 조용히 잘못된 이미지를 만들었다**: `marketing-asset-pipeline.mjs`의 `writeMarketingAsset({..., extraLines: '전화번호'})`처럼 배열 대신 문자열을 넘기면, 크래시 대신 자바스크립트 문자열의 문자 단위 순회 특성 때문에 `renderAsset()`의 `for (const line of extraLines)`가 글자 하나하나를 각각 별도 줄로 렌더한 "조용히 잘못된" 이미지를 성공적으로 만들어냈다(`renderAsset()`을 직접 호출해 에러 없이 "성공" 응답이 오는 것까지 추적 확인). 크래시는 그 이후, AI-GENERATION-LOG 기록 단계의 `extraLines.join(' / ')` 호출에서야 뒤늦게 원인을 알 수 없는 형태로 발생했다 — 실제 문제(입력 타입 오류)와 무관해 보이는 지점에서 죽는, 이 프로젝트가 경계해온 "조용한 실패"의 변형이었다. **수정**: `writeMarketingAsset()`의 `assetType` 검증 직후, 렌더링 전에 `Array.isArray(extraLines)` 가드를 추가해 즉시 명확한 메시지로 거부하도록 했다.
+
+두 건 다 회귀 테스트 4건 신설(`npm test` 305→**308/308**, `npm audit` 0건 — 코드 수정만, 새 의존성 없음). **재검증 중 이미 정상 동작으로 확인된 것들(신규 결함 아님, 실측으로 검증)**: MCP 도구 4개의 스키마 필수/타입 검증(SDK 자체 zod 계층이 핸들러 도달 전에 거부), `get_screenshot`의 URL 인코딩(`%2e%2e%2f`)·Windows 역슬래시(`..\\..\\`) 경로 탈출 방어, 5000자 `runId` 방어(정규식이 그대로 거부, 크래시·자원 고갈 없음), 존재하지 않는 도구 이름·예상 밖 추가 필드(SDK가 처리), `extraLines` 20줄·파이프 문자 포함 시 정상 동작, `assetType` 대소문자(`"OG"`)·트레일링 공백(`"og "`) 거부. 커밋 `fad51c6`.
+
+**이 두 가드를 제거하지 말 것** — 특히 ①은 MCP 도구가 `projectDir`을 항상 명시적으로 요구해야 하는 이유(호출자가 "현재 디렉터리"라는 개념을 가질 이유가 없음) 자체와 직결된다.

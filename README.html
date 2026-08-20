@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>Figma 디자인을 shadcn/ui 코드로 만들고, <strong>실제 브라우저 검증(Playwright + axe-core + 3개 화면 크기)을 통과해야만 "완료"로 인정되는</strong> Claude Code 디자인 자동화 킷입니다.</p>
 <p><a href="./README.md">한국어(현재 문서)</a> | <a href="./README.en.md">English</a></p>
 <blockquote>
-<p>✅ <strong>현재 상태 (2026-08-20 기준, 실측 확인)</strong>: **Phase 1(MVP)**과 **Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)**가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트 <strong>305개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
+<p>✅ <strong>현재 상태 (2026-08-20 기준, 실측 확인)</strong>: **Phase 1(MVP)**과 **Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)**가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트 <strong>308개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
 <p>⚠️ 이 킷은 아직 **버전 0.3.0(정식 출시 전, 개발 진행 중)**입니다. 명령어 이름·동작 방식·파일 구조가 앞으로 바뀔 수 있습니다 — 바뀔 때마다 이 문서도 함께 갱신됩니다.</p>
 </blockquote>
 <hr />
@@ -467,7 +467,7 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>킷 자체의 자동 테스트 실행(2026-08-20 기준 305개, 실행 시점에 따라 늘어날 수 있음)</td>
+<td>킷 자체의 자동 테스트 실행(2026-08-20 기준 308개, 실행 시점에 따라 늘어날 수 있음)</td>
 <td>이 킷 저장소 폴더</td>
 </tr>
 <tr>
@@ -483,7 +483,19 @@ img { max-width: 100%; }
 <p>아래 항목들은 접었다 펼 수 있는 "토글" 형태입니다 — 제목(▶ 표시가 있는 줄)을 클릭하면 자세한 내용이 펼쳐집니다. 가장 최근 것이 맨 위에 있습니다.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-20 — Claude Desktop용 확장(MCP) 추가: 검증 이력 열람 + 재검증 (클릭해서 접기)</b></summary>
+<summary><b>▶ 2026-08-20 — 최근 추가 기능 재검증에서 문제 2개 발견·수정 (클릭해서 접기)</b></summary>
+
+<ul>
+<li>바로 아래 두 기능(Claude Desktop용 확장, 마케팅 이미지 규격 추가)을 다시 꼼꼼히 확인하는 과정에서 실제 문제 2건을 찾아 고쳤습니다.</li>
+<li>① Claude Desktop 확장에서 "어느 프로젝트인지" 값을 빈 값으로 잘못 보내면, 오류로 알려주는 대신 엉뚱하게 확장 프로그램 자신이 있는 위치를 대상으로 삼아버리는 문제가 있었습니다. 이제는 빈 값을 주면 바로 명확한 오류로 알려줍니다.</li>
+<li>② 명함 이미지를 만들 때 "추가 정보"(회사·전화번호 등)를 정해진 형식이 아닌 값으로 잘못 넣으면, 오류 없이 조용히 글자가 한 자씩 따로따로 그려진 잘못된 이미지가 만들어지고, 한참 뒤 엉뚱한 단계에서 알아보기 어려운 오류가 나는 문제가 있었습니다. 이제는 잘못된 형식을 넣는 즉시 명확한 오류로 알려줍니다.</li>
+<li>재확인 결과 이 두 가지 외에 새로 발견된 문제는 없었습니다(경로 조작·비정상적으로 긴 입력값·잘못된 형식의 다른 값들은 전부 기존대로 안전하게 처리됨을 재확인).</li>
+<li>자동 테스트 4개 추가(305→308개), 전부 통과. 새로 추가한 기능·명령은 없습니다(기존 기능의 안전장치 보강).</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Claude Desktop용 확장(MCP) 추가: 검증 이력 열람 + 재검증 (클릭해서 펼치기)</b></summary>
 
 <ul>
 <li>지금까지는 Claude Code(터미널형 채팅)에서만 이 킷을 쓸 수 있었는데, 이제 Claude Desktop(일반 데스크톱 앱)에서도 검증 이력·판정서·스크린샷을 보고 재검증을 실행할 수 있는 확장(<code>.mcpb</code> 파일)을 만들 수 있습니다.</li>
@@ -804,7 +816,7 @@ img { max-width: 100%; }
 │   ├── marketing-asset-pipeline.mjs  ← 마케팅 이미지 자동 생성 엔진 (Phase 3, og·포스터·배너·명함)
 │   ├── asset-ledger.mjs              ← 라이선스 게이트 확장(이미지·아이콘 자산) + 출처 정리 문서 자동 생성 (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop용 확장 엔진 — 검증 이력 열람 · 재검증 (Phase 3)
-├── tests/                            ← 자동 테스트(2026-08-20 기준 305개)
+├── tests/                            ← 자동 테스트(2026-08-20 기준 308개)
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록(개발자용, git에는 올라가지 않음)
 ├── README.md / README.en.md          ← 지금 이 문서

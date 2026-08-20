@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **305 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **308 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
@@ -253,7 +253,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (305 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (308 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -263,7 +263,18 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-20 — Added a Claude Desktop extension (MCP): browse verification history + re-verify (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Re-checking the newest features turned up 2 problems, both fixed (click to collapse)</b></summary>
+
+- While re-checking the two features right below (the Claude Desktop extension, the new marketing-image formats) carefully once more, 2 real problems were found and fixed.
+- ① In the Claude Desktop extension, if the "which project" value was sent as empty by mistake, instead of reporting an error it silently treated the extension's own install location as the target. Now an empty value is rejected immediately with a clear error.
+- ② When generating a business-card image, if the "extra info" (company, phone number, etc.) was passed in the wrong shape, instead of an error it silently produced a broken image where each letter was drawn on its own separate line, and only much later, at an unrelated step, did a confusing error finally appear. Now the wrong shape is rejected immediately with a clear error.
+- Beyond these two, re-checking turned up no other new problems (path manipulation, unusually long input, and other malformed values were all confirmed to still be handled safely as before).
+- Added 4 new automated tests (305 → 308), all passing. No new features or commands were added — this was purely hardening existing ones.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Added a Claude Desktop extension (MCP): browse verification history + re-verify (click to expand)</b></summary>
 
 - Until now this kit could only be used from Claude Code (the terminal-style chat). Now Claude Desktop (the regular desktop app) can also browse verification history, reports, and screenshots, and trigger re-verification, via an extension (`.mcpb` file).
 - An important discovery came up during design — the original plan was "reuse the existing dashboard (a web server) as-is," but checking the official documentation directly showed that this kind of Claude Desktop extension doesn't work as a web server at all; it works a completely different way (Claude Desktop runs the program directly and talks to it). So instead of "sharing a server," the design was reworked to the simpler "reuse the functions that already exist."
@@ -567,7 +578,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (305 as of 2026-08-20)
+├── tests/                            ← automated tests (308 as of 2026-08-20)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

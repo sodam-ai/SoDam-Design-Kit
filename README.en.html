@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-08-20, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>305 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>✅ <strong>Current status (as of 2026-08-20, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>308 automated tests pass</strong>, and there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code>). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
 <p>⚠️ This kit is still <strong>version 0.3.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
@@ -467,7 +467,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit's own automated tests (305 as of 2026-08-20; the count may grow over time)</td>
+<td>Runs the kit's own automated tests (308 as of 2026-08-20; the count may grow over time)</td>
 <td>this kit's own repository folder</td>
 </tr>
 <tr>
@@ -483,7 +483,19 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-20 — Added a Claude Desktop extension (MCP): browse verification history + re-verify (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Re-checking the newest features turned up 2 problems, both fixed (click to collapse)</b></summary>
+
+<ul>
+<li>While re-checking the two features right below (the Claude Desktop extension, the new marketing-image formats) carefully once more, 2 real problems were found and fixed.</li>
+<li>① In the Claude Desktop extension, if the "which project" value was sent as empty by mistake, instead of reporting an error it silently treated the extension's own install location as the target. Now an empty value is rejected immediately with a clear error.</li>
+<li>② When generating a business-card image, if the "extra info" (company, phone number, etc.) was passed in the wrong shape, instead of an error it silently produced a broken image where each letter was drawn on its own separate line, and only much later, at an unrelated step, did a confusing error finally appear. Now the wrong shape is rejected immediately with a clear error.</li>
+<li>Beyond these two, re-checking turned up no other new problems (path manipulation, unusually long input, and other malformed values were all confirmed to still be handled safely as before).</li>
+<li>Added 4 new automated tests (305 → 308), all passing. No new features or commands were added — this was purely hardening existing ones.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Added a Claude Desktop extension (MCP): browse verification history + re-verify (click to expand)</b></summary>
 
 <ul>
 <li>Until now this kit could only be used from Claude Code (the terminal-style chat). Now Claude Desktop (the regular desktop app) can also browse verification history, reports, and screenshots, and trigger re-verification, via an extension (<code>.mcpb</code> file).</li>
@@ -808,7 +820,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (305 as of 2026-08-20)
+├── tests/                            ← automated tests (308 as of 2026-08-20)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

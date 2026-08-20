@@ -21,7 +21,7 @@ Figma MCP 도구(`get_metadata`/`get_design_context`)는 이 킷의 Node 스크�
 6. PASS 판정서 없이 "완료" 보고 금지 — `hooks/verify-gate.mjs`가 기계적으로 차단.
 
 ## 실측 함정 (구현 중 확인된 것 — `.PRD/01_PRD.md` §11·04 참조)
-- Figma 이미지·SVG 자산 URL은 **7일 후 만료** — 코드에 그대로 박지 말고 즉시 로컬 다운로드(자산 다운로드 스크립트는 아직 미구현 — 이미지 포함 노드 매핑 시 다음 증분)
+- Figma 이미지·SVG 자산 URL은 **7일 후 만료** — 코드에 그대로 박지 말고 즉시 로컬 다운로드. **2026-08-20부터 `asset-downloader.mjs`로 강제됨** — 신규 컴포넌트 경로 0.5번 참조(재사용 경로는 이미 로컬 파일을 참조하므로 해당 없음)
 - Windows/Git Bash에서 `--route /...` 같은 `/`로 시작하는 인자는 경로로 오염될 수 있음 — PowerShell 사용 권장
 
 ## 절차 — 신규 컴포넌트 경로 (2026-07-27 구현 — component-map에 매핑이 없을 때)
@@ -29,10 +29,13 @@ Figma MCP 도구(`get_metadata`/`get_design_context`)는 이 킷의 Node 스크�
 `matchComponent`가 아무것도 못 찾으면(신규 Figma 노드), 재사용 경로 3번 대신 아래를 따른다.
 Figma 원시 코드를 실제 코드로 옮기는 판단은 **에이전트의 몫**이다 — 스크립트는 결과물을 검사·배치·등록만 한다(Figma 호출 없음, 04 ALWAYS DO 원칙 유지).
 
-1. **[에이전트] 코드 생성**: `get_design_context`로 받은 원시 코드(Tailwind 임의값 포함)를 프로젝트의 **기존 Tailwind/shadcn 토큰**으로 옮겨 쓴다(04 DO NOT: 하드코딩 hex·px 금지). 결과를 스크래치 파일(예: `<scratchpad>/badge.tsx`)에 저장.
+0.5. **[스크립트, 이미지·SVG 자산이 있을 때만] 자산 먼저 로컬로 다운로드 (2026-08-20 신설 — 04 연결/동기화 스펙 6번의 실제 강제)**: `get_design_context` 결과에 이미지·SVG 자산 URL이 있으면, 코드를 작성하기 **전에** 자산마다 `node "${CLAUDE_PLUGIN_ROOT}/scripts/asset-downloader.mjs" --project <경로> --url <Figma 자산 URL> --targetPath <배치할 상대경로, 예: public/images/badge-icon.png>`를 실행한다. 이 URL은 **7일 후 만료**되므로 생성 코드에 그대로 박아넣지 말 것 — 반드시 이 단계로 로컬에 받은 뒤, 다음 단계의 코드에는 로컬 경로(`/images/badge-icon.png`)만 참조한다. 이미지·SVG가 없는 노드(색상·텍스트만)는 이 단계를 건너뛴다.
+1. **[에이전트] 코드 생성**: `get_design_context`로 받은 원시 코드(Tailwind 임의값 포함)를 프로젝트의 **기존 Tailwind/shadcn 토큰**으로 옮겨 쓴다(04 DO NOT: 하드코딩 hex·px 금지). 이미지·SVG를 참조하는 부분은 0.5번에서 받은 로컬 경로로 바꿔 쓴다. 결과를 스크래치 파일(예: `<scratchpad>/badge.tsx`)에 저장.
 2. **[스크립트] 검사+배치+등록 (한 명령)**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-codegen.mjs" --project <경로> --newComponentFile <스크래치 파일 경로> --codePath <배치할 상대경로, 예: src/components/ui/badge.tsx> --figmaNodeId <ID> --figmaName <이름>` — **하드코딩 hex·px 값이 남아있으면 여기서 자동 거부**(파일 미배치·component-map 미변경, 04 DO NOT 규칙을 코드로 강제하는 첫 지점). 통과하면 배치+component-map 등록+프리뷰 라우트 생성까지 한 번에 끝난다.
 3. **[스크립트] 검증 + 판정서 기록**: 재사용 경로 4번과 동일 — `verify-runner.mjs --target ...`.
-4. 이후 FAIL 처리·재시도 규칙은 재사용 경로와 동일.
+4. 이후 FAIL 처리·재시도 규칙은 재사용 경로와 동일. **자산(0.5번)은 재시도 때 다시 받지 않는다** — 이미 로컬에 있으므로 3번부터 재시도(다른 스크립트 단계와 같은 원칙).
+
+**자산 저장 위치 주의**: `public/design-kit-assets/`에 저장하지 말 것 — 그 폴더는 `asset-ledger.mjs --assetGate`가 이 킷 자신이 만드는 마케팅 이미지 전용으로 스캔 제외해둔 곳이다(02_DATA_MODEL.md 결정 기록). Figma에서 받아온 자산은 외부 출처라 라이선스 게이트 대상이므로 `public/images/` 등 일반 위치에 둔다.
 
 ## 아직 없는 것 (다음 증분)
 (현재 없음 — Phase 1 계획된 증분은 모두 구현 완료. 03_PHASES.md 참조)

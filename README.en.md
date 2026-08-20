@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **314 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **329 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
@@ -253,7 +253,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (314 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (329 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -263,7 +263,18 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-20 — Added "re-wire component preview" to the Claude Desktop extension (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Fixed designs with photos/icons breaking after 7 days (click to collapse)</b></summary>
+
+- When a Figma design contains a photo or icon and gets turned into code, this kit used to put that image's temporary URL directly into the generated code. That URL is one **Figma deletes after 7 days**, so the picture would suddenly vanish from the page once time passed.
+- This risk had been written down in the docs from the very start, but nothing actually enforced it — it relied purely on "remembering to handle it carefully." Re-auditing the docs surfaced that gap and it's now fixed.
+- From now on, when a screen with images is generated, those images are automatically downloaded into your project folder, and the code points at the saved local file instead — the picture won't disappear after 7 days anymore.
+- Safety checks were added too: a file is only saved once it's confirmed to be a real image, and icon files (SVG) are rejected if they contain anything that looks like hidden malicious code.
+- Added 15 new automated tests (314 → 329), all passing. No new dependencies were added.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Added "re-wire component preview" to the Claude Desktop extension (click to expand)</b></summary>
 
 - One more capability was added to the Claude Desktop extension (introduced in the entry right below): re-wiring a component that's already registered in `component-map.json` back into the verification preview page.
 - Designing this surfaced something important, confirmed by reading the code directly: "read a Figma design and write new code automatically" and "wire an already-existing component into a preview" turned out to be completely different risk levels. The former (actually writing new code into the project) has no mechanism on Claude Desktop enforcing "not done until verification passes" — so unverified code could silently end up in the project.
@@ -583,13 +594,14 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
 │   ├── report-writer.mjs
+│   ├── asset-downloader.mjs          ← Figma image/icon auto-download engine (fixes the 7-day expiring URL problem)
 │   ├── font-pipeline.mjs             ← automatic Korean font download/setup engine
 │   ├── visual-regression.mjs         ← automatic visual-change detection engine
 │   ├── ai-generation-log.mjs         ← AI-generation history logging engine (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (314 as of 2026-08-20)
+├── tests/                            ← automated tests (329 as of 2026-08-20)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

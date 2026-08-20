@@ -40,6 +40,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   └── verify-gate.mjs         # runs/에 verifying·fail 상태가 있을 때만 발동 (오탐 방지 스코핑)
 ├── scripts/
 │   ├── verify-runner.mjs       # dev server 자동 기동(포트 자동 우회)+Playwright+axe 실행기
+│   ├── asset-downloader.mjs    # [P1, 2026-08-20 완료] Figma 이미지·SVG 자산 다운로드 — https 전용+경로 조작 방어+콘텐츠 기반 형식 검증(sharp/SVG 패턴 스캔), public/design-kit-assets/는 미사용(라이선스 게이트 사각지대 방지)
 │   ├── visual-regression.mjs   # [P2, 2026-08-09 완료] 로컬 시각 회귀 감지 — opt-in(--visualRegression), pixelmatch+pngjs
 │   ├── font-pipeline.mjs       # [P2] 폰트 파이프라인 A(전자동, 2026-08-09)+게이트 C(opt-in, 2026-08-10) — OFL 화이트리스트 다운로드+ASSET-LEDGER+next/font/local 모듈+미등록 폰트 스캔(--fontGate)
 │   ├── report-writer.mjs       # runs/·reports/ 생성기
@@ -50,7 +51,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   ├── dashboard-web/          # [P2] 대시보드 화면(정적 HTML+외부 JS, 인라인 script 금지 — CSP script-src 'self')
 │   │   ├── index.html          #      GET / — 토큰 없이 서빙(셸만, 데이터는 /api/*가 보호)
 │   │   └── dashboard.js        #      GET /dashboard.js — innerHTML 사용 금지, textContent만
-│   └── mcp-server.mjs          # [P3, T1 완료 2026-08-20] MCP 래퍼 — stdio 전송, dashboard-server.mjs 함수 in-process 재사용 (Claude Desktop .mcpb)
+│   └── mcp-server.mjs          # [P3, T1+T2a 완료 2026-08-20] MCP 래퍼 — stdio 전송, dashboard-server.mjs·pipeline-codegen.mjs 함수 in-process 재사용 (Claude Desktop .mcpb)
 ├── AGENTS.md                   # Codex용 규칙 (원천 자료 19번 기반)
 └── README.md
 ```

@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>Figma 디자인을 shadcn/ui 코드로 만들고, <strong>실제 브라우저 검증(Playwright + axe-core + 3개 화면 크기)을 통과해야만 "완료"로 인정되는</strong> Claude Code 디자인 자동화 킷입니다.</p>
 <p><a href="./README.md">한국어(현재 문서)</a> | <a href="./README.en.md">English</a></p>
 <blockquote>
-<p>✅ <strong>현재 상태 (2026-08-20 기준, 실측 확인)</strong>: **Phase 1(MVP)**과 **Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)**가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트 <strong>314개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
+<p>✅ <strong>현재 상태 (2026-08-20 기준, 실측 확인)</strong>: **Phase 1(MVP)**과 **Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)**가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트 <strong>329개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
 <p>⚠️ 이 킷은 아직 **버전 0.3.0(정식 출시 전, 개발 진행 중)**입니다. 명령어 이름·동작 방식·파일 구조가 앞으로 바뀔 수 있습니다 — 바뀔 때마다 이 문서도 함께 갱신됩니다.</p>
 </blockquote>
 <hr />
@@ -467,7 +467,7 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>킷 자체의 자동 테스트 실행(2026-08-20 기준 314개, 실행 시점에 따라 늘어날 수 있음)</td>
+<td>킷 자체의 자동 테스트 실행(2026-08-20 기준 329개, 실행 시점에 따라 늘어날 수 있음)</td>
 <td>이 킷 저장소 폴더</td>
 </tr>
 <tr>
@@ -483,7 +483,19 @@ img { max-width: 100%; }
 <p>아래 항목들은 접었다 펼 수 있는 "토글" 형태입니다 — 제목(▶ 표시가 있는 줄)을 클릭하면 자세한 내용이 펼쳐집니다. 가장 최근 것이 맨 위에 있습니다.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-08-20 — Claude Desktop 확장에 "컴포넌트 프리뷰 다시 연결" 기능 추가 (클릭해서 접기)</b></summary>
+<summary><b>▶ 2026-08-20 — 디자인에 사진·아이콘이 들어있어도 7일 뒤 깨지지 않게 수정 (클릭해서 접기)</b></summary>
+
+<ul>
+<li>Figma 디자인 안에 사진이나 아이콘이 들어있는 화면을 코드로 만들 때, 지금까지는 그 이미지 주소를 임시 주소 그대로 코드에 넣고 있었습니다. 이 임시 주소는 <strong>Figma가 7일 뒤에 없애버리는 주소</strong>라서, 시간이 지나면 화면에서 그림이 갑자기 사라지는 문제가 있었습니다.</li>
+<li>처음부터 이 문제가 있다는 건 문서에 적혀 있었지만, 실제로 막아주는 장치는 없이 "알아서 조심하기"에만 의존하고 있었다는 걸 이번에 재확인해서 고쳤습니다.</li>
+<li>이제부터는 이미지가 있는 화면을 만들 때 그 이미지를 자동으로 내 프로젝트 폴더 안에 내려받아 저장하고, 코드에는 그 저장된 파일을 가리키게 만듭니다 — 7일이 지나도 그림이 사라지지 않습니다.</li>
+<li>안전장치도 같이 넣었습니다: 진짜 이미지 파일이 맞는지 확인 후에만 저장하고, 아이콘 파일(SVG) 안에 위험한 코드가 숨어 있으면 저장을 거부합니다.</li>
+<li>자동 테스트 15개 추가(314→329개), 전부 통과. 새로운 프로그램(의존성)은 추가하지 않았습니다.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Claude Desktop 확장에 "컴포넌트 프리뷰 다시 연결" 기능 추가 (클릭해서 펼치기)</b></summary>
 
 <ul>
 <li>Claude Desktop 확장(바로 아래 항목에서 처음 추가)에 기능 1개를 더했습니다 — <code>component-map.json</code>에 이미 등록된 컴포넌트를 검증용 프리뷰 화면에 다시 연결하는 기능입니다.</li>
@@ -822,13 +834,14 @@ img { max-width: 100%; }
 │   ├── preview-route.mjs
 │   ├── verify-runner.mjs
 │   ├── report-writer.mjs
+│   ├── asset-downloader.mjs          ← Figma 이미지·아이콘 자동 다운로드 엔진(7일 만료 URL 문제 해결)
 │   ├── font-pipeline.mjs             ← 한글 폰트 자동 다운로드/설정 엔진
 │   ├── visual-regression.mjs         ← 화면 변경 자동 감지 엔진
 │   ├── ai-generation-log.mjs         ← AI 생성 이력 자동 기록 엔진 (Phase 3)
 │   ├── marketing-asset-pipeline.mjs  ← 마케팅 이미지 자동 생성 엔진 (Phase 3, og·포스터·배너·명함)
 │   ├── asset-ledger.mjs              ← 라이선스 게이트 확장(이미지·아이콘 자산) + 출처 정리 문서 자동 생성 (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop용 확장 엔진 — 검증 이력 열람 · 재검증 (Phase 3)
-├── tests/                            ← 자동 테스트(2026-08-20 기준 314개)
+├── tests/                            ← 자동 테스트(2026-08-20 기준 329개)
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
 ├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록(개발자용, git에는 올라가지 않음)
 ├── README.md / README.en.md          ← 지금 이 문서

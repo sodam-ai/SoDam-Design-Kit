@@ -26,6 +26,7 @@ import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listRuns, readReportContent, readScreenshotFile, reverifyRun, extractScreenshotPaths } from './dashboard-server.mjs';
+import { runCodegen } from './pipeline-codegen.mjs';
 
 const RUN_ID_EXAMPLE = '예: 2026-08-20-001';
 const PROJECT_DIR_SCHEMA = z.string().describe('대상 프로젝트의 절대경로(.design-kit/이 있는 폴더)');
@@ -167,6 +168,43 @@ export function createServer() {
       try {
         const resolved = assertProjectDir(projectDir);
         const result = await reverifyRun(resolved, path.join(resolved, '.design-kit'), runId);
+        return textResult(JSON.stringify(result, null, 2));
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  /**
+   * T2a(2026-08-20) — pipeline-codegen.mjs의 runCodegen()만 노출한다. 같은 파일의
+   * registerNewComponent()(신규 컴포넌트 실제 코드를 프로젝트에 쓰는 경로)는 의도적으로
+   * 제외했다 — Claude Desktop엔 완료 차단 훅(T3)이 없어, 그 경로를 그대로 열면 검증 없이
+   * 실제 애플리케이션 코드가 조용히 프로젝트에 들어갈 수 있는 첫 통로가 된다(01_PRD.md §1
+   * 핵심 가치와 직접 충돌). runCodegen()은 이미 매핑된 컴포넌트를 dev 전용·gitignore 대상
+   * 프리뷰 라우트에 연결만 하므로 이 위험이 없다 — T2를 T2a/T2b로 나눈 근거는
+   * 02_DATA_MODEL.md 결정 기록 참조. registerNewComponent()를 여기 추가하려면 별도 리스크
+   * 검토와 별도 사용자 승인이 먼저 필요하다.
+   */
+  server.registerTool(
+    'register_component_preview',
+    {
+      title: '컴포넌트 프리뷰 등록',
+      description:
+        '이 도구는 Figma를 읽지 않고 새 코드를 작성하지도 않습니다 — component-map.json에 이미 등록된 ' +
+        '컴포넌트를 검증용 프리뷰 라우트(dev 전용, 프로젝트에 커밋되지 않음)에 연결할 뿐입니다. ' +
+        '매핑이 없으면 실패합니다 — 매핑은 Claude Code의 /sodam-design-kit:setup 또는 :pipeline, ' +
+        '또는 component-map.json 직접 편집으로 먼저 만들어야 합니다. ' +
+        '이 도구만으로는 판정이 나오지 않습니다 — 실행 후 반드시 reverify 도구를 호출해 PASS/FAIL을 확인하세요.',
+      inputSchema: {
+        projectDir: PROJECT_DIR_SCHEMA,
+        figmaNodeId: z.string().optional().describe('component-map.json에 등록된 Figma 노드 ID'),
+        figmaName: z.string().optional().describe('component-map.json에 등록된 Figma 컴포넌트 이름'),
+      },
+    },
+    async ({ projectDir, figmaNodeId, figmaName }) => {
+      try {
+        const resolved = assertProjectDir(projectDir);
+        const result = await runCodegen({ projectDir: resolved, designKitDir: path.join(resolved, '.design-kit'), figmaNodeId, figmaName });
         return textResult(JSON.stringify(result, null, 2));
       } catch (err) {
         return errorResult(err);

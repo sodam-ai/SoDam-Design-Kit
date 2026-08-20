@@ -283,3 +283,21 @@ FAIL 확정 전 같은 코드로 1회 자동 재검한다 — **2회 연속 FAIL
 두 건 다 회귀 테스트 4건 신설(`npm test` 305→**308/308**, `npm audit` 0건 — 코드 수정만, 새 의존성 없음). **재검증 중 이미 정상 동작으로 확인된 것들(신규 결함 아님, 실측으로 검증)**: MCP 도구 4개의 스키마 필수/타입 검증(SDK 자체 zod 계층이 핸들러 도달 전에 거부), `get_screenshot`의 URL 인코딩(`%2e%2e%2f`)·Windows 역슬래시(`..\\..\\`) 경로 탈출 방어, 5000자 `runId` 방어(정규식이 그대로 거부, 크래시·자원 고갈 없음), 존재하지 않는 도구 이름·예상 밖 추가 필드(SDK가 처리), `extraLines` 20줄·파이프 문자 포함 시 정상 동작, `assetType` 대소문자(`"OG"`)·트레일링 공백(`"og "`) 거부. 커밋 `fad51c6`.
 
 **이 두 가드를 제거하지 말 것** — 특히 ①은 MCP 도구가 `projectDir`을 항상 명시적으로 요구해야 하는 이유(호출자가 "현재 디렉터리"라는 개념을 가질 이유가 없음) 자체와 직결된다.
+
+---
+
+**T2를 T2a/T2b로 쪼개고 T2a만 구현했다(2026-08-20, "다음 Phase 작업" 검토 중 발견 — Plan Mode로 설계 후 구현)**: 01_PRD.md §3 Parity 매트릭스는 T2("Figma 읽기→매핑→코드 생성")를 Claude Desktop MCP의 다음 증분으로 남겨뒀다. 착수 전 `scripts/pipeline-codegen.mjs`를 직접 열어본 결과, 이 원안 전제 자체가 부정확했다는 걸 발견했다 — T1 착수 때 "대시보드 서버 공유" 전제가 스파이크로 틀렸다고 밝혀진 것과 같은 종류의 발견이다.
+
+**발견한 사실**: 이 킷에는 "Figma 데이터를 받아 코드를 생성하는 함수"가 존재하지 않는다. `commands/pipeline.md`도 처음부터 "코드 작성은 에이전트(Claude) 자신의 몫, 스크립트는 검사·배치·등록만"으로 설계돼 있다. `pipeline-codegen.mjs`는 위험 등급이 서로 다른 두 함수를 제공한다:
+- `runCodegen({projectDir, designKitDir, figmaNodeId, figmaName})` — **이미 매핑된** 컴포넌트를 dev 전용·gitignore 대상 프리뷰 라우트(`preview-route.mjs`의 `generatePreviewRoute()` 재사용)에 연결만 한다. 신규 코드 0줄, Figma 재호출 0회. 실패 시(매핑 없음) 이미 명확한 에러를 던진다.
+- `registerNewComponent({..., sourceFile, codePath})` — 에이전트가 이미 디스크에 써둔 `.tsx` 파일을 받아, 하드코딩 값 검사(`findHardcodedStyleViolations`)·경로 탈출 검증(06 신뢰 경계)·중복 등록 검사를 통과시킨 뒤 **실제 프로젝트 코드 위치(`resolvedDest`)에 파일을 쓴다** — 이게 진짜 "코드 생성·배치"에 해당하는 함수다.
+
+**리스크 판단**: `runCodegen()` 경로는 T1과 같은 등급(사실상 무해)이지만, `registerNewComponent()` 경로를 그대로 MCP로 열면 새로운 종류의 위험이 생긴다 — Claude Desktop엔 Claude Code의 Stop 훅(T3, 완료 차단)이 없으므로, 이 경로가 열리는 순간 **검증 게이트를 한 번도 거치지 않은 실제 애플리케이션 코드가 조용히 프로젝트에 들어갈 수 있는 첫 통로**가 생긴다. 이건 01_PRD.md §1 핵심 가치("실제 브라우저 검증을 통과해야만 완료로 인정")와 정면으로 충돌하는 블라스트 반경이라, T1(읽기+기존 코드 재검증 트리거)이 가졌던 위험과는 질적으로 다르다.
+
+**결정**: 이번 증분은 `runCodegen()`만 `register_component_preview` MCP 도구로 노출한다(T2a). `registerNewComponent()`(T2b)는 별도 리스크 검토·별도 사용자 승인 없이는 노출하지 않는다 — marketing-asset이 og 1종부터 시작하고 폰트 게이트가 opt-in으로 시작한 것과 같은 "작게 시작" 원칙을, 이번엔 "한 함수 안의 두 경로 중 안전한 쪽만 먼저 연다"는 형태로 한 단계 더 정밀하게 적용한 것이다.
+
+**구현**: `scripts/mcp-server.mjs`에 `runCodegen`을 import해 5번째 도구로 등록 — 새 비즈니스 로직 0줄(T1과 같은 "얇은 래퍼" 원칙). 도구 이름을 `register_component_preview`로 정했다(`generate_code`류 이름은 실제로 코드를 생성하지 않으므로 01 §3 정직 원칙 위반) — description에 "Figma를 읽지 않고 새 코드를 작성하지도 않는다", "매핑이 없으면 실패한다", "이 도구만으로는 판정이 나오지 않으니 `reverify`를 호출하라"는 3가지 정직 고지를 `reverify` 도구의 선례와 같은 방식으로 명시했다.
+
+단위테스트 6건 신설(`npm test` 308→**314/314**, `npm audit` 0건 — 새 의존성 없음, 기존 `pipeline-codegen.mjs` re-import뿐) — 도구 개수 5개 갱신, 정직 고지 3종 확인, 실제 매핑으로 프리뷰 라우트 생성 성공 경로, 매핑 없음·`projectDir` 없음/빈 문자열 실패 경로. **실제 픽스처(`SoDam-Design-Kit-Fixture`) 대상 `InMemoryTransport`로 왕복 실측**: `register_component_preview`로 실제 `button` 컴포넌트를 프리뷰 라우트에 재연결 확인 → 이어서 기존 `reverify` 도구를 실제로 호출해 새 PASS 판정서(`2026-08-20-020`) 생성까지 확인 — T2a가 기존 T1 도구와 실제로 연결되는 것을 증명했다. `e2e-selftest.mjs` 무회귀 확인.
+
+**`register_component_preview`에 `registerNewComponent()`(T2b) 경로를 추가하지 말 것** — 추가하려면 위에 적은 "완료 차단 우회" 리스크를 먼저 어떻게 완화할지(예: 별도의 명시적 "미검증" 마킹, 강제 `reverify` 체이닝 등)를 설계하고 사용자 승인을 받아야 한다.

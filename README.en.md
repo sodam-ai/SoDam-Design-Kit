@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **308 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-08-20, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **314 automated tests pass**, and there are **0 known security vulnerabilities** (per `npm audit`). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
@@ -141,8 +141,8 @@ All 4 of the following must be ready. If even one is missing, you cannot proceed
 3. **Success looks like**: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (`list_runs`, etc.).
 
 **What this extension can and can't do (honest disclosure)**:
-- Can: browse verification history, view reports/screenshots, trigger re-verification — the same data as the `/sodam-design-kit:open` dashboard in Claude Code.
-- Can't: **mechanically block completion**. That's a Claude Code hook-only feature. Claude Desktop only shows the re-verify result (PASS/FAIL); it won't forcibly stop work on a FAIL.
+- Can: browse verification history, view reports/screenshots, trigger re-verification — the same data as the `/sodam-design-kit:open` dashboard in Claude Code. **(added 2026-08-20)** It can also re-wire a component that's already registered in `component-map.json` back into the verification preview page (it does not read Figma or write new code — it only reuses an existing mapping).
+- Can't: **mechanically block completion**. That's a Claude Code hook-only feature. Claude Desktop only shows the re-verify result (PASS/FAIL); it won't forcibly stop work on a FAIL. It also **won't write real code for a new component into your project on Claude Desktop's behalf** — that was intentionally left out this round because it would let unverified code enter the project silently.
 - The re-verify feature runs a real browser (Playwright) internally — if you've already run `npm install` in this repo, you're set. If you installed only this extension standalone, you may separately need `npx playwright install`.
 
 ---
@@ -253,7 +253,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (308 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (314 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -263,7 +263,18 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-20 — Re-checking the newest features turned up 2 problems, both fixed (click to collapse)</b></summary>
+<summary><b>▶ 2026-08-20 — Added "re-wire component preview" to the Claude Desktop extension (click to collapse)</b></summary>
+
+- One more capability was added to the Claude Desktop extension (introduced in the entry right below): re-wiring a component that's already registered in `component-map.json` back into the verification preview page.
+- Designing this surfaced something important, confirmed by reading the code directly: "read a Figma design and write new code automatically" and "wire an already-existing component into a preview" turned out to be completely different risk levels. The former (actually writing new code into the project) has no mechanism on Claude Desktop enforcing "not done until verification passes" — so unverified code could silently end up in the project.
+- So only the safe half (wiring an existing component into a preview) was added this round; the risky half (writing new code into the project) was intentionally left out.
+- Added 6 new automated tests (308 → 314), all passing. No new dependencies were added (this fully reuses existing functionality).
+- Confirmed end-to-end against a real test project: "wire component into preview → re-verify" round-trips correctly.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-20 — Re-checking the newest features turned up 2 problems, both fixed (click to expand)</b></summary>
 
 - While re-checking the two features right below (the Claude Desktop extension, the new marketing-image formats) carefully once more, 2 real problems were found and fixed.
 - ① In the Claude Desktop extension, if the "which project" value was sent as empty by mistake, instead of reporting an error it silently treated the extension's own install location as the target. Now an empty value is rejected immediately with a clear error.
@@ -578,7 +589,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (308 as of 2026-08-20)
+├── tests/                            ← automated tests (314 as of 2026-08-20)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

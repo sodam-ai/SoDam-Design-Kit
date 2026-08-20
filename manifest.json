@@ -26,7 +26,8 @@
     { "name": "list_runs", "description": "검증 실행 이력을 최신순으로 조회합니다" },
     { "name": "get_report", "description": "판정서(PASS/FAIL·근거)와 스크린샷 목록을 조회합니다" },
     { "name": "get_screenshot", "description": "검증 스크린샷 이미지를 조회합니다" },
-    { "name": "reverify", "description": "저장된 실행 기록을 다시 검증하고 판정을 받습니다 (완료를 자동으로 막지는 않습니다)" }
+    { "name": "reverify", "description": "저장된 실행 기록을 다시 검증하고 판정을 받습니다 (완료를 자동으로 막지는 않습니다)" },
+    { "name": "register_component_preview", "description": "이미 매핑된 컴포넌트를 검증용 프리뷰 라우트에 연결합니다 (Figma 읽기·코드 생성 없음)" }
   ],
   "compatibility": {
     "platforms": ["win32", "darwin"]

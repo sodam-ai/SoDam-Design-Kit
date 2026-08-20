@@ -21,13 +21,22 @@ async function connectedClient() {
   return client;
 }
 
-test('createServer: 도구 4개가 정확히 등록된다', async () => {
+test('createServer: 도구 5개가 정확히 등록된다', async () => {
   const client = await connectedClient();
   const { tools } = await client.listTools();
   assert.deepEqual(
     tools.map((t) => t.name).sort(),
-    ['get_report', 'get_screenshot', 'list_runs', 'reverify']
+    ['get_report', 'get_screenshot', 'list_runs', 'register_component_preview', 'reverify']
   );
+});
+
+test('register_component_preview 도구 설명에 3가지 정직 고지가 전부 포함된다 (T2a — Figma 안 읽음/코드 안 씀/판정 없음)', async () => {
+  const client = await connectedClient();
+  const { tools } = await client.listTools();
+  const tool = tools.find((t) => t.name === 'register_component_preview');
+  assert.match(tool.description, /Figma를 읽지 않고 새 코드를 작성하지도 않습니다/);
+  assert.match(tool.description, /매핑이 없으면 실패합니다/);
+  assert.match(tool.description, /이 도구만으로는 판정이 나오지 않습니다/);
 });
 
 test('reverify 도구 설명에 "완료 보고를 기계적으로 차단하지 않는다"는 정직 고지가 포함된다 (01_PRD.md §3 능력 매트릭스 집행 지점)', async () => {
@@ -274,4 +283,97 @@ test('reverify: 존재하지 않는 projectDir은 isError + Node 내부 에러 �
   } finally {
     await rm(base, { recursive: true, force: true });
   }
+});
+
+// --- register_component_preview (T2a) ---
+
+test('register_component_preview: 이미 매핑된 컴포넌트를 실제로 프리뷰 라우트에 연결한다 (전체 왕복)', async () => {
+  const client = await connectedClient();
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-mcp-'));
+  try {
+    const designKitDir = path.join(projectDir, '.design-kit');
+    await mkdir(designKitDir, { recursive: true });
+    await mkdir(path.join(projectDir, 'src', 'app'), { recursive: true });
+    await writeFile(path.join(projectDir, 'components.json'), JSON.stringify({ aliases: { ui: '@/components/ui' } }), 'utf-8');
+    await writeFile(
+      path.join(designKitDir, 'component-map.json'),
+      JSON.stringify([{ figmaNodeId: '421:3078', figmaName: 'Button', codePath: 'src/components/ui/button.tsx' }])
+    );
+
+    const result = await client.callTool({
+      name: 'register_component_preview',
+      arguments: { projectDir, figmaNodeId: '421:3078' },
+    });
+
+    assert.equal(result.isError, undefined);
+    const parsed = JSON.parse(result.content[0].text);
+    assert.equal(parsed.routePath, '/design-kit-preview/button');
+    assert.equal(parsed.matchedComponent.figmaNodeId, '421:3078');
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('register_component_preview: 매핑 없는 figmaNodeId는 isError + Figma를 다시 호출하지 않았다는 안내', async () => {
+  const client = await connectedClient();
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-mcp-'));
+  try {
+    const designKitDir = path.join(projectDir, '.design-kit');
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(path.join(designKitDir, 'component-map.json'), '[]', 'utf-8');
+
+    const result = await client.callTool({
+      name: 'register_component_preview',
+      arguments: { projectDir, figmaNodeId: '999:999' },
+    });
+
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /component-map\.json에 매핑된 컴포넌트가 없습니다/);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('register_component_preview: figmaNodeId·figmaName 둘 다 없으면 isError (빈 매핑 판정 그대로)', async () => {
+  const client = await connectedClient();
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'design-kit-mcp-'));
+  try {
+    const designKitDir = path.join(projectDir, '.design-kit');
+    await mkdir(designKitDir, { recursive: true });
+    await writeFile(path.join(designKitDir, 'component-map.json'), '[]', 'utf-8');
+
+    const result = await client.callTool({ name: 'register_component_preview', arguments: { projectDir } });
+
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /component-map\.json에 매핑된 컴포넌트가 없습니다/);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('register_component_preview: 존재하지 않는 projectDir은 isError + Node 내부 에러 미노출', async () => {
+  const client = await connectedClient();
+  const base = await mkdtemp(path.join(tmpdir(), 'design-kit-mcp-'));
+  const nonexistent = path.join(base, 'does-not-exist');
+  try {
+    const result = await client.callTool({
+      name: 'register_component_preview',
+      arguments: { projectDir: nonexistent, figmaNodeId: '421:3078' },
+    });
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /프로젝트 디렉터리를 찾을 수 없습니다/);
+    assert.doesNotMatch(result.content[0].text, /ENOENT|ENOTDIR/);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('register_component_preview: 빈 문자열 projectDir은 isError (2026-08-20 assertProjectDir 가드 재확인)', async () => {
+  const client = await connectedClient();
+  const result = await client.callTool({
+    name: 'register_component_preview',
+    arguments: { projectDir: '', figmaNodeId: '421:3078' },
+  });
+  assert.equal(result.isError, true);
+  assert.match(result.content[0].text, /비어있지 않은 문자열이어야 합니다/);
 });

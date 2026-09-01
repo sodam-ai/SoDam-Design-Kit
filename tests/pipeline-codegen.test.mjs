@@ -14,6 +14,7 @@ import {
   runCodegen,
   findHardcodedStyleViolations,
   registerNewComponent,
+  registerAndVerifyComponent,
 } from '../scripts/pipeline-codegen.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -246,6 +247,80 @@ test('registerNewComponent: 이미 등록된 codePath면 거부 (재사용 경�
       () => registerNewComponent({ projectDir: dir, designKitDir, sourceFile, codePath: 'src/components/ui/button.tsx' }),
       /등록돼 있습니다/
     );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// registerAndVerifyComponent: registerNewComponent() + 자동 재검증 연쇄 (2026-09-01 — T2B_RISK_REVIEW.md
+// §5-1 완화방안 B). 여기서는 registerNewComponent() 자체가 등록을 "거부"하는 경로만 검증한다 —
+// 이 경로는 acquireLock()·startDevServer()(실제 브라우저)에 도달하기 전에 끝나야 하므로 빠르고
+// 결정적인 단위테스트로 검증 가능하다. 실제 PASS/FAIL 판정까지 도는 전체 왕복(진짜 브라우저 필요)은
+// 이 프로젝트의 기존 관례(M1·M4·T2a 등)와 동일하게 npm test가 아니라 픽스처 실측으로 검증한다
+// (verify-runner.mjs의 startDevServer/verifyPage/chromium 자체도 npm test 대상이 아님 — 실측 확인).
+
+test('registerAndVerifyComponent: registerNewComponent가 거부하면(하드코딩 값) 그 에러를 그대로 전파하고 재검증 단계에 도달하지 않는다', async () => {
+  const { dir, designKitDir } = await setupRegisterFixture();
+  try {
+    const sourceFile = path.join(dir, 'scratch-bad.tsx');
+    await writeFile(sourceFile, `export function Bad() {\n  return <div className="bg-[#123456]">x</div>;\n}\n`, 'utf-8');
+
+    await assert.rejects(
+      () =>
+        registerAndVerifyComponent({
+          projectDir: dir,
+          designKitDir,
+          sourceFile,
+          codePath: 'src/components/ui/bad.tsx',
+        }),
+      /하드코딩된 값/
+    );
+    // 재검증 단계(acquireLock)에 도달했다면 .design-kit/.lock 파일이 생성돼 있을 것 — 없어야 한다.
+    assert.ok(!existsSync(path.join(designKitDir, '.lock')), '등록이 거부되면 락도 획득하면 안 됨(재검증 단계 미도달)');
+    assert.ok(!existsSync(path.join(dir, 'src', 'components', 'ui', 'bad.tsx')), '거부되면 파일이 배치되면 안 됨');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('registerAndVerifyComponent: codePath가 프로젝트 루트 밖이면(경로 조작) 재검증 단계 없이 즉시 거부', async () => {
+  const { dir, designKitDir } = await setupRegisterFixture();
+  try {
+    const sourceFile = path.join(dir, 'scratch-ok.tsx');
+    await writeFile(sourceFile, `export function Ok() {\n  return <div className="bg-primary">x</div>;\n}\n`, 'utf-8');
+
+    await assert.rejects(
+      () =>
+        registerAndVerifyComponent({
+          projectDir: dir,
+          designKitDir,
+          sourceFile,
+          codePath: '../../outside.tsx',
+        }),
+      /프로젝트 루트 밖/
+    );
+    assert.ok(!existsSync(path.join(designKitDir, '.lock')));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('registerAndVerifyComponent: 이미 등록된 codePath면(중복) 재검증 단계 없이 즉시 거부', async () => {
+  const { dir, designKitDir } = await setupRegisterFixture();
+  try {
+    await writeFile(
+      path.join(designKitDir, 'component-map.json'),
+      JSON.stringify([{ figmaNodeId: '1:1', figmaName: 'Button', codePath: 'src/components/ui/button.tsx' }]),
+      'utf-8'
+    );
+    const sourceFile = path.join(dir, 'scratch-dup.tsx');
+    await writeFile(sourceFile, `export function Button() {\n  return <button className="bg-primary">x</button>;\n}\n`, 'utf-8');
+
+    await assert.rejects(
+      () => registerAndVerifyComponent({ projectDir: dir, designKitDir, sourceFile, codePath: 'src/components/ui/button.tsx' }),
+      /등록돼 있습니다/
+    );
+    assert.ok(!existsSync(path.join(designKitDir, '.lock')));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

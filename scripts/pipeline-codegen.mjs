@@ -167,6 +167,58 @@ export async function registerNewComponent({ projectDir, designKitDir, figmaNode
   return { ...result, gitignoreUpdated, registeredComponent: { figmaNodeId: figmaNodeId || '', figmaName: figmaName || '', codePath } };
 }
 
+/**
+ * registerNewComponent()의 결과를 실제 브라우저로 즉시 재검증까지 연쇄 실행하는 래퍼
+ * (2026-09-01 설계·구현, T2B_RISK_REVIEW.md §5-1 — 완화방안 B). registerNewComponent()
+ * 자체는 무수정 — dashboard-server.mjs의 reverifyRun()이 이미 쓰는 것과 동일한 5개
+ * export 함수(acquireLock·startDevServer·verifyPage·judge·writeReport)를 새 순서로
+ * 조합할 뿐, 신규 검증 로직은 없다.
+ *
+ * 주의: 이 함수는 아직 어떤 MCP 도구·CLI 플래그에도 연결돼 있지 않다 — Claude Desktop에
+ * T2b를 실제로 열려면 mcp-server.mjs에 별도 도구 등록이 필요하고, 그건 별도 사용자
+ * 승인 사항이다(§5-1 "정직한 한계" 참조).
+ *
+ * verify-runner.mjs·report-writer.mjs·execution-lock.mjs를 파일 상단이 아니라 여기서
+ * 동적 import()하는 이유: verify-runner.mjs는 playwright·@axe-core/playwright를 정적
+ * import한다. 이 파일(pipeline-codegen.mjs)을 상단에서 그 체인까지 정적 import하면,
+ * 기존 tests/detail-page-pipeline.test.mjs의 "공백·한글 경로" 회귀 테스트처럼 이 파일을
+ * 단독 복사해 node_modules 없는 임시 폴더에서 실행하는 모든 곳이 module-load 단계에서
+ * 깨진다(실측 발견 — 이 함수 구현 직후 npm test로 재현·확인). 이 함수를 실제로 호출할 때만
+ * 무거운 체인을 불러오도록 지연시켜, registerNewComponent() 등 기존 경로의 가벼운 import
+ * 특성을 그대로 보존한다.
+ */
+export async function registerAndVerifyComponent({ projectDir, designKitDir, figmaNodeId, figmaName, sourceFile, codePath, target }) {
+  const { startDevServer, verifyPage, judge } = await import('./verify-runner.mjs');
+  const { writeReport } = await import('./report-writer.mjs');
+  const { acquireLock, releaseLock } = await import('./execution-lock.mjs');
+
+  const registration = await registerNewComponent({ projectDir, designKitDir, figmaNodeId, figmaName, sourceFile, codePath });
+
+  await acquireLock(designKitDir);
+  let devServer;
+  try {
+    devServer = await startDevServer(projectDir);
+    const result = await verifyPage({
+      baseUrl: devServer.url,
+      route: registration.routePath,
+      screenshotDir: path.join(designKitDir, 'reports', 'screenshots', `register-${guessExportName(codePath).toLowerCase()}-${Date.now()}`),
+    });
+    const judgement = judge(result);
+    const report = await writeReport({
+      designKitDir,
+      target: target || `신규 컴포넌트 등록: ${codePath}`,
+      generatedFiles: [codePath],
+      retryCount: 0,
+      route: registration.routePath,
+      verifyRunnerOutput: { devServer: { port: devServer.port, autoStarted: true }, ...result, ...judgement },
+    });
+    return { ...registration, verification: { ...report, verdict: judgement.verdict } };
+  } finally {
+    if (devServer) await devServer.stop();
+    await releaseLock(designKitDir);
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const getArg = (name) => {

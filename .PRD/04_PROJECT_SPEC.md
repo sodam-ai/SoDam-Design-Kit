@@ -38,9 +38,9 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   └── design-pipeline/SKILL.md
 ├── hooks/
 │   └── verify-gate.mjs         # runs/에 verifying·fail 상태가 있을 때만 발동 (오탐 방지 스코핑)
-├── scripts/
+├── scripts/                    # 아래 트리는 슬래시 명령이 직접 쓰는 파일만 나열 — e2e-selftest.mjs(자기 점검 스크립트, node로 직접 실행)는 트리 밖, 아래 각주 참고
 │   ├── setup-wizard.mjs        # [P1] /sodam-design-kit:setup 엔진 — config.json 생성 + shadcn/ui 컴포넌트 스캔으로 component-map 초기 시드
-│   ├── pipeline-codegen.mjs    # [P1] 코드 생성 엔진 — runCodegen(기존 매핑 재사용)·registerNewComponent(신규 컴포넌트 배치+하드코딩 값 가드)
+│   ├── pipeline-codegen.mjs    # [P1] 코드 생성 엔진 — runCodegen(기존 매핑 재사용)·registerNewComponent(신규 컴포넌트 배치+하드코딩 값 가드)·registerAndVerifyComponent(2026-09-01, T2B_RISK_REVIEW.md §5-1 완화방안 B — 등록 직후 자동 재검증 연쇄, 아직 MCP 도구로 노출 안 함)
 │   ├── preview-route.mjs       # [P1] 컴포넌트 단위 검증용 dev 전용 프리뷰 라우트 생성기(generatePreviewRoute)
 │   ├── verify-runner.mjs       # dev server 자동 기동(포트 자동 우회)+Playwright+axe 실행기
 │   ├── asset-downloader.mjs    # [P1, 2026-08-20 완료] Figma 이미지·SVG 자산 다운로드 — https 전용+경로 조작 방어+콘텐츠 기반 형식 검증(sharp/SVG 패턴 스캔), public/design-kit-assets/는 미사용(라이선스 게이트 사각지대 방지)

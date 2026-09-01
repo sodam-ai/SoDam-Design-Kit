@@ -314,8 +314,24 @@ img { max-width: 100%; }
 <li>이 저장소 폴더에서 다음 명령으로 확장 파일(<code>.mcpb</code>)을 만듭니다(터미널, 이 저장소 폴더 안에서):
 <pre><code>npx @anthropic-ai/mcpb pack .</code></pre>
 이 저장소 폴더 이름을 딴 <code>.mcpb</code> 파일이 폴더 안에 새로 생깁니다(방금 만들어진 파일이니 폴더에서 바로 확인 가능합니다). 크기는 약 20MB입니다(2026-08-21 기준 — 실제 브라우저로 재검증하는 기능이 들어있어 다른 확장보다 큰 편입니다. 이전엔 실수로 무관한 파일까지 포함돼 약 70MB였으나, 불필요한 파일을 제외하도록 고쳐 지금 크기로 줄었습니다).</li>
-<li>생성된 <code>.mcpb</code> 파일을 <strong>더블클릭</strong>하면 Claude Desktop이 설치 화면을 띄웁니다. 내용을 확인하고 설치를 승인하세요.</li>
-<li><strong>설치 확인</strong>: Claude Desktop에서 "최근 검증 이력을 보여줘"처럼 물어봤을 때 이 킷의 도구(<code>list_runs</code> 등)가 호출되면 성공입니다.</li>
+<li>생성된 <code>.mcpb</code> 파일을 <strong>더블클릭</strong>합니다. 정상이라면 Claude Desktop이 설치 화면을 띄웁니다 — 내용을 확인하고 설치를 승인하세요.
+<blockquote>
+<p><strong>더블클릭했는데 "이 파일을 열 프로그램을 선택하세요" 같은 Windows 창이 뜨나요?</strong> 설치 실패가 아니라 이 컴퓨터에 <code>.mcpb</code> 파일 형식에 대한 연결이 아직 없어서 생기는 별개의 문제입니다(Claude Desktop이 이미 설치돼 있어도 발생할 수 있습니다 — 2026-09-01 실측 확인). 그 창에서 <strong>취소</strong>를 누르고, 아래 방법으로 설치하세요:</p>
+<ol type="1">
+<li>Claude Desktop 앱을 열고 왼쪽 위 <code>☰</code> → <strong>설정</strong>(단축키 Ctrl+,)</li>
+<li>왼쪽 목록에서 <strong>"확장 프로그램"</strong> 클릭</li>
+<li>화면 맨 아래 <strong>"고급 설정"</strong> 클릭</li>
+<li>"확장 프로그램 개발자" 항목의 버튼 4개 중 맨 왼쪽 <strong>"확장 프로그램 설치"</strong> 클릭</li>
+<li>파일 선택창에서 방금 만든 <code>.mcpb</code> 파일을 선택</li>
+<li>확인 화면(이름·설명, 도구 5개 이름, "모든 요구 사항 충족됨", 제작사 SoDam AI Studio, 라이선스 Apache-2.0, 버전 표시)이 뜨면 <strong>설치</strong>를 클릭</li>
+</ol>
+</blockquote></li>
+<li><strong>설치 확인 (아래 둘 중 하나로 확인하면 됩니다)</strong>:
+<ul>
+<li>Claude Desktop에서 "최근 검증 이력을 보여줘"처럼 물어봤을 때 이 킷의 도구(<code>list_runs</code> 등)가 호출되면 성공입니다.</li>
+<li>또는 설정 → <strong>"개발자"</strong> → <strong>"로컬 MCP 서버"</strong> 목록에서 <code>SoDam Design Kit</code>이 <strong><code>running</code></strong> 배지로 표시되면 성공입니다.</li>
+</ul>
+</li>
 </ol>
 <p><strong>이 확장으로 할 수 있는 것 / 못 하는 것 (정직 고지)</strong>:</p>
 <ul>
@@ -954,6 +970,12 @@ img { max-width: 100%; }
 <td>이미 다른 인스턴스가 열려 있거나, 이 킷 저장소에서 <code>npm install</code>을 안 함</td>
 <td><code>/sodam-design-kit:open --stop</code>으로 한 번 끈 뒤 다시 실행. 그래도 안 되면 <code>npm install</code> 재실행</td>
 <td>브라우저에 판정서 목록이 정상적으로 보임</td>
+</tr>
+<tr>
+<td>Claude Desktop에서 <code>.mcpb</code> 파일을 더블클릭했더니 "이 파일을 열 프로그램을 선택하세요" 창이 떠요</td>
+<td>이 컴퓨터에 <code>.mcpb</code> 확장자에 대한 파일 연결이 없음(Claude Desktop 설치 여부와는 무관한 별개 문제)</td>
+<td>그 창에서 <strong>취소</strong> → Claude Desktop 설정 → <strong>확장 프로그램</strong> → <strong>고급 설정</strong> → <strong>확장 프로그램 설치</strong> 버튼으로 파일을 직접 선택해 설치(3장 보충 참고)</td>
+<td>확인 화면에 도구 5개·"모든 요구 사항 충족됨"이 표시되고, 설치 후 "개발자 → 로컬 MCP 서버" 목록에 <code>running</code> 배지로 나타남</td>
 </tr>
 <tr>
 <td>명령 입력이 익숙하지 않아요</td>

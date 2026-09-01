@@ -314,8 +314,24 @@ img { max-width: 100%; }
 <li>From this repository folder, generate the extension file (<code>.mcpb</code>) with (terminal, inside this repo folder):
 <pre><code>npx @anthropic-ai/mcpb pack .</code></pre>
 A <code>.mcpb</code> file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (as of 2026-08-21 — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed, and it now packages only what's needed).</li>
-<li><strong>Double-click</strong> the generated <code>.mcpb</code> file — Claude Desktop will show an install screen. Review the details and approve.</li>
-<li><strong>Success looks like</strong>: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (<code>list_runs</code>, etc.).</li>
+<li><strong>Double-click</strong> the generated <code>.mcpb</code> file. If all goes well, Claude Desktop shows an install screen — review the details and approve.
+<blockquote>
+<p><strong>Did double-clicking instead open a Windows "How do you want to open this file?" dialog?</strong> That's not an install failure — it just means this computer has no file association for <code>.mcpb</code> yet (this can happen even if Claude Desktop is already installed — confirmed by hands-on testing on 2026-09-01). Click <strong>Cancel</strong> on that dialog and install this way instead:</p>
+<ol type="1">
+<li>Open Claude Desktop, then the <code>☰</code> menu (top left) → <strong>Settings</strong> (Ctrl+,)</li>
+<li>Click <strong>"Extensions"</strong> in the left sidebar</li>
+<li>Click <strong>"Advanced settings"</strong> at the bottom of the page</li>
+<li>Under "Extension developer," click the leftmost of the 4 buttons: <strong>"Install Extension"</strong></li>
+<li>In the file picker, choose the <code>.mcpb</code> file you just created</li>
+<li>When the confirmation screen appears (name/description, the 5 tool names, "All requirements met," maker "SoDam AI Studio," license Apache-2.0, version), click <strong>Install</strong></li>
+</ol>
+</blockquote></li>
+<li><strong>Success looks like (either of these confirms it)</strong>:
+<ul>
+<li>Asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (<code>list_runs</code>, etc.).</li>
+<li>Or: Settings → <strong>"Developer"</strong> → <strong>"Local MCP servers"</strong> shows <code>SoDam Design Kit</code> with a <strong><code>running</code></strong> badge.</li>
+</ul>
+</li>
 </ol>
 <p><strong>What this extension can and can't do (honest disclosure)</strong>:</p>
 <ul>
@@ -958,6 +974,12 @@ Provide the target project's path and the Figma node (or let it use the existing
 <td>Another instance is already running, or <code>npm install</code> was never run in this kit's own repo</td>
 <td>Run <code>/sodam-design-kit:open --stop</code> once to shut it down, then start it again. If that doesn't help, re-run <code>npm install</code></td>
 <td>The browser correctly shows your list of reports</td>
+</tr>
+<tr>
+<td>Double-clicking the <code>.mcpb</code> file in Claude Desktop opens a "How do you want to open this file?" window instead</td>
+<td>This computer has no file association for <code>.mcpb</code> (unrelated to whether Claude Desktop itself is installed)</td>
+<td>Click <strong>Cancel</strong> in that window → Claude Desktop Settings → <strong>Extensions</strong> → <strong>Advanced settings</strong> → <strong>Install Extension</strong> button, and pick the file directly (see the Section 3 addendum)</td>
+<td>The confirmation screen shows the 5 tools and "All requirements met," and after install, Settings → Developer → Local MCP servers shows a <code>running</code> badge</td>
 </tr>
 <tr>
 <td>I'm not used to typing commands</td>

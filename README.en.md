@@ -137,8 +137,19 @@ All 4 of the following must be ready. If even one is missing, you cannot proceed
    npx @anthropic-ai/mcpb pack .
    ```
    A `.mcpb` file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (as of 2026-08-21 — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed, and it now packages only what's needed).
-2. **Double-click** the generated `.mcpb` file — Claude Desktop will show an install screen. Review the details and approve.
-3. **Success looks like**: asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (`list_runs`, etc.).
+2. **Double-click** the generated `.mcpb` file. If all goes well, Claude Desktop shows an install screen — review the details and approve.
+
+   > **Did double-clicking instead open a Windows "How do you want to open this file?" dialog?** That's not an install failure — it just means this computer has no file association for `.mcpb` yet (this can happen even if Claude Desktop is already installed — confirmed by hands-on testing on 2026-09-01). Click **Cancel** on that dialog and install this way instead:
+   > 1. Open Claude Desktop, then the `☰` menu (top left) → **Settings** (Ctrl+,)
+   > 2. Click **"Extensions"** in the left sidebar
+   > 3. Click **"Advanced settings"** at the bottom of the page
+   > 4. Under "Extension developer," click the leftmost of the 4 buttons: **"Install Extension"**
+   > 5. In the file picker, choose the `.mcpb` file you just created
+   > 6. When the confirmation screen appears (name/description, the 5 tool names, "All requirements met," maker "SoDam AI Studio," license Apache-2.0, version), click **Install**
+
+3. **Success looks like (either of these confirms it)**:
+   - Asking Claude Desktop something like "show me the recent verification history" and seeing it call this kit's tool (`list_runs`, etc.).
+   - Or: Settings → **"Developer"** → **"Local MCP servers"** shows `SoDam Design Kit` with a **`running`** badge.
 
 **What this extension can and can't do (honest disclosure)**:
 - Can: browse verification history, view reports/screenshots, trigger re-verification — the same data as the `/sodam-design-kit:open` dashboard in Claude Code. **(added 2026-08-20)** It can also re-wire a component that's already registered in `component-map.json` back into the verification preview page (it does not read Figma or write new code — it only reuses an existing mapping).
@@ -664,6 +675,7 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 | On Windows, passing an option like `--route /...` (starting with `/`) produces a strange result | A Git Bash (MSYS) environment quirk mangles values starting with `/` into file paths (not a defect in this kit's code — a note for developers) | Use PowerShell instead | Verification returns a correct result |
 | Korean text (or other non-Latin text) renders as broken boxes (□) | The project doesn't have a Korean font set up yet | Ask a developer to run the `font-pipeline` feature (auto-sets up Pretendard, etc.) — regular users only need to follow the normal setup/pipeline flow | Text displays correctly |
 | The dashboard (`/open`) won't start, or the page is blank | Another instance is already running, or `npm install` was never run in this kit's own repo | Run `/sodam-design-kit:open --stop` once to shut it down, then start it again. If that doesn't help, re-run `npm install` | The browser correctly shows your list of reports |
+| Double-clicking the `.mcpb` file in Claude Desktop opens a "How do you want to open this file?" window instead | This computer has no file association for `.mcpb` (unrelated to whether Claude Desktop itself is installed) | Click **Cancel** in that window → Claude Desktop Settings → **Extensions** → **Advanced settings** → **Install Extension** button, and pick the file directly (see the Section 3 addendum) | The confirmation screen shows the 5 tools and "All requirements met," and after install, Settings → Developer → Local MCP servers shows a `running` badge |
 | I'm not used to typing commands | Totally understandable if computers or chat-style tools are new to you | Read the [glossary in Section 0](#0-before-you-start-key-terms-in-5-minutes) first, then follow [Section 4, Quick Start](#4-quick-start-first-success-in-5-minutes) one line at a time, exactly as written | Each step's stated "success looks like" outcome appears as described |
 
 ---

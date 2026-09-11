@@ -121,7 +121,7 @@ img { max-width: 100%; }
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
 <p>✅ <strong>Current status (as of 2026-09-11, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>333 automated tests pass</strong>, there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code> — 4 recently discovered ones were patched immediately), and a full license audit of all <strong>126 packages including transitive dependencies is complete</strong> (zero copyleft). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
-<p>⚠️ This kit is still <strong>version 0.4.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
+<p>⚠️ This kit is still <strong>version 0.4.1 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -499,7 +499,18 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-09-11 — Fixed a false "verification failed" right after a cold start (click to collapse)</b></summary>
+<summary><b>▶ 2026-09-11 — Patch release v0.4.1 (version housekeeping, click to collapse)</b></summary>
+
+<ul>
+<li>The two entries right below (longer verification wait time, 4 security fixes) landed after the last tagged release (v0.4.0), and the tag/GitHub Release hadn't caught up with them.</li>
+<li>No code or docs changed here — just bumping the version number 0.4.0 -&gt; 0.4.1 and publishing it as a new GitHub Release (a patch version — this folds already-made fixes into an official release, it's not a new feature).</li>
+<li>All 333 automated tests still pass.</li>
+</ul>
+
+</details>
+
+<details>
+<summary><b>▶ 2026-09-11 — Fixed a false "verification failed" right after a cold start (click to expand)</b></summary>
 
 <ul>
 <li>If you'd just turned on your computer, or hadn't run this kit in a while, the very first verification could take a bit longer than usual to get the preview page ready — but the kit only waited 30 seconds before deciding the page "wasn't ready" and marking the whole verification a failure.</li>
@@ -1029,7 +1040,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p><strong>Q. Can I use this commercially, or share/redistribute it?</strong> A. <strong>Yes, under the terms of the Apache License 2.0</strong> (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the "SoDam-Design-Kit" name or trademark itself. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> carefully.</p>
 <p><strong>Q. Can I sell, or deliver to a client, things this kit produces (like a detail page)?</strong> A. This kit's own license doesn't stop you from doing that. But the <strong>copyright of the original Figma design</strong>, <strong>the source of any product data</strong>, and <strong>the legal status of AI-generated code/copy</strong> are separate questions from this kit's license, and are entirely your own responsibility — each is explained in detail in <a href="#13-legal-copyright-license--commercial-use">Section 13</a>.</p>
 <p><strong>Q. Does this work on Windows/Mac/Linux?</strong> A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is <strong>Windows</strong>. Real-world verification on Mac/Linux has not yet been performed.</p>
-<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.4.0 (pre-release)</strong>. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
+<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.4.1 (pre-release)</strong>. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
 <hr />
 <h2 id="13-legal-copyright-license--commercial-use">13. Legal, Copyright, License &amp; Commercial Use</h2>
 <blockquote>

@@ -6,7 +6,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 > ✅ **Current status (as of 2026-09-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **333 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — 4 recently discovered ones were patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
-> ⚠️ This kit is still **version 0.4.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
+> ⚠️ This kit is still **version 0.4.1 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
 ---
 
@@ -274,7 +274,16 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-09-11 — Fixed a false "verification failed" right after a cold start (click to collapse)</b></summary>
+<summary><b>▶ 2026-09-11 — Patch release v0.4.1 (version housekeeping, click to collapse)</b></summary>
+
+- The two entries right below (longer verification wait time, 4 security fixes) landed after the last tagged release (v0.4.0), and the tag/GitHub Release hadn't caught up with them.
+- No code or docs changed here — just bumping the version number 0.4.0 -> 0.4.1 and publishing it as a new GitHub Release (a patch version — this folds already-made fixes into an official release, it's not a new feature).
+- All 333 automated tests still pass.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-09-11 — Fixed a false "verification failed" right after a cold start (click to expand)</b></summary>
 
 - If you'd just turned on your computer, or hadn't run this kit in a while, the very first verification could take a bit longer than usual to get the preview page ready — but the kit only waited 30 seconds before deciding the page "wasn't ready" and marking the whole verification a failure.
 - Reproduced this twice (today and in the prior session): running the exact same command again, right after, always succeeded immediately. So this wasn't the kit being broken — it just wasn't waiting long enough.
@@ -728,7 +737,7 @@ A. This kit's own license doesn't stop you from doing that. But the **copyright 
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed.
 
 **Q. Is this a stable, finished release?**
-A. No. The current version is **0.4.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
+A. No. The current version is **0.4.1 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
 
 ---
 

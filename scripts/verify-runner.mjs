@@ -26,7 +26,11 @@ export const VIEWPORTS = [
 
 const PORT_RANGE_START = 3000;
 const PORT_RANGE_END = 3020;
-const READY_TIMEOUT_MS = 30000;
+// 2026-09-11 실측 발견: Next.js(Turbopack)가 콜드 캐시 상태에서 첫 요청("/") 컴파일에
+// 30초를 넘기는 경우가 이 픽스처에서 2회 재현됨(dev server 자체는 5초 안에 "Ready"를
+// 찍지만, 최초 페이지 컴파일은 별개로 더 걸림) — 실패가 아니라 정상 dev server를
+// "준비 안 됨"으로 오판하고 종료시키는 거짓 실패였다. 60초로 여유를 둠.
+const READY_TIMEOUT_MS = 60000;
 const READY_POLL_INTERVAL_MS = 500;
 
 /**

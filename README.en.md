@@ -4,9 +4,9 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-08-21, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **330 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit`), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-09-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **333 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — 4 recently discovered ones were patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
-> ⚠️ This kit is still **version 0.3.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
+> ⚠️ This kit is still **version 0.4.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
 ---
 
@@ -264,7 +264,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (330 as of 2026-08-20; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (333 as of 2026-09-01; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -274,7 +274,17 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-08-21 — Hardened repo security, audited every dependency license, fixed a data-leak bug in the packaged extension (click to collapse)</b></summary>
+<summary><b>▶ 2026-09-11 — Found and immediately fixed 4 security vulnerabilities in bundled dependencies + version 0.4.0 (click to collapse)</b></summary>
+
+- Re-running `npm audit` (a command that checks installed packages against known security-vulnerability databases) turned up 4 new issues (2 high, 2 moderate) in packages this kit never installed directly but that came bundled in with others. The kit's own code hadn't changed — the vulnerability records were simply published in the meantime.
+- One of them (the image-processing library `sharp`) is actually used to inspect images downloaded from Figma, so it was fixed right away with a **one-step version bump** (0.35.3 → 0.35.4). The other three were transitive dependencies of the Claude Desktop extension's SDK, pulled in for a connection method this kit doesn't actually use — real-world risk was minimal, but they were bumped to their latest patched versions as well.
+- After the fix, all 333 automated tests still pass, and a full live re-run (PASS/FAIL verdicts and completion blocking) confirmed nothing broke. No new packages were added — only existing ones were bumped, so behavior is unchanged.
+- Since the last release (0.3.0, August 19) went out, the 3 additional marketing-image formats, the extended license gate, AI-generation-history logging, the Claude Desktop extension, and now this security fix have all landed without a version bump — so the version is now **0.4.0**.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-08-21 — Hardened repo security, audited every dependency license, fixed a data-leak bug in the packaged extension (click to expand)</b></summary>
 
 - Found that 3 GitHub repository security features (secret detection, push blocking, and outdated-dependency alerts) had been off for over a week on this public repo, and turned them on.
 - Until now only the 8 packages installed directly had their licenses checked. This time we checked all 126 packages, including everything those 8 pull in indirectly. Nothing concerning turned up, but we discovered that a native component bundled inside the image-conversion library (sharp) carries a different kind of license (LGPL) — documented honestly in [Section 13](#13-legal-copyright-license--commercial-use) (there is no legal problem).
@@ -622,7 +632,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (330 as of 2026-08-20)
+├── tests/                            ← automated tests (333 as of 2026-09-01)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -707,7 +717,7 @@ A. This kit's own license doesn't stop you from doing that. But the **copyright 
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed.
 
 **Q. Is this a stable, finished release?**
-A. No. The current version is **0.3.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
+A. No. The current version is **0.4.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
 
 ---
 

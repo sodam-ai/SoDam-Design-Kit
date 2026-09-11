@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.2",
   "name": "sodam-design-kit",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "display_name": "SoDam Design Kit",
   "description": "Figma 디자인을 shadcn/ui 코드로 만들고 실제 브라우저 검증을 통과해야만 완료로 인정하는 디자인 자동화 킷 — 검증 이력 열람 + 재검증 도구 (Claude Desktop용)",
   "author": {

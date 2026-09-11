@@ -499,7 +499,19 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-09-11 — Found and immediately fixed 4 security vulnerabilities in bundled dependencies + version 0.4.0 (click to collapse)</b></summary>
+<summary><b>▶ 2026-09-11 — Fixed a false "verification failed" right after a cold start (click to collapse)</b></summary>
+
+<ul>
+<li>If you'd just turned on your computer, or hadn't run this kit in a while, the very first verification could take a bit longer than usual to get the preview page ready — but the kit only waited 30 seconds before deciding the page "wasn't ready" and marking the whole verification a failure.</li>
+<li>Reproduced this twice (today and in the prior session): running the exact same command again, right after, always succeeded immediately. So this wasn't the kit being broken — it just wasn't waiting long enough.</li>
+<li>Fixed by raising the wait time from 30 to 60 seconds. The pass/fail judging logic itself was not touched. All 333 automated tests still pass.</li>
+<li>Also added this symptom and its fix to <a href="#11-troubleshooting">Section 11, Troubleshooting</a>.</li>
+</ul>
+
+</details>
+
+<details>
+<summary><b>▶ 2026-09-11 — Found and immediately fixed 4 security vulnerabilities in bundled dependencies + version 0.4.0 (click to expand)</b></summary>
 
 <ul>
 <li>Re-running <code>npm audit</code> (a command that checks installed packages against known security-vulnerability databases) turned up 4 new issues (2 high, 2 moderate) in packages this kit never installed directly but that came bundled in with others. The kit's own code hadn't changed — the vulnerability records were simply published in the meantime.</li>
@@ -998,6 +1010,12 @@ Provide the target project's path and the Figma node (or let it use the existing
 <td>Totally understandable if computers or chat-style tools are new to you</td>
 <td>Read the <a href="#0-before-you-start-key-terms-in-5-minutes">glossary in Section 0</a> first, then follow <a href="#4-quick-start-first-success-in-5-minutes">Section 4, Quick Start</a> one line at a time, exactly as written</td>
 <td>Each step's stated "success looks like" outcome appears as described</td>
+</tr>
+<tr>
+<td>Verification fails with "dev server did not become ready within N ms"</td>
+<td>Your computer just started, or hasn't run this kit in a while, so the very first page takes longer than usual to get ready (not a real failure)</td>
+<td>Just run the same command again — the second time is normally fast, since everything is already warmed up</td>
+<td>Re-running proceeds normally to a PASS/FAIL verdict</td>
 </tr>
 </tbody>
 </table>

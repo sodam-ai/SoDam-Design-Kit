@@ -274,7 +274,17 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-09-11 — Found and immediately fixed 4 security vulnerabilities in bundled dependencies + version 0.4.0 (click to collapse)</b></summary>
+<summary><b>▶ 2026-09-11 — Fixed a false "verification failed" right after a cold start (click to collapse)</b></summary>
+
+- If you'd just turned on your computer, or hadn't run this kit in a while, the very first verification could take a bit longer than usual to get the preview page ready — but the kit only waited 30 seconds before deciding the page "wasn't ready" and marking the whole verification a failure.
+- Reproduced this twice (today and in the prior session): running the exact same command again, right after, always succeeded immediately. So this wasn't the kit being broken — it just wasn't waiting long enough.
+- Fixed by raising the wait time from 30 to 60 seconds. The pass/fail judging logic itself was not touched. All 333 automated tests still pass.
+- Also added this symptom and its fix to [Section 11, Troubleshooting](#11-troubleshooting).
+
+</details>
+
+<details>
+<summary><b>▶ 2026-09-11 — Found and immediately fixed 4 security vulnerabilities in bundled dependencies + version 0.4.0 (click to expand)</b></summary>
 
 - Re-running `npm audit` (a command that checks installed packages against known security-vulnerability databases) turned up 4 new issues (2 high, 2 moderate) in packages this kit never installed directly but that came bundled in with others. The kit's own code hadn't changed — the vulnerability records were simply published in the meantime.
 - One of them (the image-processing library `sharp`) is actually used to inspect images downloaded from Figma, so it was fixed right away with a **one-step version bump** (0.35.3 → 0.35.4). The other three were transitive dependencies of the Claude Desktop extension's SDK, pulled in for a connection method this kit doesn't actually use — real-world risk was minimal, but they were bumped to their latest patched versions as well.
@@ -687,6 +697,7 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 | The dashboard (`/open`) won't start, or the page is blank | Another instance is already running, or `npm install` was never run in this kit's own repo | Run `/sodam-design-kit:open --stop` once to shut it down, then start it again. If that doesn't help, re-run `npm install` | The browser correctly shows your list of reports |
 | Double-clicking the `.mcpb` file in Claude Desktop opens a "How do you want to open this file?" window instead | This computer has no file association for `.mcpb` (unrelated to whether Claude Desktop itself is installed) | Click **Cancel** in that window → Claude Desktop Settings → **Extensions** → **Advanced settings** → **Install Extension** button, and pick the file directly (see the Section 3 addendum) | The confirmation screen shows the 5 tools and "All requirements met," and after install, Settings → Developer → Local MCP servers shows a `running` badge |
 | I'm not used to typing commands | Totally understandable if computers or chat-style tools are new to you | Read the [glossary in Section 0](#0-before-you-start-key-terms-in-5-minutes) first, then follow [Section 4, Quick Start](#4-quick-start-first-success-in-5-minutes) one line at a time, exactly as written | Each step's stated "success looks like" outcome appears as described |
+| Verification fails with "dev server did not become ready within N ms" | Your computer just started, or hasn't run this kit in a while, so the very first page takes longer than usual to get ready (not a real failure) | Just run the same command again — the second time is normally fast, since everything is already warmed up | Re-running proceeds normally to a PASS/FAIL verdict |
 
 ---
 

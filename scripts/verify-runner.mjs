@@ -17,6 +17,7 @@ import { acquireLock, releaseLock } from './execution-lock.mjs';
 import { compareRunToBaseline, promoteBaseline } from './visual-regression.mjs';
 import { checkFontGate } from './font-pipeline.mjs';
 import { checkAssetGate } from './asset-ledger.mjs';
+import { checkTypeScript } from './typecheck-gate.mjs';
 
 export const VIEWPORTS = [
   { width: 360, height: 800, label: '360' },
@@ -235,7 +236,7 @@ export async function verifyPage({ baseUrl, route = '/', screenshotDir }) {
  * 안 넘기면(기본값 전부 []) 기존 4조건 판정과 완전히 동일하게 동작한다 — 하위 호환 유지
  * (--visualRegression·--fontGate·--assetGate 플래그를 안 쓰는 기존 호출부는 전혀 영향 없음).
  */
-export function judge(result, { visualRegressions = [], fontGateViolations = [], assetGateViolations = [] } = {}) {
+export function judge(result, { visualRegressions = [], fontGateViolations = [], assetGateViolations = [], typeCheck = null } = {}) {
   const reasons = [];
   if (!result.renderOk) reasons.push('렌더 실패 (대상 URL 정상 로드 안 됨)');
   if (result.consoleErrors.length > 0) reasons.push(`콘솔 에러 ${result.consoleErrors.length}건`);
@@ -254,6 +255,17 @@ export function judge(result, { visualRegressions = [], fontGateViolations = [],
 
   if (assetGateViolations.length > 0) {
     reasons.push(`미등록 이미지 자산 감지 ${assetGateViolations.length}건 (${assetGateViolations.map((v) => v.file).join(', ')})`);
+  }
+
+  // 타입 검사(opt-in, --typeCheck): 요청했는데 못 돌린 경우(unavailable)도 FAIL — 조용한 통과 금지.
+  // typecheck-gate.mjs 파일 상단의 설계 결정 참조(2026-10-11 스파이크로 거짓 PASS 재현).
+  if (typeCheck) {
+    if (typeCheck.status === 'unavailable') {
+      reasons.push(`타입 검사를 실행할 수 없음: ${typeCheck.reason}`);
+    } else if (typeCheck.status === 'errors') {
+      const first = typeCheck.errors.slice(0, 3).map((e) => `${e.file}:${e.line}`).join(', ');
+      reasons.push(`타입 오류 ${typeCheck.errors.length}건 (${first}${typeCheck.errors.length > 3 ? ' 외' : ''})`);
+    }
   }
 
   return { verdict: reasons.length === 0 ? 'PASS' : 'FAIL', reasons };
@@ -318,6 +330,14 @@ async function main() {
   // 자산(이미지) 게이트도 같은 이유로 opt-in — asset-ledger.mjs 파일 상단 경계 설명 참조
   // (marketing-asset-pipeline.mjs 산출물·.design-kit/ 내부 스크린샷은 스캔 대상에서 제외됨).
   const assetGateEnabled = args.includes('--assetGate');
+  // 타입 검사도 같은 이유로 opt-in이다(typecheck-gate.mjs 상단 참조). 다른 opt-in 게이트와 달리
+  // --project 없이 쓰면 조용히 건너뛰지 않고 거부한다 — 요청한 검사가 말없이 빠지는 것이
+  // fail-open이기 때문이다. 잠금을 쥐기 전에 거부해야 하므로 여기서 확인한다.
+  const typeCheckEnabled = args.includes('--typeCheck');
+  if (typeCheckEnabled && !projectDir) {
+    console.error('--typeCheck는 대상 프로젝트가 필요합니다 — --project <디렉터리>를 함께 주세요 (조용히 무시하지 않고 거부합니다).');
+    process.exit(2);
+  }
 
   let devServer = null;
   let baseUrl = explicitUrl;
@@ -331,9 +351,16 @@ async function main() {
       await acquireLock(lockedDesignKitDir);
     }
 
+    // dev server를 띄우기 전에 실행한다 — dev server가 .next/ 생성 파일을 쓰는 동안 tsc가 그
+    // 파일을 읽는 경합을 피한다(그래도 .next/ 오류는 checkTypeScript가 판정에서 제외함).
+    let typeCheck = null;
+    if (typeCheckEnabled) {
+      typeCheck = await checkTypeScript({ projectDir: path.resolve(projectDir) });
+    }
+
     if (!baseUrl) {
       if (!projectDir) {
-        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]] [--fontGate] [--assetGate]');
+        console.error('사용법: verify-runner.mjs --url <URL> | --project <디렉터리> [--route /경로] [--screenshotDir <경로>] [--target <설명> [--generatedFiles a,b,c] [--retryCount N]] [--visualRegression [--promoteBaseline]] [--fontGate] [--assetGate] [--typeCheck]');
         process.exit(2);
       }
       devServer = await startDevServer(path.resolve(projectDir));
@@ -364,6 +391,7 @@ async function main() {
       visualRegressions: visualRegression,
       fontGateViolations: fontGate ? fontGate.violations : [],
       assetGateViolations: assetGate ? assetGate.violations : [],
+      typeCheck,
     });
 
     // 기준본 승격은 PASS일 때만 허용 — 깨진 화면을 "정상"으로 못박는 걸 막는다(04 DO NOT
@@ -381,6 +409,7 @@ async function main() {
       ...(baselinePromotion ? { baselinePromotion } : {}),
       ...(fontGate ? { fontGate } : {}),
       ...(assetGate ? { assetGate } : {}),
+      ...(typeCheck ? { typeCheck } : {}),
       ...judgement,
     };
 

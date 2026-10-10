@@ -286,6 +286,11 @@ export async function writeReport(opts) {
     // 바뀌면 조용히 깨지는 추측이라 채택하지 않음 — 실제 값을 저장). null이면(구버전 판정서)
     // 재검증 라우트가 "정보 없음"으로 명확히 거부한다(추측으로 땜질하지 않음).
     route,
+    // 2026-10-11 신설 — 이 실행이 --typeCheck로 돌았는지. 대시보드·MCP 재검증(reverifyRun)이 이
+    // 값을 읽어 같은 기준을 이어받는다. 없으면(기존 기록·안 쓴 실행) 필드 자체를 만들지 않아
+    // 하위 호환을 지킨다. 스파이크: 이 값이 없던 시절 FAIL 기록을 재검증하면 같은 파일 상태에서
+    // PASS가 나와 Stop 훅이 열렸다(렌더만 보고 타입 오류를 안 봄).
+    ...(rawVerifyResult.typeCheck ? { typeCheck: true } : {}),
   };
 
   const runPath = path.join(runsDir, `${runId}.json`);

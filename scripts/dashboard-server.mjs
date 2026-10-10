@@ -18,6 +18,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findAvailablePort, startDevServer, verifyPage, judge } from './verify-runner.mjs';
+import { checkTypeScript } from './typecheck-gate.mjs';
 import { writeReport } from './report-writer.mjs';
 import { acquireLock, releaseLock, isProcessAlive } from './execution-lock.mjs';
 
@@ -345,8 +346,19 @@ export async function readReportContent(designKitDir, runId) {
  * 코드를 다시 생성하지 않는다 — 이미 만들어진 코드를 다시 검사만 한다(T2 AI 작업은 대시보드
  * 범위 밖, 01 §3). route가 저장돼 있지 않은 오래된 판정서(2026-08-09 이전)는 재검증을
  * 명확히 거부한다(경로를 추측해서 땜질하지 않음 — 02 결정 기록).
+ *
+ * 원래 실행이 --typeCheck로 돌았다면(runs/*.json의 `typeCheck: true`) 재검증도 같은 기준을
+ * 이어받는다(2026-10-11 스파이크: 이어받지 않던 시절, 타입 오류로 FAIL한 기록을 재검증하면
+ * 파일이 그대로인데 PASS가 나와 Stop 훅이 열렸다 — 01 §3 Parity "같은 입력 → 같은 판정").
+ * `deps`는 테스트가 실제 dev 서버·tsc 없이 이 계약을 검증하도록 의존 함수를 주입하는 통로다
+ * (기본값은 진짜 구현이라 기존 호출부는 전부 그대로 동작).
  */
-export async function reverifyRun(projectDir, designKitDir, runId) {
+export async function reverifyRun(projectDir, designKitDir, runId, deps = {}) {
+  const {
+    startDevServer: startServer = startDevServer,
+    verifyPage: verify = verifyPage,
+    checkTypeScript: checkTypes = checkTypeScript,
+  } = deps;
   if (!RUN_ID_PATTERN.test(String(runId))) {
     throw Object.assign(new Error('잘못된 runId 형식'), { statusCode: 400 });
   }
@@ -369,20 +381,30 @@ export async function reverifyRun(projectDir, designKitDir, runId) {
   await acquireLock(designKitDir); // 실행 중이면 여기서 statusCode 409로 거부됨(execution-lock.mjs)
   let devServer;
   try {
-    devServer = await startDevServer(projectDir);
-    const result = await verifyPage({
+    // verify-runner main()과 같은 순서 — dev 서버가 .next/에 쓰는 동안 tsc가 읽는 경합을 피한다.
+    let typeCheck = null;
+    if (originalRun.typeCheck === true) {
+      typeCheck = await checkTypes({ projectDir: path.resolve(projectDir) });
+    }
+    devServer = await startServer(projectDir);
+    const result = await verify({
       baseUrl: devServer.url,
       route: originalRun.route,
       screenshotDir: path.join(designKitDir, 'reports', 'screenshots', `reverify-${runId}-${Date.now()}`),
     });
-    const judgement = judge(result);
+    const judgement = judge(result, { typeCheck });
     const report = await writeReport({
       designKitDir,
       target: `${originalRun.target} (대시보드 재검증)`,
       generatedFiles: originalRun.generatedFiles || [],
       retryCount: 0,
       route: originalRun.route,
-      verifyRunnerOutput: { devServer: { port: devServer.port, autoStarted: true }, ...result, ...judgement },
+      verifyRunnerOutput: {
+        devServer: { port: devServer.port, autoStarted: true },
+        ...result,
+        ...(typeCheck ? { typeCheck } : {}),
+        ...judgement,
+      },
     });
     return { ...report, verdict: judgement.verdict };
   } finally {

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { parseTscOutput, isGeneratedFile, checkTypeScript } from '../scripts/typecheck-gate.mjs';
 import { judge } from '../scripts/verify-runner.mjs';
 import { writeReport } from '../scripts/report-writer.mjs';
+import { reverifyRun } from '../scripts/dashboard-server.mjs';
 
 // 2026-10-11 스파이크 실측: 게이트가 PASS(exit 0)를 내는 같은 상태에서 `tsc --noEmit`은
 // 방문한 화면 자신의 타입 오류(TS2322)로 실패했다 — "검증 통과 = 완료"라는 이 킷의 약속이
@@ -230,4 +231,155 @@ test('CLI: --typeCheck를 --project 없이 쓰면 조용히 무시하지 않고 
   const r = spawnSync(process.execPath, [VERIFY_RUNNER, '--url', 'http://127.0.0.1:1', '--typeCheck'], { encoding: 'utf-8' });
   assert.equal(r.status, 2);
   assert.match(r.stderr, /--project/);
+});
+
+// ── 재검증 경로 동등성 (2026-10-11 스파이크) ─────────────────────────────────────────────
+// 스파이크 실측: --typeCheck로 FAIL(타입 오류 1건)이 난 기록(2026-10-11-009)을 대시보드/MCP가
+// 쓰는 reverifyRun으로 재검증했더니, 파일이 그대로인데 PASS(2026-10-11-010)가 나왔고 그 PASS가
+// 최신 기록이 돼 Stop 훅이 열렸다. reverifyRun이 judge()를 typeCheck 없이 불렀기 때문이다.
+// 아래는 실제 dev 서버·tsc 없이 의존 함수를 주입해 그 계약을 고정한다(01 §3 Parity: 같은 입력 → 같은 판정).
+
+const TYPE_ERROR_RESULT = {
+  status: 'errors',
+  errors: [{ file: 'src/app/page.tsx', line: 68, column: 7, code: 'TS2322', message: "Type 'string' is not assignable to type 'number'." }],
+  ignoredGeneratedCount: 0,
+};
+
+async function makeReverifyProject(runExtra = {}) {
+  const dir = await mkdtemp(path.join(tmpdir(), 'reverify-typecheck-'));
+  const designKitDir = path.join(dir, '.design-kit');
+  await mkdir(path.join(designKitDir, 'runs'), { recursive: true });
+  await writeFile(
+    path.join(designKitDir, 'runs', '2026-10-11-001.json'),
+    JSON.stringify({
+      runId: '2026-10-11-001',
+      startedAt: '2026-10-11T00:00:00.000Z',
+      target: 'spike',
+      generatedFiles: ['src/app/page.tsx'],
+      status: 'fail',
+      retryCount: 0,
+      route: '/',
+      ...runExtra,
+    }),
+    'utf-8'
+  );
+  return { dir, designKitDir };
+}
+
+function makeReverifyStubs(calls, typeCheckResult) {
+  return {
+    checkTypeScript: async () => {
+      calls.push('tsc');
+      return typeCheckResult;
+    },
+    startDevServer: async () => {
+      calls.push('dev');
+      return { url: 'http://127.0.0.1:1', port: 1, stop: async () => { calls.push('stop'); } };
+    },
+    verifyPage: async () => ({
+      renderOk: true,
+      consoleErrors: [],
+      axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+      axeViolations: [],
+      screenshots: [360, 768, 1440].map((viewport) => ({ viewport, path: `reports/screenshots/x/${viewport}.png` })),
+    }),
+  };
+}
+
+test('writeReport: --typeCheck로 실행된 기록만 runs/*.json에 typeCheck:true가 남는다 (재검증이 이어받을 근거 — 안 쓴 실행은 필드 자체가 없어 하위 호환)', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'writereport-typecheck-flag-'));
+  try {
+    const designKitDir = path.join(dir, '.design-kit');
+    const base = {
+      devServer: { port: 3000, autoStarted: true },
+      renderOk: true,
+      consoleErrors: [],
+      axeCounts: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+      axeViolations: [],
+      screenshots: [{ viewport: '360', path: 'reports/screenshots/x/360.png' }],
+      verdict: 'PASS',
+      reasons: [],
+    };
+    const withTc = await writeReport({
+      designKitDir,
+      target: 't',
+      date: new Date('2026-10-11T00:00:00Z'),
+      verifyRunnerOutput: { ...base, typeCheck: { status: 'ok', errors: [], ignoredGeneratedCount: 0 } },
+    });
+    const withoutTc = await writeReport({ designKitDir, target: 't', date: new Date('2026-10-11T00:00:00Z'), verifyRunnerOutput: base });
+    const a = JSON.parse(await readFile(withTc.runPath, 'utf-8'));
+    const b = JSON.parse(await readFile(withoutTc.runPath, 'utf-8'));
+    assert.equal(a.typeCheck, true);
+    assert.equal('typeCheck' in b, false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: 원래 실행이 typeCheck였고 타입 오류가 남아 있으면 재검증도 FAIL — 렌더만 되는 PASS로 둔갑시키지 않는다 (스파이크 재현 조건)', async () => {
+  const { dir, designKitDir } = await makeReverifyProject({ typeCheck: true });
+  try {
+    const calls = [];
+    const result = await reverifyRun(dir, designKitDir, '2026-10-11-001', makeReverifyStubs(calls, TYPE_ERROR_RESULT));
+    assert.equal(result.verdict, 'FAIL');
+    const rec = JSON.parse(await readFile(result.runPath, 'utf-8'));
+    assert.equal(rec.status, 'fail');
+    assert.equal(rec.typeCheck, true);
+    assert.match(await readFile(result.reportPath, 'utf-8'), /src\/app\/page\.tsx\(68,7\) TS2322/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: tsc는 dev 서버를 띄우기 전에 실행한다 (.next/ 쓰기 경합 회피 — verify-runner main()과 같은 순서)', async () => {
+  const { dir, designKitDir } = await makeReverifyProject({ typeCheck: true });
+  try {
+    const calls = [];
+    await reverifyRun(dir, designKitDir, '2026-10-11-001', makeReverifyStubs(calls, { status: 'ok', errors: [], ignoredGeneratedCount: 0 }));
+    assert.deepEqual(calls, ['tsc', 'dev', 'stop']);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: typeCheck 없이 실행됐던 기록은 tsc를 호출하지 않고 기존과 같은 판정을 낸다 (하위 호환)', async () => {
+  const { dir, designKitDir } = await makeReverifyProject();
+  try {
+    const calls = [];
+    const result = await reverifyRun(dir, designKitDir, '2026-10-11-001', makeReverifyStubs(calls, TYPE_ERROR_RESULT));
+    assert.equal(result.verdict, 'PASS');
+    assert.deepEqual(calls, ['dev', 'stop']);
+    const rec = JSON.parse(await readFile(result.runPath, 'utf-8'));
+    assert.equal('typeCheck' in rec, false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: typeCheck 재검증이 통과하면 새 기록도 typeCheck:true를 유지한다 (재검증의 재검증도 같은 기준)', async () => {
+  const { dir, designKitDir } = await makeReverifyProject({ typeCheck: true });
+  try {
+    const result = await reverifyRun(dir, designKitDir, '2026-10-11-001', makeReverifyStubs([], { status: 'ok', errors: [], ignoredGeneratedCount: 0 }));
+    assert.equal(result.verdict, 'PASS');
+    const rec = JSON.parse(await readFile(result.runPath, 'utf-8'));
+    assert.equal(rec.typeCheck, true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('reverifyRun: 타입 검사를 못 돌리면(unavailable) 재검증도 FAIL — 조용한 통과 금지 (fail-closed)', async () => {
+  const { dir, designKitDir } = await makeReverifyProject({ typeCheck: true });
+  try {
+    const result = await reverifyRun(
+      dir,
+      designKitDir,
+      '2026-10-11-001',
+      makeReverifyStubs([], { status: 'unavailable', reason: 'tsconfig.json 없음', errors: [], ignoredGeneratedCount: 0 })
+    );
+    assert.equal(result.verdict, 'FAIL');
+    assert.match(await readFile(result.reportPath, 'utf-8'), /실행 불가/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

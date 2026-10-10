@@ -120,7 +120,7 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-09-11, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>333 automated tests pass</strong>, there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code> — 4 recently discovered ones were patched immediately), and a full license audit of all <strong>126 packages including transitive dependencies is complete</strong> (zero copyleft). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>✅ <strong>Current status (as of 2026-10-11, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>334 automated tests pass</strong>, there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code> — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all <strong>126 packages including transitive dependencies is complete</strong> (zero copyleft). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
 <p>⚠️ This kit is still <strong>version 0.4.1 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
@@ -483,7 +483,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit's own automated tests (333 as of 2026-09-01; the count may grow over time)</td>
+<td>Runs the kit's own automated tests (334 as of 2026-10-11; the count may grow over time)</td>
 <td>this kit's own repository folder</td>
 </tr>
 <tr>
@@ -499,6 +499,19 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
+<summary><b>▶ 2026-10-11 — Patched 5 security vulnerabilities + fixed MCP version reporting (click to collapse)</b></summary>
+
+<ul>
+<li>Re-running <code>npm audit</code> (the command that checks installed packages for known security problems) reported 5 new issues (1 critical, 2 high, 2 moderate). The kit's own code is unchanged; the list of known vulnerabilities was updated.</li>
+<li>Three of the five come from indirect packages that the MCP (Claude Desktop connection) library pulls in; the other two are the image-processing package (sharp) and the MCP library itself, both installed directly. Per the "fix high or above immediately" rule, all were upgraded. The direct dependency list (<code>package.json</code>) is unchanged — only the lock file (<code>package-lock.json</code>) changed.</li>
+<li>The Claude Desktop extension (MCP) was reporting its own version as <code>0.3.0</code>; it now follows the <code>package.json</code> version (currently 0.4.1). One automated test was added.</li>
+<li>All 334 automated tests pass, <code>npm audit</code> shows 0 vulnerabilities, and the live screen verification (PASS/FAIL verdicts and completion blocking) plus a real MCP connection were re-checked.</li>
+<li>This is not yet reflected in the already-built <code>.mcpb</code> file or the installed plugin (they must be rebuilt and reinstalled).</li>
+</ul>
+
+</details>
+
+<details>
 <summary><b>▶ 2026-09-11 — Patch release v0.4.1 (version housekeeping, click to collapse)</b></summary>
 
 <ul>
@@ -907,7 +920,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (333 as of 2026-09-01)
+├── tests/                            ← automated tests (334 as of 2026-10-11)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

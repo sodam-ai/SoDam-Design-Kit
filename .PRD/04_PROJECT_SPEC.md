@@ -56,6 +56,7 @@ SoDam-Design-Kit/               # 플러그인 저장소 (마켓 id: sodam-desig
 │   ├── marketing-asset-pipeline.mjs # [P3, og·포스터·배너·명함] Satori(JSX→SVG)+Sharp(→PNG)로 마케팅 이미지 생성, font-pipeline.mjs 폰트 재사용 + ai-generation-log.mjs 연동
 │   ├── asset-ledger.mjs        # [P3, 2026-08-18] 라이선스 게이트 확장 — ASSET-LEDGER.csv를 이미지·아이콘으로 확장(opt-in 게이트, font-pipeline.mjs 폰트 게이트 패턴 재사용) + ATTRIBUTION.md 자동 생성. public/design-kit-assets/·.design-kit/는 스캔 제외(1m 경계)
 │   ├── detail-page-pipeline.mjs # [P3, 2026-08-10] 상세페이지 파이프라인 — 상품 데이터 파싱(parseProductData)+페이지 템플릿 1개(registerPageTemplate)+상품별 데이터 파일 분리
+│   ├── typecheck-gate.mjs      # [P3, 2026-10-11] 타입 검사 게이트(opt-in, verify-runner --typeCheck) — tsc --noEmit·.next/ 생성 파일 오류 제외·실행 불가=FAIL
 │   └── mcp-server.mjs          # [P3, T1+T2a 완료 2026-08-20] MCP 래퍼 — stdio 전송, dashboard-server.mjs·pipeline-codegen.mjs 함수 in-process 재사용 (Claude Desktop .mcpb)
 ├── AGENTS.md                   # Codex용 규칙 (원천 자료 19번 기반)
 └── README.md
@@ -161,6 +162,9 @@ npm run lint && npx tsc --noEmit && npm run build
 
 # 게이트 수동 실행
 node scripts/verify-runner.mjs --url http://localhost:3000/login
+
+# 타입 오류까지 게이트로 (opt-in, 2026-10-11 — 기본 게이트는 타입 오류를 보지 않는다)
+node scripts/verify-runner.mjs --project <경로> --route / --screenshotDir <경로> --typeCheck
 ```
 
 > **정정(2026-07-20)**: 이전 판에 있던 `/design-kit selftest` 슬래시 명령은 실제로 구현된 적이 없습니다(콜론형 명명 규칙과도 불일치). 실제 자기 점검은 위 두 명령(`node --test`, `node scripts/e2e-selftest.mjs`)뿐이며, 슬래시 명령은 `/sodam-design-kit:setup`·`/sodam-design-kit:pipeline` 2개만 존재합니다(README 명령어 표가 정본).

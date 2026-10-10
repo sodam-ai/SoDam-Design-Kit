@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -28,6 +28,12 @@ test('createServer: 도구 5개가 정확히 등록된다', async () => {
     tools.map((t) => t.name).sort(),
     ['get_report', 'get_screenshot', 'list_runs', 'register_component_preview', 'reverify']
   );
+});
+
+test('createServer: MCP 클라이언트에 보고하는 서버 버전이 package.json 버전과 같다 (04 "버전 단일화" — 하드코딩 드리프트 회귀 방지)', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf-8'));
+  const client = await connectedClient();
+  assert.equal(client.getServerVersion().version, pkg.version);
 });
 
 test('register_component_preview 도구 설명에 3가지 정직 고지가 전부 포함된다 (T2a — Figma 안 읽음/코드 안 씀/판정 없음)', async () => {

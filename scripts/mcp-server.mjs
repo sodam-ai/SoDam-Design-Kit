@@ -22,11 +22,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listRuns, readReportContent, readScreenshotFile, reverifyRun, extractScreenshotPaths } from './dashboard-server.mjs';
 import { runCodegen } from './pipeline-codegen.mjs';
+
+// MCP 클라이언트에 보고하는 서버 버전은 package.json 하나만 정본으로 삼는다(04 "버전 단일화").
+// 예전엔 '0.3.0'을 여기 하드코딩해 0.4.x 릴리스 뒤에도 클라이언트에 낡은 버전이 보고됐다.
+// URL 객체로 읽으므로 공백·한글 경로에서도 안전하다(fileURLToPath 규칙과 같은 이유 — pathname 문자열 비교 금지).
+const PKG_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')).version;
 
 const RUN_ID_EXAMPLE = '예: 2026-08-20-001';
 const PROJECT_DIR_SCHEMA = z.string().describe('대상 프로젝트의 절대경로(.design-kit/이 있는 폴더)');
@@ -77,7 +82,7 @@ function errorResult(err) {
  * createRequestHandler()가 실제 소켓과 분리된 것과 같은 이유).
  */
 export function createServer() {
-  const server = new McpServer({ name: 'sodam-design-kit', version: '0.3.0' });
+  const server = new McpServer({ name: 'sodam-design-kit', version: PKG_VERSION });
 
   server.registerTool(
     'list_runs',

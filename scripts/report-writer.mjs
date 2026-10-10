@@ -8,6 +8,9 @@ import { mkdir, readdir, readFile, writeFile, rm, stat } from 'node:fs/promises'
 import path from 'node:path';
 
 const SCREENSHOT_RETENTION_COUNT = 10;
+// 타입 오류가 수백 건이어도 판정서가 비대해지지 않게 상한을 둔다(전체 건수는 사유 줄에 항상 남음).
+const TYPECHECK_REPORT_MAX_ERRORS = 20;
+const TYPECHECK_MESSAGE_MAX = 200;
 
 /**
  * .design-kit/reports/screenshots/를 .gitignore에 등록 (setup-wizard.mjs의
@@ -113,7 +116,7 @@ export async function nextRunId(designKitDir, date = new Date()) {
 }
 
 function renderReportMarkdown({ runId, target, verifyResult, judgement, devServerInfo, recheck }) {
-  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression, fontGate, assetGate } = verifyResult;
+  const { renderOk, consoleErrors, axeCounts, axeViolations, screenshots, visualRegression, fontGate, assetGate, typeCheck } = verifyResult;
   const lines = [];
   lines.push(`# 판정서 — ${runId}`);
   lines.push('');
@@ -174,6 +177,26 @@ function renderReportMarkdown({ runId, target, verifyResult, judgement, devServe
     } else {
       lines.push(`- **미등록 이미지 ${assetGate.violations.length}건** (ASSET-LEDGER.csv에 출처·라이선스를 기록해야 통과):`);
       for (const v of assetGate.violations) lines.push(`  - ${v.file}`);
+    }
+  }
+  if (typeCheck) {
+    lines.push('');
+    lines.push('## 타입 검사 (tsc --noEmit, opt-in)');
+    if (typeCheck.status === 'unavailable') {
+      lines.push(`- **실행 불가**: ${typeCheck.reason}`);
+    } else if (typeCheck.status === 'ok') {
+      lines.push('- 타입 오류 없음');
+    } else {
+      lines.push(`- **타입 오류 ${typeCheck.errors.length}건** (위치는 프로젝트 루트 기준 상대경로):`);
+      for (const e of typeCheck.errors.slice(0, TYPECHECK_REPORT_MAX_ERRORS)) {
+        lines.push(`  - ${e.file}(${e.line},${e.column}) ${e.code}: ${String(e.message).slice(0, TYPECHECK_MESSAGE_MAX)}`);
+      }
+      if (typeCheck.errors.length > TYPECHECK_REPORT_MAX_ERRORS) {
+        lines.push(`  - … 외 ${typeCheck.errors.length - TYPECHECK_REPORT_MAX_ERRORS}건 (판정서에는 앞 ${TYPECHECK_REPORT_MAX_ERRORS}건만 기록)`);
+      }
+    }
+    if (typeCheck.ignoredGeneratedCount > 0) {
+      lines.push(`- 참고: .next/ 생성 파일의 오류 ${typeCheck.ignoredGeneratedCount}건은 사용자 코드가 아니라 판정에서 제외했습니다.`);
     }
   }
   lines.push('');

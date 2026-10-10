@@ -26,7 +26,7 @@ Figma 디자인을 shadcn/ui 코드로 만들되, **실제 브라우저 검증(P
 - FAIL 자동 수정 재시도에서 데이터 흐름·인증·저장·API 로직 파일을 수정하지 않는다 (표시 코드만)
 
 ## 완료 조건
-- lint 통과 / typecheck 통과 / build 통과
+- lint 통과 / typecheck 통과 / build 통과 (대상 프로젝트에서 별도로 실행해 확인한다 — 킷 게이트는 `verify-runner --typeCheck`로 typecheck만 기계 검사하고, lint·build는 실행하지 않는다)
 - Playwright로 핵심 화면 렌더 확인, 콘솔 에러 0건
 - axe-core critical/serious 위반 0건
 - 360px, 768px, 1440px 뷰포트 스크린샷 존재

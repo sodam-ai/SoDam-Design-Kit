@@ -4,7 +4,7 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-09-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **333 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — 4 recently discovered ones were patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-10-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **334 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.4.1 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
@@ -264,7 +264,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (333 as of 2026-09-01; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (334 as of 2026-10-11; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -274,6 +274,17 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
+<summary><b>▶ 2026-10-11 — Patched 5 security vulnerabilities + fixed MCP version reporting (click to collapse)</b></summary>
+
+- Re-running `npm audit` (the command that checks installed packages for known security problems) reported 5 new issues (1 critical, 2 high, 2 moderate). The kit's own code is unchanged; the list of known vulnerabilities was updated.
+- Three of the five come from indirect packages that the MCP (Claude Desktop connection) library pulls in; the other two are the image-processing package (sharp) and the MCP library itself, both installed directly. Per the "fix high or above immediately" rule, all were upgraded. The direct dependency list (`package.json`) is unchanged — only the lock file (`package-lock.json`) changed.
+- The Claude Desktop extension (MCP) was reporting its own version as `0.3.0`; it now follows the `package.json` version (currently 0.4.1). One automated test was added.
+- All 334 automated tests pass, `npm audit` shows 0 vulnerabilities, and the live screen verification (PASS/FAIL verdicts and completion blocking) plus a real MCP connection were re-checked.
+- This is not yet reflected in the already-built `.mcpb` file or the installed plugin (they must be rebuilt and reinstalled).
+
+</details>
+
+<details>
 <summary><b>▶ 2026-09-11 — Patch release v0.4.1 (version housekeeping, click to collapse)</b></summary>
 
 - The two entries right below (longer verification wait time, 4 security fixes) landed after the last tagged release (v0.4.0), and the tag/GitHub Release hadn't caught up with them.
@@ -651,7 +662,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (333 as of 2026-09-01)
+├── tests/                            ← automated tests (334 as of 2026-10-11)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document

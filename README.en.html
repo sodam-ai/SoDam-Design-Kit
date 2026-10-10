@@ -120,8 +120,8 @@ img { max-width: 100%; }
 <p>A Claude Code design-automation kit that turns Figma designs into shadcn/ui code — and <strong>will not call the work "done" unless it passes real-browser verification (Playwright + axe-core + 3 viewport sizes).</strong></p>
 <p><a href="./README.md">한국어 (Korean)</a> | <a href="./README.en.md">English (current document)</a></p>
 <blockquote>
-<p>✅ <strong>Current status (as of 2026-10-11, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>350 automated tests pass</strong>, there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code> — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all <strong>126 packages including transitive dependencies is complete</strong> (zero copyleft). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
-<p>⚠️ This kit is still <strong>version 0.4.1 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
+<p>✅ <strong>Current status (as of 2026-10-11, confirmed by direct testing)</strong>: <strong>Phase 1 (MVP)</strong> and <strong>Phase 2 (dashboard, automatic visual-change detection, Korean font automation)</strong> are officially complete, and <strong>Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)</strong> (only beta-release timing remains, a user decision). All <strong>361 automated tests pass</strong>, there are <strong>0 known security vulnerabilities</strong> (per <code>npm audit</code> — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all <strong>126 packages including transitive dependencies is complete</strong> (zero copyleft). There are <strong>5 commands</strong> in total (<code>setup</code>, <code>pipeline</code>, <code>open</code>, <code>detail-page</code>, <code>marketing-asset</code>), and every one of them has been round-trip verified (PASS) against a real project. See <a href="#7-update-summary">Section 7</a> for the full history.</p>
+<p>⚠️ This kit is still <strong>version 0.5.0 (pre-release, actively under development)</strong>. Command names, behavior, and file structure may still change — this document will be updated whenever they do.</p>
 </blockquote>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -483,7 +483,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Runs the kit's own automated tests (350 as of 2026-10-11; the count may grow over time)</td>
+<td>Runs the kit's own automated tests (361 as of 2026-10-11; the count may grow over time)</td>
 <td>this kit's own repository folder</td>
 </tr>
 <tr>
@@ -499,7 +499,21 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p>The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-10-11 — Added optional --typeCheck so type errors can fail the gate (click to collapse)</b></summary>
+<summary><b>▶ 2026-10-11 — Release v0.5.0 — type check added to the standard procedure, and a re-verification bypass closed (click to collapse)</b></summary>
+
+<ul>
+<li>The optional <code>--typeCheck</code> check added last time was not part of the actual commands in the standard procedure, so it never ran in the normal flow. The standard verification commands of <code>pipeline</code> and <code>detail-page</code> now include <code>--typeCheck</code> (TypeScript projects with a <code>tsconfig.json</code>).</li>
+<li>Added guidance for the case where a type error is outside the display files (data, auth, storage or API logic files): the AI must not edit those files just to get the check to pass — it <strong>stops immediately and reports to you</strong>. If the check itself cannot run (no <code>tsconfig.json</code>/typescript, timeout), it also stops and reports the cause instead of retrying.</li>
+<li>A hands-on experiment found and closed a bypass: re-running a run that had failed with <code>--typeCheck</code> through the dashboard 're-verify' button or the MCP <code>reverify</code> tool gave PASS with the file unchanged, which unblocked completion. Re-verification now inherits the original run's type-check setting (before the fix PASS → after the fix FAIL; restoring the file gives PASS again, no false alarm).</li>
+<li>This release is the first to ship the 5 security-vulnerability patches (sharp, the MCP SDK, etc.) and the MCP version-reporting fix that landed after the previous release (v0.4.1). To get them into the Claude Desktop extension (<code>.mcpb</code>) and the installed plugin you must rebuild and reinstall (full restart).</li>
+<li>All 361 automated tests pass, <code>npm audit</code> reports 0, and the real-screen verification (normal/error verdicts and completion blocking) was re-checked.</li>
+<li>Not done yet: the visual-regression, font and asset optional flags are not inherited by re-verification (separate work). Lint and build are still not checked.</li>
+</ul>
+
+</details>
+
+<details>
+<summary><b>▶ 2026-10-11 — Added optional --typeCheck so type errors can fail the gate (click to expand)</b></summary>
 
 <ul>
 <li>In a hands-on experiment, deliberately putting a type error into a file used by a page still gave PASS from the existing verification — only the type checker (<code>tsc --noEmit</code>) failed. That is because the dev server renders pages even when they contain type errors.</li>
@@ -932,7 +946,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (350 as of 2026-10-11)
+├── tests/                            ← automated tests (361 as of 2026-10-11)
 ├── .PRD/                             ← this kit&#39;s authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -1065,7 +1079,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 <p><strong>Q. Can I use this commercially, or share/redistribute it?</strong> A. <strong>Yes, under the terms of the Apache License 2.0</strong> (finalized 2026-08-09) — you must include a copy of the license, mark any changed files, and preserve the original copyright notice. The license does not, however, grant rights to the "SoDam-Design-Kit" name or trademark itself. Please read <a href="#13-legal-copyright-license--commercial-use">Section 13</a> carefully.</p>
 <p><strong>Q. Can I sell, or deliver to a client, things this kit produces (like a detail page)?</strong> A. This kit's own license doesn't stop you from doing that. But the <strong>copyright of the original Figma design</strong>, <strong>the source of any product data</strong>, and <strong>the legal status of AI-generated code/copy</strong> are separate questions from this kit's license, and are entirely your own responsibility — each is explained in detail in <a href="#13-legal-copyright-license--commercial-use">Section 13</a>.</p>
 <p><strong>Q. Does this work on Windows/Mac/Linux?</strong> A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is <strong>Windows</strong>. Real-world verification on Mac/Linux has not yet been performed.</p>
-<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.4.1 (pre-release)</strong>. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
+<p><strong>Q. Is this a stable, finished release?</strong> A. No. The current version is <strong>0.5.0 (pre-release)</strong>. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check <a href="./CHECKPOINT.md">CHECKPOINT.md</a> and <a href="#7-update-summary">Section 7</a> for the latest status.</p>
 <hr />
 <h2 id="13-legal-copyright-license--commercial-use">13. Legal, Copyright, License &amp; Commercial Use</h2>
 <blockquote>

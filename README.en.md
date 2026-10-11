@@ -4,9 +4,9 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-10-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **350 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-10-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **361 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
-> ⚠️ This kit is still **version 0.4.1 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
+> ⚠️ This kit is still **version 0.5.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 
 ---
 
@@ -264,7 +264,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (350 as of 2026-10-11; the count may grow over time) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (361 as of 2026-10-11; the count may grow over time) | this kit's own repository folder |
 | `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
 
 ---
@@ -274,7 +274,19 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-10-11 — Added optional --typeCheck so type errors can fail the gate (click to collapse)</b></summary>
+<summary><b>▶ 2026-10-11 — Release v0.5.0 — type check added to the standard procedure, and a re-verification bypass closed (click to collapse)</b></summary>
+
+- The optional `--typeCheck` check added last time was not part of the actual commands in the standard procedure, so it never ran in the normal flow. The standard verification commands of `pipeline` and `detail-page` now include `--typeCheck` (TypeScript projects with a `tsconfig.json`).
+- Added guidance for the case where a type error is outside the display files (data, auth, storage or API logic files): the AI must not edit those files just to get the check to pass — it **stops immediately and reports to you**. If the check itself cannot run (no `tsconfig.json`/typescript, timeout), it also stops and reports the cause instead of retrying.
+- A hands-on experiment found and closed a bypass: re-running a run that had failed with `--typeCheck` through the dashboard 're-verify' button or the MCP `reverify` tool gave PASS with the file unchanged, which unblocked completion. Re-verification now inherits the original run's type-check setting (before the fix PASS → after the fix FAIL; restoring the file gives PASS again, no false alarm).
+- This release is the first to ship the 5 security-vulnerability patches (sharp, the MCP SDK, etc.) and the MCP version-reporting fix that landed after the previous release (v0.4.1). To get them into the Claude Desktop extension (`.mcpb`) and the installed plugin you must rebuild and reinstall (full restart).
+- All 361 automated tests pass, `npm audit` reports 0, and the real-screen verification (normal/error verdicts and completion blocking) was re-checked.
+- Not done yet: the visual-regression, font and asset optional flags are not inherited by re-verification (separate work). Lint and build are still not checked.
+
+</details>
+
+<details>
+<summary><b>▶ 2026-10-11 — Added optional --typeCheck so type errors can fail the gate (click to expand)</b></summary>
 
 - In a hands-on experiment, deliberately putting a type error into a file used by a page still gave PASS from the existing verification — only the type checker (`tsc --noEmit`) failed. That is because the dev server renders pages even when they contain type errors.
 - Added an optional `--typeCheck` flag to `verify-runner.mjs`. It is off by default (so existing projects that already have type errors do not suddenly flip to FAIL). When on, type errors produce FAIL, and so does being unable to run the check (it never passes silently). Errors in files under `.next/` (generated by the dev server) are excluded. Using it without `--project` is rejected.
@@ -672,7 +684,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (350 as of 2026-10-11)
+├── tests/                            ← automated tests (361 as of 2026-10-11)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
 ├── README.md / README.en.md          ← this document
@@ -758,7 +770,7 @@ A. This kit's own license doesn't stop you from doing that. But the **copyright 
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed.
 
 **Q. Is this a stable, finished release?**
-A. No. The current version is **0.4.1 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
+A. No. The current version is **0.5.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
 
 ---
 

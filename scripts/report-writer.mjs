@@ -291,6 +291,12 @@ export async function writeReport(opts) {
     // 하위 호환을 지킨다. 스파이크: 이 값이 없던 시절 FAIL 기록을 재검증하면 같은 파일 상태에서
     // PASS가 나와 Stop 훅이 열렸다(렌더만 보고 타입 오류를 안 봄).
     ...(rawVerifyResult.typeCheck ? { typeCheck: true } : {}),
+    // 같은 이유로 나머지 opt-in 게이트도 "썼다"는 사실만 남긴다(2026-10-11 스파이크: --fontGate
+    // --assetGate로 FAIL한 기록을 재검증하면 PASS가 나왔다). visualRegression은 비교 대상이 없어
+    // 결과가 빈 배열이어도 "요청했다"는 뜻이므로 배열 여부로 판정한다.
+    ...(rawVerifyResult.fontGate ? { fontGate: true } : {}),
+    ...(rawVerifyResult.assetGate ? { assetGate: true } : {}),
+    ...(Array.isArray(rawVerifyResult.visualRegression) ? { visualRegression: true } : {}),
   };
 
   const runPath = path.join(runsDir, `${runId}.json`);

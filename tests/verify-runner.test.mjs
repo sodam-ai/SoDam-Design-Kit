@@ -5,7 +5,7 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdtemp, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { findAvailablePort, judge, summarizeAxeViolations, VIEWPORTS } from '../scripts/verify-runner.mjs';
 
@@ -320,6 +320,58 @@ test('CLI: --screenshotDir이 이미 .design-kit로 시작하면 중복 접두 �
         duplicatedDirExists = false;
       }
       assert.equal(duplicatedDirExists, false, '.design-kit/.design-kit/... 중복 접두 폴더가 생기면 안 됨');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// 2026-10-11 검증 라운드 실측: `--screenshotDir ../../ESCAPED`가 exit 0으로 성공하고 스크린샷이 프로젝트
+// 밖(<임시폴더>/ESCAPED/360.png)에 써졌다. 상대경로를 `.design-kit/` 기준으로 합치기만 하고(path.join)
+// 합친 결과가 `.design-kit/` 안인지 확인하지 않았기 때문 — 32·33차 사고(스크린샷이 프로젝트 밖으로 새어나감)와
+// 같은 계열이며 04 DO NOT·01 §6 Must("경로는 프로젝트 루트 하위로 정규화 검증")를 어긴다.
+// 아래는 거부해야 하는 입력(탈출·루트 자체·접두만 같은 형제 폴더)과 거부하면 안 되는 입력(.design-kit 안에
+// 머무는 `..`)을 함께 고정한다. 거부는 브라우저를 띄우기 전에, 아무것도 만들기 전에 일어나야 한다.
+async function runEscapeCase(screenshotDir) {
+  let result;
+  await withStaticServer(async (port) => {
+    const parent = await mkdtemp(path.join(tmpdir(), 'verify-runner-escape-'));
+    const dir = path.join(parent, 'project');
+    await mkdir(dir, { recursive: true });
+    try {
+      const proc = await runCli(['--url', `http://127.0.0.1:${port}`, '--project', dir, '--screenshotDir', screenshotDir]);
+      result = { proc, parentEntries: await readdir(parent), projectEntries: await readdir(dir) };
+    } finally {
+      await rm(parent, { recursive: true, force: true });
+    }
+  });
+  return result;
+}
+
+for (const [label, input] of [
+  ['프로젝트 밖으로 탈출 (../../ESCAPED)', '../../ESCAPED'],
+  ['프로젝트 루트 자체 (..)', '..'],
+  ['.design-kit와 이름 접두만 같은 형제 폴더 (../.design-kit-evil/x)', '../.design-kit-evil/x'],
+  ['역슬래시 탈출 (..\\..\\ESCAPED)', '..\\..\\ESCAPED'],
+]) {
+  test(`CLI: 잘못된 --screenshotDir은 거부한다 (exit 2, 아무것도 만들지 않음) — ${label}`, async () => {
+    const r = await runEscapeCase(input);
+    assert.equal(r.proc.code, 2, `exit 2여야 함 (실제 ${r.proc.code})`);
+    assert.match(r.proc.stderr, /\.design-kit/, '거부 사유(.design-kit 안쪽이어야 함)가 설명돼야 함');
+    assert.deepEqual(r.parentEntries, ['project'], '프로젝트 밖에 아무것도 만들어지면 안 됨');
+    assert.equal(r.projectEntries.includes('.design-kit-evil'), false, '접두만 같은 형제 폴더가 생기면 안 됨');
+    assert.equal(r.projectEntries.includes('.design-kit'), false, '거부는 .design-kit를 만들기 전에 일어나야 함');
+  });
+}
+
+test('CLI: .design-kit 안에 머무는 `..`는 과잉 차단하지 않는다 (reports/../shots/x → .design-kit/shots/x)', async () => {
+  await withStaticServer(async (port) => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'verify-runner-inside-dotdot-'));
+    try {
+      const proc = await runCli(['--url', `http://127.0.0.1:${port}`, '--project', dir, '--screenshotDir', 'reports/../shots/x']);
+      assert.equal(proc.code, 0, `통과해야 함: ${proc.stderr.slice(-200)}`);
+      const saved = await readdir(path.join(dir, '.design-kit', 'shots', 'x'));
+      assert.equal(saved.length, 3);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

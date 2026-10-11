@@ -4,9 +4,11 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-10-11, confirmed by direct testing)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). All **361 automated tests pass**, there are **0 known security vulnerabilities** (per `npm audit` — the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched immediately), and a full license audit of all **126 packages including transitive dependencies is complete** (zero copyleft). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-10-12, confirmed by running it directly)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). The automated tests all pass — **361** for the officially published v0.5.0, and **374** for the current working copy, which also contains 2 fixes that are not published yet. There are **0 known security vulnerabilities** (`npm audit` was re-run on 2026-10-12; the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched). The licenses of all packages including transitive dependencies were re-tallied on 2026-10-12: **153 entries in `package-lock.json`**, with zero strong copyleft (GPL/AGPL) — see [Section 13](#13-legal-copyright-license--commercial-use). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
 > ⚠️ This kit is still **version 0.5.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
+>
+> 📌 **How to read this document**: anything marked "(unpublished)" is a fix that is in the code at the time of writing but is **not** in the officially published version (v0.5.0) you can download from GitHub. Where the published version and the current working copy differ, it is marked that way.
 
 ---
 
@@ -40,6 +42,9 @@ This document is written so that **someone who has barely used a computer, an AI
 | **Terminal** | A text-based window where you type commands instead of clicking things. Once Claude Code is installed, the same chat window you type into *is* the terminal — there's nothing extra to learn or install. |
 | **Command / slash command** | A pre-defined instruction that starts with `/` (a "slash"). If you've ever used a `/`-prefixed command in a chat app like Discord or Slack (e.g. `/remind`), it's the exact same idea. This kit uses 5 such commands, e.g. `/sodam-design-kit:setup`. |
 | **Plugin** | An "add-on bundle" you attach to an existing program (here, Claude Code). It's similar to installing a new app on your phone — this kit itself is one such plugin. |
+| **Marketplace** | A list where plugins are gathered so you can pick and install them by name (like an app store). This kit has a small marketplace named `sodam`, and the `sodam-design-kit` plugin lives inside it. |
+| **Dependency** | **Helper programs made by other people** that this kit needs in order to work (for example Playwright, which controls the browser). They are not bundled inside the kit; they are downloaded from the internet at install time. Which ones there are, and the terms each is licensed under, are in [Section 13](#13-legal-copyright-license--commercial-use). |
+| **Copy (installed copy)** | When you install a plugin, Claude Code **copies the original into its own private folder and runs that copy**. So if you later edit the original or download a new version, the copy stays as it was until you update ([Section 3](#3-download--installation)). |
 | **Folder / path** | A "folder" is a drawer that holds files; a "path" is the address that says where that drawer lives inside your computer (e.g. `D:\MyDocuments\Project`). |
 | **Download / install** | "Download" means bringing a file from the internet onto your computer; "install" means setting that file up so your computer can actually use it. |
 | **Browser** | A program like Chrome or Edge that displays web pages. This kit doesn't open a visible browser window for you to look at — it uses an **invisible, automated browser** to check the screen on its own. |
@@ -64,13 +69,13 @@ In one sentence: **it automatically turns a Figma design into working code, and 
 - It reads a screen you drew in Figma (e.g., a single button).
 - It generates code that matches that design, styled with [shadcn/ui](https://ui.shadcn.com) (a React component library).
 - It launches the generated code with an invisible, automated browser and automatically checks: does the screen render without breaking? Are there accessibility problems (e.g., for screen-reader users)? Does it look right at phone (360px), tablet (768px), and desktop (1440px) widths?
-- If it passes, a "report" record is written. If it fails, the tool mechanically blocks any report of "done" — even if a human (or an AI) forgets or tries to skip the check.
+- The check result (pass/fail) is recorded as a "report", and **once a failure (FAIL) is recorded**, the system (a hook) mechanically blocks any report of "done" (it doesn't help if the AI pretends not to have seen the failure or tries to trick its way past it). There is one limitation, though: this mechanism cannot stop the case where verification was never run at all — the exact conditions are written in [Section 8](#8-workflow).
 
 ```
 Figma design ──▶ Code generation ──▶ Real-browser check ──▶ Only then: "done"
 ```
 
-**Why a tool like this exists**: if you simply tell an AI "build this to match the design," the AI can generate code and then say "all done." But whether that code **actually renders correctly on screen, doesn't have broken text, and works for screen-reader users** might just be something the AI *claimed* was true, without anyone actually checking. This kit forces that final check to be done mechanically by a **real browser program**, not just asserted in words — so "it said it worked, but it actually didn't" simply can't happen.
+**Why a tool like this exists**: if you simply tell an AI "build this to match the design," the AI can generate code and then say "all done." But whether that code **actually renders correctly on screen, doesn't have broken text, and works for screen-reader users** might just be something the AI *claimed* was true, without anyone actually checking. This kit forces that final check to be done mechanically by a **real browser program**, not just asserted in words — so "it said it worked, but it actually didn't" is greatly reduced (only when verification was actually run; see the limitation above).
 
 **Who this is for**: Anyone who designs in Figma and uses Claude Code to turn that design into code (the same person can do both) — especially anyone uneasy about "the AI says it made the code, but did anyone actually check it renders?"
 
@@ -80,14 +85,15 @@ Figma design ──▶ Code generation ──▶ Real-browser check ──▶ On
 
 ## 2. Prerequisites & Required Software (with download instructions)
 
-All 4 of the following must be ready. If even one is missing, you cannot proceed to Section 3 (Installation).
+All 5 of the following must be ready. If even one is missing, you cannot proceed to Section 3 (Installation).
 
 | # | Requirement | Why it's needed | Download / Check |
 |---|---|---|---|
-| 1 | **Claude Code** | This kit is itself a Claude Code "plugin" — it cannot run without Claude Code | Install per the official guide at [claude.com/claude-code](https://claude.com/claude-code) |
-| 2 | **Node.js 18 or newer** | Every verification script in this kit is written in Node.js (a JavaScript runtime) | Download the "LTS" version from [nodejs.org](https://nodejs.org). After installing, type `node -v` in a terminal — if a version number appears, you're set (this kit was built and verified on v22.19.0) |
+| 1 | **Claude Code** | This kit is itself a Claude Code "plugin" — it cannot run without Claude Code | Install per the official guide at [claude.com/claude-code](https://claude.com/claude-code). After installing, type `claude --version` in a terminal — if a version appears, you're set (the install and update steps in this document were verified by running them directly on **version 2.1.296**) |
+| 2 | **Node.js 20.9 or newer** (the current LTS is recommended) | Every verification script in this kit is written in Node.js (a JavaScript runtime). **Why the minimum is 20.9**: `sharp`, the component this kit uses for image processing, requires Node 20.9 or newer (confirmed directly from the value written in `package-lock.json`). An earlier version of this document said "18 or newer", which was incorrect guidance | Download the "LTS" version from [nodejs.org](https://nodejs.org). After installing, type `node -v` in a terminal (the command-input window) — if a number of `v20.9.0` or higher appears, you're set (the PC on which the steps in this document were last verified runs v26.7.0) |
 | 3 | **Target project**: Next.js + Tailwind CSS + shadcn/ui | The code this kit generates assumes exactly this combination (other frameworks are not yet supported) | You need a project already built with this stack. If you don't have one, create one with `npx create-next-app@latest` (official Next.js method) and follow the [official shadcn/ui install guide](https://ui.shadcn.com/docs/installation) |
-| 4 | **Figma file access** | The original design you're porting to code must live in Figma | Use the **Figma connector** already linked to claude.ai, or log in via the official **Figma MCP** (`https://mcp.figma.com/mcp`). A free (Starter) Figma plan works, but is limited to **6 reads per month** (see [Section 10](#10-security--data-flow)) |
+| 4 | **Figma file access** | The original design you're porting to code must live in Figma | Use the **Figma connector** already linked to claude.ai, or log in via the official **Figma MCP** (`https://mcp.figma.com/mcp`). A free (Starter) Figma plan works, but has a **limit on the number of reads** (when this was first written, the measured value was 6 per month; it has since been confirmed that Figma's official documentation now states a different figure — check Figma's official guidance for the exact current limit. See [Section 10](#10-security--data-flow) below) |
+| 5 | **Internet connection · about 1GB of free storage** | At install time, the dependencies and the browser files used for verification have to be downloaded | Values measured directly on this development PC: the installed kit copy is **about 76MB** (of which the dependencies in `node_modules` are 75MB) + the verification browser (Chromium) is **about 690MB** (415 + 269 + 3MB). Each time the kit version is raised a new copy is created (the old version folder stays), so the total grows slowly. Sizes may differ by PC and version. For when you need **Git**, see "Method A" in [Section 3](#3-download--installation) |
 
 > **Not sure what a term means?** Check the [glossary in Section 0](#0-before-you-start-key-terms-in-5-minutes) first. In particular, if "terminal" is unfamiliar: it's a text-based window where you type commands instead of clicking. Once Claude Code is installed, the window you type commands into *is* the terminal — nothing extra to install.
 
@@ -97,46 +103,74 @@ All 4 of the following must be ready. If even one is missing, you cannot proceed
 
 ## 3. Download & Installation
 
-> The steps below assume this kit **is not on a GitHub marketplace, and is installed by pointing directly at a folder path on your computer** ("local directory source" — confirmed as of 2026-07-20, still true today). If this later moves to a GitHub-hosted marketplace, step 1's address may change from a folder path to a different kind of address — this section will be updated when that happens.
+> ✅ The install and update commands in this section were **run directly on Windows + Claude Code 2.1.296 on 2026-10-12**, and the results were checked. The test was done in a **throwaway temporary settings folder** so as not to touch the everyday configuration, and it reproduced a first-time install from a clean state. Limitations: ① The step of downloading the verification browser files (about 690MB) from the internet for the first time could not be reproduced from scratch, because they were already installed on this PC (only that the command finishes without error was confirmed). ② The PC used for testing was logged in to GitHub — this repository is public (PUBLIC), so in principle no login is needed, but this could not be confirmed on a PC that is not logged in. ③ macOS and Linux were not tested.
 
-1. **Register the marketplace** — inside the Claude Code chat window, type this exactly (only replace the address with your own computer's real path):
-   ```
-   /plugin marketplace add <full path to this repository folder>
-   ```
-   (example: `D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit`)
+### Three things to know first (behavior confirmed by direct testing)
 
-2. **Install the plugin** — then type:
+1. **Installing creates a "copy".** When you install a plugin, Claude Code copies the original into its own private folder and runs that **copy**. The location is `plugins\cache\sodam\sodam-design-kit\<version>` inside the Claude settings folder (the settings folder is usually `C:\Users\<your name>\.claude`; it differs on PCs where the location has been changed). So even if you edit the original folder or download a new version, **the copy stays as it was until you run the "How to update" steps below**. (An earlier version of this document said "no copy is created", which was an incorrect description.)
+2. **Dependencies are installed automatically.** When installed from a clean state, Claude Code installed the dependencies (Playwright, axe-core, sharp, etc.) inside the copy on its own. So **you do not need to type `npm install` yourself.** However, if you use it **right after** installing or updating, the dependencies may still be getting ready — if the first command fails with a dependency-related error, wait 1–2 minutes and run it again (the exact time it takes was not measured).
+3. **The verification browser is not installed automatically.** The browser (Chromium) in which this kit actually opens the screen has to be downloaded separately, once — that is **step 4** of the method below. If you skip it, verification fails with an `Executable doesn't exist ...` error ([Section 11](#11-troubleshooting)).
+
+### Method A (recommended) — install directly from the GitHub address (without downloading the repository separately)
+
+> **What you need**: [Git](https://git-scm.com/downloads) (Claude Code downloads it using Git internally).
+
+1. **Register the marketplace** — type this in the Claude Code chat window:
+   ```
+   /plugin marketplace add sodam-ai/SoDam-Design-Kit
+   ```
+   (You can also use the full address `https://github.com/sodam-ai/SoDam-Design-Kit.git`. Both were confirmed to succeed on 2026-10-12. To do the same thing from a terminal: `claude plugin marketplace add sodam-ai/SoDam-Design-Kit`.)
+
+2. **Install the plugin**:
    ```
    /plugin install sodam-design-kit@sodam
    ```
 
-3. **Fully restart Claude Code** — close the window completely and reopen it. (See [Section 11](#11-troubleshooting), "Installed but the command doesn't show up" — this must be a **full restart**, not a refresh.)
+3. **Fully restart Claude Code** — close the window completely and reopen it. It must be a **full quit and restart**, not a refresh (the first item of [Section 11](#11-troubleshooting)).
 
-4. **Install dependencies (once only)** — from **inside this plugin's own repository folder** (where this `README.en.md` lives), type into your terminal:
+4. **Install the verification browser (once only)** — type this in a terminal (PowerShell on Windows):
    ```
-   npm install
+   npx playwright@1.61.1 install chromium
    ```
-   The verification gate depends on the browser-automation tool (Playwright) and the accessibility checker (axe-core), which are not bundled with the kit's code and must be fetched with this command.
+   > The number `1.61.1` is the Playwright version used by the officially published v0.5.0 (the value written in this kit's `package-lock.json`). **This number may change when the kit version changes**, so if verification later fails with `Executable doesn't exist`, follow the command shown on that error screen (`npx playwright install`), or ask Claude Code to "install the Playwright browser for me". If you download a browser of a different version, this kit will not be able to find it.
 
-   > **Important (a confirmed real-world pitfall)**: Because this plugin uses a "local directory source," installing it does **not** create a copy anywhere else. Claude Code simply uses the original folder you pointed to in step 1. So `npm install` must also be run **inside that same original folder** — there is no separate "installed location" to go looking for.
-
-5. **Verify the install** — inside the **target project** (the Next.js project from prerequisite #3), type:
+5. **Verify the install** — type this inside the **target project** (prerequisite #3 in Section 2, the project you are porting code into):
    ```
    /sodam-design-kit:setup
    ```
-   If this command appears in autocomplete and runs without error, the install succeeded.
+   If the command appears in the autocomplete list and runs, you're set. You can also check by typing `claude plugin list` in a terminal and seeing that the `Status` of `sodam-design-kit@sodam` shows `enabled`.
 
-**How do you know it failed?**: if you type the first few letters (`/sod`) and nothing appears in autocomplete, the install didn't take. See the first row of [Section 11](#11-troubleshooting).
+### Method B — install from a folder on your computer (for developers who edit the code)
+
+1. Download the repository: `git clone https://github.com/sodam-ai/SoDam-Design-Kit.git`
+2. Give marketplace registration the **full path of the folder** (e.g. `/plugin marketplace add D:\MyFolder\SoDam-Design-Kit`).
+3. The rest is the same as steps 2–5 of Method A (`/plugin install sodam-design-kit@sodam` → full restart → install the browser → verify).
+4. This method also **creates a copy** (confirmed the same way as in Method A). If you edited the code in the original folder, be sure to **commit it first** and then run the "How to update" steps below — whether uncommitted edits are reflected in the copy was not confirmed.
+5. To run this kit's automated tests (`npm test`), or to run the scripts directly without the plugin, you need to run `npm ci` (or `npm install`) once **inside that folder**. It is not needed when you use the kit only as a plugin.
+
+### How to update (when a new version is out)
+
+Type the following two lines into a terminal, one after the other (this is the order confirmed by actually upgrading from 0.5.0 to 0.5.1 on 2026-10-12):
+```
+claude plugin marketplace update sodam
+claude plugin update sodam-design-kit@sodam
+```
+→ If "Restart to apply changes" appears, you must **fully restart Claude Code** for the new version to take effect. Check it with the `Version` column of `claude plugin list`. The new version folder is created separately as `plugins\cache\...\<new version>`, and **the old version folder stays as it is** (within the scope where it was confirmed that this does not affect operation).
+
+> **Important**: If you do not update, the Claude Code you normally use **keeps running the old version's copy.** For example, even if a new safeguard has been added to this kit, it does not apply until you update.
+
+### How do you know the install didn't work?
+If you type up to `/sod` in the chat window and nothing appears in the autocomplete list, the install (or the restart) is not complete. See the first item of [Section 11](#11-troubleshooting).
 
 ### Section 3 addendum — Want verification history in Claude Desktop too? (optional, added 2026-08-20)
 
 > The steps 1-5 above are for **Claude Code** (the terminal-style chat) only. If you also want **Claude Desktop** (the regular desktop app) to show this kit's verification history, reports, and screenshots, and let you trigger re-verification, you can install an additional extension below — the two are separate apps, and this extension is optional.
 
-1. From this repository folder, generate the extension file (`.mcpb`) with (terminal, inside this repo folder):
+1. First download the repository as in Method B (above) and run `npm ci` once in that folder (because the extension file bundles the dependencies from this folder's `node_modules` — confirmed directly on 2026-10-12 by opening the inside of a freshly built `.mcpb` and seeing `node_modules` in it). Then generate the extension file (`.mcpb`) with the following command (terminal, inside this repository folder):
    ```
    npx @anthropic-ai/mcpb pack .
    ```
-   A `.mcpb` file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (as of 2026-08-21 — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed, and it now packages only what's needed).
+   A `.mcpb` file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (the file built with v0.5.0 is 20.3MB — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed by excluding unnecessary files, which brought it down to the current size. On 2026-10-12 the inside of the file was opened again, and it was re-confirmed that it contains no development notes, session state, or design documents).
 2. **Double-click** the generated `.mcpb` file. If all goes well, Claude Desktop shows an install screen — review the details and approve.
 
    > **Did double-clicking instead open a Windows "How do you want to open this file?" dialog?** That's not an install failure — it just means this computer has no file association for `.mcpb` yet (this can happen even if Claude Desktop is already installed — confirmed by hands-on testing on 2026-09-01). Click **Cancel** on that dialog and install this way instead:
@@ -154,13 +188,13 @@ All 4 of the following must be ready. If even one is missing, you cannot proceed
 **What this extension can and can't do (honest disclosure)**:
 - Can: browse verification history, view reports/screenshots, trigger re-verification — the same data as the `/sodam-design-kit:open` dashboard in Claude Code. **(added 2026-08-20)** It can also re-wire a component that's already registered in `component-map.json` back into the verification preview page (it does not read Figma or write new code — it only reuses an existing mapping).
 - Can't: **mechanically block completion**. That's a Claude Code hook-only feature. Claude Desktop only shows the re-verify result (PASS/FAIL); it won't forcibly stop work on a FAIL. It also **won't write real code for a new component into your project on Claude Desktop's behalf** — that was intentionally left out this round because it would let unverified code enter the project silently.
-- The re-verify feature runs a real browser (Playwright) internally — if you've already run `npm install` in this repo, you're set. If you installed only this extension standalone, you may separately need `npx playwright install`.
+- The re-verify feature of this extension runs a real browser (Playwright) internally. The extension file contains the dependencies (the Playwright program itself) but **does not contain the browser files (Chromium, about 690MB)** — you must run the command from [step 4 of Method A](#method-a-recommended--install-directly-from-the-github-address-without-downloading-the-repository-separately) above (`npx playwright@1.61.1 install chromium`) once on your PC for re-verification to work. (Browsing the verification history, and viewing reports and screenshots, work without the browser — only re-verification needs it.)
 
 ---
 
 ## 4. Quick Start (first success in 5 minutes)
 
-Once prerequisites and installation are done, here's the fastest path to seeing a real result.
+Once prerequisites and installation are done (**including installing the verification browser — step 4 of Method A in Section 3**), here's the fastest path to seeing a real result. If you haven't downloaded the browser yet, step 2 fails with an `Executable doesn't exist` error.
 
 **Step 1 — Initial setup (once per target project)**
 ```
@@ -197,14 +231,14 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 
 ### `/sodam-design-kit:setup` — initial setup
 - **Input**: none (uses the current project folder automatically) / optional: a Figma file link
-- **What it does**: reads `components.json` (shadcn's own config) to locate your actual component folder, scans the `.tsx` files inside it, and writes `.design-kit/component-map.json`. It also creates `.design-kit/config.json` (default settings — 3 viewport sizes, 3 auto-retries, etc.).
+- **What it does**: reads `components.json` (shadcn's own config) to locate your actual component folder, scans the `.tsx` files inside it, and writes `.design-kit/component-map.json`. It also creates `.design-kit/config.json` (default settings — 3 viewport sizes, 3 auto-retries, etc.). **Worth knowing (confirmed from the code)**: this `config.json` is currently just **default values for the record**, and no program reads these values to change its behavior. The 3 viewport sizes (360 · 768 · 1440px) are fixed in the code, so editing this file does not change how the checks work.
 - **How it behaves**: run it **once** per project. If a config already exists it's skipped automatically; add `--force` to rescan (existing Figma mappings are preserved, and only newly found components are added).
 - **Success looks like**: a completion message + a new `.design-kit/` folder.
 
 ### `/sodam-design-kit:pipeline` — design → code → verification
 - **Input**: a Figma share link (a direct page/node link, not a whole-file link — see [Section 10](#10-security--data-flow))
 - **What it does**: reads Figma → records the mapping in `component-map.json` → generates shadcn/ui code → auto-creates a preview route (`/design-kit-preview/{component}`) → auto-starts a dev server → runs real-browser verification (Playwright + axe-core + 3 viewports) → writes the report.
-- **How it behaves**: on `FAIL`, it retries automatically up to 3 times (two consecutive failures are required to finalize a `FAIL`). **Both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch" path have been verified end-to-end (PASS).** Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. `#ff0000`) and refuses to place the file if it finds any.
+- **How it behaves**: on `FAIL`, the AI reads the failure reason in the report, fixes the code, and verifies again. The limit of 3 retries is something the **procedure document (`commands/pipeline.md`) instructs the AI to do**; the program does not enforce the count. Also, the rule "two consecutive failures are required to finalize a FAIL" **is not in the code** — in reality, **if the single most recent report record is a FAIL, completion is blocked immediately** ([Section 8](#8-workflow)). The standard verification command also includes a TypeScript type check (`--typeCheck`) (for projects that have a `tsconfig.json`). **Both the "reuse an already-mapped component" path and the "generate a brand-new component from scratch" path have been verified end-to-end (PASS).** Before placing a newly generated component, it automatically checks for hardcoded style values (e.g. `#ff0000`) and refuses to place the file if it finds any.
 - **Success looks like**: a report file in `.design-kit/reports/` containing `**PASS**`.
 
 ### `/sodam-design-kit:open` — view the verification-history dashboard
@@ -229,7 +263,7 @@ This kit runs from inside Claude Code via **slash commands** (commands starting 
 
 > This is not something you do on every regular use — it's the **final check that the kit actually works the same way from a brand-new session, from scratch** ([`.PRD/01_PRD.md`](./.PRD/01_PRD.md) §9, Success Criteria 5 and 6). Follow these steps in a new Claude Code session, and this document alone is enough to reproduce it.
 
-1. **Pick a target project** — ideally one that has already run `/sodam-design-kit:setup` and already has a Figma mapping (so no fresh Figma call is needed, and the free 6-calls-per-month limit isn't touched).
+1. **Pick a target project** — ideally one that has already run `/sodam-design-kit:setup` and already has a Figma mapping (so no fresh Figma call is needed, and the free plan's monthly read limit isn't touched).
 2. **Before running anything, check the current state of the reports folder** and keep it as your baseline (PowerShell):
    ```powershell
    Get-ChildItem "<target project path>\.design-kit\runs" | Sort-Object Name | Select-Object -Last 3
@@ -263,9 +297,28 @@ Commands for kit developers only (end users don't need these):
 
 | Command | Description | Run from |
 |---|---|---|
-| `npm install` | Installs the browser and accessibility tools used for verification (once only) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (361 as of 2026-10-11; the count may grow over time) | this kit's own repository folder |
-| `npm run selftest` (= `node scripts/e2e-selftest.mjs`) | Full self-check of the round-trip pipeline (PASS/FAIL/recheck) | this kit's own repository folder |
+| `npm ci` (or `npm install`) | Installs the dependencies (Playwright, axe-core, etc.) — **not needed when you use the kit only as a plugin** (Section 3); only needed when you run the automated tests or the scripts directly. The **browser files used for verification are not installed by this command** (`npx playwright install chromium` is needed separately) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (as of 2026-10-12: 361 for the officially published v0.5.0, and 374 for the working copy that includes the unpublished fixes — the count may grow) | this kit's own repository folder |
+| `node scripts/e2e-selftest.mjs --fixture <path to a test project>` | Full self-check of the round-trip pipeline (PASS/FAIL/recheck). You must pass, via `--fixture`, **a separate Next.js test project to be verified** (run without a path, it only prints the usage and exits), and that test project is not included in this repository (first-time users can skip this). `npm run selftest` in `package.json` is shorthand for the same command, so you must pass arguments like `npm run selftest -- --fixture <path>` | this kit's own repository folder |
+
+### Verification options (5 optional features) — switches that add checks on top of the basic check
+
+The basic verification covers 4 things: "does the screen render · are there no console errors · are there no accessibility violations (critical/serious) · do screenshots exist at all 3 viewport sizes". The options below are switches that **add more checks** on top of that, and you append them to the end of the verification-runner (`scripts/verify-runner.mjs`) command. The slash commands `pipeline` and `detail-page` run with only `--typeCheck` attached as standard, and the other 4 are **off by default** (a design so that existing projects don't suddenly flip to FAIL without warning). To turn one on, ask Claude Code something like "verify with the font check turned on too", or append it yourself in a terminal.
+
+| Option | What it does when on | When it FAILs | Worth knowing |
+|---|---|---|---|
+| `--typeCheck` | Runs the TypeScript type check (`tsc --noEmit`) before the screen verification | When there is a type error, or when the check could not be run (it is not silently passed) | You must also pass `--project` (without it, the run is refused). Errors in files inside `.next/`, which the dev server creates, are excluded. Without this option, a type error still gives PASS as long as the screen renders (confirmed by a direct experiment) |
+| `--fontGate` | Checks that the font files found in the project are registered in `.design-kit/ASSET-LEDGER.csv` (the asset ledger) | When there is a font file that is not in the ledger | Pretendard and the like, downloaded automatically by this kit, are already registered and are not flagged |
+| `--assetGate` | Checks image and icon files for ledger registration in the same way | When there is an image that is not in the ledger | `public/design-kit-assets/` (marketing-image output) and `.design-kit/` (verification screenshots) are excluded from the check. The source-attribution document `.design-kit/ATTRIBUTION.md` is generated from the ledger by a command separate from this option: `node scripts/asset-ledger.mjs --project <target project> --generateAttribution` |
+| `--visualRegression` | Compares the current screen, pixel by pixel, against a baseline screen that a person has approved as "this screen is correct" | When it differs from the baseline screen (an image showing the difference is generated) | If there is no approved baseline screen yet, the comparison is skipped (not a FAIL) |
+| `--promoteBaseline` | Approves the current screen as the new **baseline screen** | (This option does not produce a FAIL) | **Only screens whose verification is PASS** are approved, and a person must explicitly ask for it. There is no path that approves automatically |
+
+Example (PowerShell; `<kit folder>` is the folder downloaded with Method B in Section 3, or the installed copy folder):
+```powershell
+node "<kit folder>\scripts\verify-runner.mjs" --project "<target project folder>" --route /design-kit-preview/button --target "Button check" --typeCheck --fontGate
+```
+- **"Re-verify" (the dashboard button, and re-verification in Claude Desktop) inherits the options that were turned on in the original run, as they were.** `--typeCheck` has done so since the officially published v0.5.0, while `--fontGate`, `--assetGate`, and `--visualRegression` are **(unpublished)**. In the time before they were inherited, there was a bypass: if you "re-verified" a record that had FAILed on an option check, it came out PASS with the files unchanged, which lifted the completion block; it was closed after being reproduced and confirmed directly. When re-verifying, visual regression **only compares** and does not approve a baseline screen.
+- `--screenshotDir` (where screenshots are saved) accepts only paths inside `.design-kit/`. A value that goes outside with `..` (e.g. `../../elsewhere`) is refused with an error (exit code 2) without creating anything **(unpublished)** — previously, giving such a value had a defect where screenshots were saved outside the project.
 
 ---
 
@@ -274,14 +327,26 @@ Commands for kit developers only (end users don't need these):
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-10-11 — Release v0.5.0 — type check added to the standard procedure, and a re-verification bypass closed (click to collapse)</b></summary>
+<summary><b>▶ 2026-10-12 — (unpublished) "Re-verify" now inherits every option check + screenshot save-path escape blocked + install guidance corrected (click to collapse)</b></summary>
+
+- **Status note**: items ① and ② below are in the code and the automated tests pass, but at the time of writing they are **not yet merged or released on GitHub**, so they are **not in** the officially published version (v0.5.0) that you can download from GitHub. Item ③ is a correction of this README itself.
+- **① Closed the other 3 re-verification bypasses**: the v0.5.0 entry right below closed the "re-verify" bypass only for records that had FAILed on `--typeCheck`. The same hole existed for `--fontGate`, `--assetGate` and `--visualRegression` as well (re-verifying a record that had FAILed on an option gave PASS with the files unchanged — the font and asset options were reproduced and confirmed directly, and visual regression has the same structure so it was fixed together). Now the options turned on in the original run are kept in the record, and re-verification inherits them. Visual regression **only compares** against the baseline screen, and approving a baseline screen is still kept so that a person must explicitly ask for it.
+- **② Closed a defect where the screenshot save path leaked outside the project**: it was directly reproduced that pointing outside with `..`, as in `--screenshotDir ../../ESCAPED`, saved the screenshots outside the project and still finished as a success (exit code 0). Now anything not inside `.design-kit/` is refused before anything is created (exit code 2), and the `\` separator and look-alike sibling folders such as `.design-kit-evil` are blocked too. A `..` that stays inside `.design-kit/` (e.g. `reports/../shots/x`) is not blocked.
+- **③ README corrections**: that installing creates a copy and the dependencies are installed automatically (the previous document said the opposite), that the minimum Node version is 20.9, not 18, that the verification browser has to be downloaded separately (the previous document had no such step), how to update, that the retry count and the "2 consecutive failures" rule are not in the code, that no program reads the `config.json` values, the verification-options table, the re-tally of the license package count (153), and the removal of broken links that pointed to files not in the repository.
+- **Automated tests**: 361 → 374 (13 added, 1 new test file), all passing, `npm audit` 0. No new dependencies added.
+- **Honest limits**: for ①, **no end-to-end check against a real project** — going through a real dev server, font scan and baseline-screen comparison — has been done yet (only the automated tests that swap in fake components were confirmed), and even after merge and release, it takes effect in the Claude Code you normally use only after you do the [update in Section 3](#3-download--installation).
+
+</details>
+
+<details>
+<summary><b>▶ 2026-10-11 — Release v0.5.0 — type check added to the standard procedure, and a re-verification bypass closed (click to expand)</b></summary>
 
 - The optional `--typeCheck` check added last time was not part of the actual commands in the standard procedure, so it never ran in the normal flow. The standard verification commands of `pipeline` and `detail-page` now include `--typeCheck` (TypeScript projects with a `tsconfig.json`).
 - Added guidance for the case where a type error is outside the display files (data, auth, storage or API logic files): the AI must not edit those files just to get the check to pass — it **stops immediately and reports to you**. If the check itself cannot run (no `tsconfig.json`/typescript, timeout), it also stops and reports the cause instead of retrying.
 - A hands-on experiment found and closed a bypass: re-running a run that had failed with `--typeCheck` through the dashboard 're-verify' button or the MCP `reverify` tool gave PASS with the file unchanged, which unblocked completion. Re-verification now inherits the original run's type-check setting (before the fix PASS → after the fix FAIL; restoring the file gives PASS again, no false alarm).
 - This release is the first to ship the 5 security-vulnerability patches (sharp, the MCP SDK, etc.) and the MCP version-reporting fix that landed after the previous release (v0.4.1). To get them into the Claude Desktop extension (`.mcpb`) and the installed plugin you must rebuild and reinstall (full restart).
 - All 361 automated tests pass, `npm audit` reports 0, and the real-screen verification (normal/error verdicts and completion blocking) was re-checked.
-- Not done yet: the visual-regression, font and asset optional flags are not inherited by re-verification (separate work). Lint and build are still not checked.
+- Not done yet as of this release: the visual-regression, font and asset optional flags are not inherited by re-verification (→ solved in the 2026-10-12 entry right above, unpublished). Lint and build are still not checked.
 
 </details>
 
@@ -641,15 +706,22 @@ User                    Claude Code (AI)              This kit's code
   │   │ "done" may be   │◀──┤                             │
   │   │ reported        │   │                             │
   │   └───────────────┘   │                             │
-  │   ┌───── FAIL ─────┐   │  Auto-retry up to 3 times          │
-  │   │ Reporting       │◀──┤  (2 consecutive failures =         │
-  │   │ "done" is       │   │   final FAIL)                      │
+  │   ┌───── FAIL ─────┐   │  The AI reads the reason,          │
+  │   │ Reporting       │◀──┤  fixes it, re-verifies             │
+  │   │ "done" is       │   │  (recommended max 3 — per docs)    │
   │   │ blocked by the  │   │                             │
   │   │ hook            │   │                             │
   │   └───────────────┘   │                             │
 ```
 
-The key point is the final fork: **`hooks/verify-gate.mjs` mechanically prevents the word "done" without a PASS report** — even if the AI forgets, or tries to cut corners.
+The key point is the final fork: **once a verification result is recorded as FAIL, `hooks/verify-gate.mjs` mechanically prevents the word "done"** — even if the AI pretends not to have seen the FAIL, or tries to cut corners.
+
+**Exactly under what conditions this block triggers** (confirmed from the code in `hooks/verify-gate.mjs`):
+- It blocks **if the single most recent run record in `.design-kit/runs/` is a FAIL**. There is no condition like "2 consecutive failures" — one FAIL blocks for as long as that record is the newest. It is lifted once a new PASS record is created afterward.
+- It also blocks if the run-record folder cannot be read, or if the most recent record file is corrupted (the cause is reported separately).
+- It does not block if the `.design-kit/runs/` folder itself does not exist, or has no records at all (so as not to get in the way in projects that don't use this kit). **That means this hook cannot stop someone from saying "done" without running verification at all.** What covers that case is the procedure document (`commands/pipeline.md`) and the "no completion report without a PASS report" instruction in `AGENTS.md`, and that is an **instruction for the AI to follow, not mechanical enforcement.** So, before trusting the word "done", we recommend getting into the habit of opening `.design-kit/reports/` yourself to check that the latest PASS report is there.
+- The hook only looks at `.design-kit/runs/` in the **folder where Claude Code is open**. If you open Claude Code and work in some folder other than the target project, it cannot see that project's FAIL records.
+- This hook is **Claude Code only**. It does not exist in the Claude Desktop extension or other tools, so there the result is only shown and nothing is blocked (see the [Section 3 addendum](#section-3-addendum--want-verification-history-in-claude-desktop-too-optional-added-2026-08-20)).
 
 ---
 
@@ -670,12 +742,19 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og/poster/banner/business-card)
 ├── hooks/
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
-├── scripts/                          ← the actual engine, all Node.js (representative examples — see scripts/ for the full list)
+├── skills/
+│   └── design-pipeline/SKILL.md      ← a skill file that tells Claude Code "when to use this kit" (on words like Figma or design) and the core rules
+├── scripts/                          ← the actual engine, all Node.js (as of 2026-10-12: 17 actual files in the `scripts/` folder + 1 screen (UI) folder)
 │   ├── setup-wizard.mjs
 │   ├── pipeline-codegen.mjs
 │   ├── detail-page-pipeline.mjs      ← detail-page pipeline engine (Phase 3)
 │   ├── preview-route.mjs
-│   ├── verify-runner.mjs
+│   ├── verify-runner.mjs             ← verification runner (dev-server startup · render · accessibility · 3 viewports · 5 optional options)
+│   ├── typecheck-gate.mjs            ← type-check option (--typeCheck) engine
+│   ├── execution-lock.mjs            ← a lock that keeps verification from running twice at the same time in the same project
+│   ├── dashboard-server.mjs          ← /open dashboard server (127.0.0.1 only) + re-verify feature
+│   ├── dashboard-web/                ← the dashboard screen (index.html · dashboard.js)
+│   ├── e2e-selftest.mjs              ← full round-trip self-check (needs a test-project path)
 │   ├── report-writer.mjs
 │   ├── asset-downloader.mjs          ← Figma image/icon auto-download engine (fixes the 7-day expiring URL problem)
 │   ├── font-pipeline.mjs             ← automatic Korean font download/setup engine
@@ -684,11 +763,15 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (361 as of 2026-10-11)
+├── tests/                            ← automated tests (as of 2026-10-12: 361 for the officially published v0.5.0, 374 for the working copy that includes the unpublished fixes)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
-├── CHECKPOINT.md                     ← the next tasks to pick up (for developers; not tracked in git)
-├── README.md / README.en.md          ← this document
-└── package.json
+├── AGENTS.md                         ← a summary of the rules for tools outside Claude Code, such as Codex
+├── LICENSE                           ← the full text of the Apache License 2.0
+├── .mcpbignore                       ← the list of files to leave out when building the Claude Desktop extension file (prevents internal notes from leaking)
+├── README.md / README.en.md          ← this document (Korean/English, Markdown)
+├── README.html / README.en.html      ← the same content as a web page (open it in a browser)
+├── package.json / package-lock.json  ← the dependency list, with exact versions pinned
+└── (not in the repository) CHECKPOINT.md      ← the developer's personal work notes. It is intentionally not pushed to GitHub (a local-only file), so it is not in the folder you download
 ```
 
 ### What appears inside the target project (where code gets generated)
@@ -702,8 +785,10 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 ├── reports/*.md                ← human-readable reports — meant to be committed to git
 └── reports/screenshots/       ← verification screenshots — only the most recent 10 runs are kept automatically (older ones are auto-deleted)
 ```
-> The list above is representative (Phase 2 also added `fonts/`, `ASSET-LEDGER.csv`, `.api-token`, `.lock`, `.dashboard.json`, `reports/baseline/`, etc. — [`.PRD/02_DATA_MODEL.md`](./.PRD/02_DATA_MODEL.md) is the authoritative source).
-> **Safe to delete**: `reports/screenshots/` (regenerated automatically). **Do not delete**: `component-map.json` (recreating it means reading Figma again, and the free Figma plan only allows 6 reads a month — see [Section 10](#10-security--data-flow)).
+> The list above is representative (Phase 2 also added `fonts/`, `ASSET-LEDGER.csv`, `.api-token`, `.lock`, `.dashboard.json`, `reports/baseline/`, etc., and Phase 3 added `AI-GENERATION-LOG.md`, `ATTRIBUTION.md`, etc. — [`.PRD/02_DATA_MODEL.md`](./.PRD/02_DATA_MODEL.md) is the authoritative source). Marketing images are saved in the target project's `public/design-kit-assets/`.
+>
+> **Remember that on your computer these two places exist separately**: ① the "this kit's repository" structure above is the same as the original you get from GitHub, and ② what actually runs is the **copy** that Claude Code made (`<Claude settings folder>\plugins\cache\sodam\sodam-design-kit\<version>`) ([Section 3](#3-download--installation)). The verification results (`.design-kit/`) pile up in the **target project folder**, not in the copy.
+> **Safe to delete**: `reports/screenshots/` (regenerated automatically). **Do not delete**: `component-map.json` (recreating it means reading Figma again, and the free Figma plan has a monthly limit on the number of reads — see [Section 10](#10-security--data-flow)).
 
 ---
 
@@ -711,10 +796,17 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 
 **No exaggeration — just the facts.**
 
-- **What leaves your computer**: read requests to Figma's servers (using your own Figma login, for only the design pages you specify). Nothing else is sent to any server by this kit. Login credentials (tokens, etc.) are never stored by the kit's own code — it reuses whatever Figma connector/official MCP login is already set up in Claude Code.
+- **Every case in which this kit communicates externally is listed here** (confirmed on 2026-10-12 by searching the kit's entire code for network calls):
+  1. **Claude Code ↔ Anthropic servers (not something this kit's code sends, but Claude Code's own default behavior)**: because this kit runs inside Claude Code, exactly as in normal Claude Code use, **the conversation content, the files the AI reads, and part of the Figma design data are sent to Anthropic's servers**. For how that is handled, check Anthropic's official guidance. So do not leave files containing personal information or real customer data within what the AI can read.
+  2. **Figma servers**: it reads only the design pages you specify, using your own Figma login. Login credentials (tokens, etc.) are never stored by the kit's own code — it reuses whatever Figma connector/official MCP login is already set up in Claude Code.
+  3. **At install time only**: the plugin is downloaded from GitHub, the dependencies from the npm registry, and the verification browser (Chromium) from the Playwright distribution server ([Section 3](#3-download--installation)).
+  4. **Only when you use the automatic Korean font setup feature**: it downloads only from addresses on an allowlist fixed in the code (the Pretendard v1.3.9 and Noto Sans KR fonts, and each license file, on `raw.githubusercontent.com`). Fonts not on the list are refused.
+  5. **Only when you use the Figma image/icon download feature**: it downloads only from the `https://` address that Figma provides (`http://` is refused, nothing is saved if the address changes to `http://` partway through, and files over 10MB or that are not images are not saved).
+  6. Beyond the above, **there is no code in this kit that sends usage statistics, remote logs, error reports, or the like** (confirmed by searching the entire code for related words and network calls).
+  7. **⚠️ The dev server that is briefly opened during verification is NOT "this computer only" (measured directly on 2026-10-12)**: when this kit starts the dev server it asks for it to open only on `127.0.0.1` (this computer itself), but when it was actually brought up the same way and checked, the server was **accepting connections on all network addresses (`::`)**. That means that for the several tens of seconds that verification is running, there is a **possibility** that another device on the same network can connect to that temporary screen (the code of the screen being built, development information). Whether the Windows firewall blocks this could not be confirmed. **To be safe, do not run verification on an untrusted network such as a cafe or public Wi-Fi.** (This is an item that should be passed on to the developers as an improvement task — it has not been fixed yet.) By contrast, the `/sodam-design-kit:open` dashboard is, per the code, opened only on `127.0.0.1`.
 - **What stays local (on your computer only)**: the generated code, and everything inside `.design-kit/` — settings, mappings, run records, and screenshots. All of it lives only on your local disk and is never transmitted anywhere.
 - **Figma image URLs expire after 7 days**: URLs Figma returns for images/icons are temporary and break after 7 days. This kit is designed to download them locally right away instead of embedding the temporary URL directly in generated code.
-- **Figma free-plan read limits**: if your own Figma account is on the free (Starter/View) plan, you get only **6 reads per month** (paid Dev/Full plans get 200–600 per day). This kit is designed to save what it reads into `component-map.json` and reuse it, to conserve that limit.
+- **Figma free-plan read limits (the figure has changed before, and I could not pin down the exact current value)**: if your own Figma account is on the free (Starter/View) plan, there is a **monthly limit** on the number of Figma reads. The value confirmed directly when this kit was built was **6 per month** (paid Dev/Full plans get 200–600 per day), and when Figma's official documentation was checked again on 2026-09-01, it was found that this figure **is now stated as 20 per month** (though I could not confirm whether that figure is exactly the one that applies to my account's conditions). So this document guarantees only that it is "very low, somewhere between 6 and 20 per month" — **check Figma's official guidance directly for the exact limit.** This kit is designed to save what it reads into `component-map.json` and reuse it, to conserve that limit.
 - **No personal data or real customer data allowed**: this kit's rules (the "Do Not" list in [`.PRD/04_PROJECT_SPEC.md`](./.PRD/04_PROJECT_SPEC.md)) prohibit connecting Figma files or product data that contain personal information or real customer data. Only dummy/sample data should be used, for both designs and product data.
 - **How external commands are run**: when running things like the dev server, this kit only spawns processes with an argument array — it never concatenates strings into a shell command (which would risk command injection).
 - **The dashboard (`/open`) is only reachable from your own computer**: it's bound to `127.0.0.1` (an address meaning "this computer, and only this computer"), so no one else can reach it over the internet. Path-traversal protection, rejection of malformed requests, and a lock that blocks concurrent access are all implemented, and each was confirmed by actually simulating an attack against it.
@@ -729,17 +821,22 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 |---|---|---|---|
 | Installed, but `/sodam-design-kit:setup` doesn't show up | Claude Code is still using a cached, stale view of installed plugins | **Fully close and reopen** Claude Code (not a refresh — a complete restart) | The command appears in autocomplete when typing `/` |
 | "Completion has been blocked" appears | **This is expected behavior.** The verification gate detected a `FAIL` and is deliberately preventing a report of "done" | Open the latest report in `.design-kit/reports/` to see why it failed → retry, or investigate manually | The report clearly states a specific reason for failure |
-| `FAIL` keeps repeating | The problem may not be fixable by the automatic retries (max 3) | Read the failure reason in the report (accessibility violations, console errors) yourself. `gateEnabled` should only ever be changed by you, directly, in `.design-kit/config.json` | A retry turns into `PASS`, or you've identified the root cause |
+| `FAIL` keeps repeating | The problem may not be fixable by the AI's retries (up to 3 recommended) | Read the failure reason in the report (accessibility violations, console errors) yourself. **Trying to turn the gate off by changing the `gateEnabled` value in `.design-kit/config.json` does not work** — no program reads that value (confirmed from the code). Don't try to turn the gate off; fix the reason for the FAIL | A retry turns into `PASS`, or you've identified the root cause |
 | Figma won't connect, or reads seem insufficient | The connector login may have expired, or you may need the official MCP | Check the connector's login status → switch to the official remote MCP (`mcp.figma.com/mcp`) if needed | A Figma read request returns results normally |
 | A `.fig` file saved on my computer won't open | The Figma connector/MCP can only read files **saved to a Figma account** — it cannot read local files directly | Open that file in the Figma desktop app to save it to your account, then use its share link | The share link reads successfully |
-| It says shadcn or Playwright (the verification browser) isn't installed | The target project lacks shadcn/ui, or `npm install` wasn't run in this kit's own repo | If it's shadcn, follow the prompt asking whether to run `npx shadcn init`; if it's Playwright, re-run `npm install` inside this kit's repository folder | The command runs normally after the prompted install finishes |
+| It says shadcn/ui isn't installed | The target project doesn't have shadcn/ui | Follow the prompt asking whether to run `npx shadcn init` | The command runs normally after the prompted install finishes |
+| Verification fails with `browserType.launch: Executable doesn't exist at ...chromium_headless_shell...`, and below it says "Looks like Playwright was just installed or updated. Please run the following command to download new browsers" | **The verification browser (Chromium) files are not on this computer yet** (this is the actual error text, reproduced as-is on 2026-10-12 by emptying the browser path). The dependencies are installed automatically, but the browser is not downloaded automatically | Run `npx playwright@1.61.1 install chromium` in a terminal ([step 4 of Method A in Section 3](#method-a-recommended--install-directly-from-the-github-address-without-downloading-the-repository-separately)). The `npx playwright install` that the error screen suggests serves the same purpose | The same verification command proceeds all the way to a PASS/FAIL verdict without error |
+| A "cannot find package" error such as `Cannot find package 'playwright'` appears | You may have just installed or updated, and the dependencies may still be installing automatically | Wait 1–2 minutes and run the same command again. If it persists, check the version with `claude plugin list`, and check that the installed copy folder (see the end of [Section 9](#9-architecture--filedocument-locations)) has a `node_modules` folder. Recovery when it is missing (running `npm ci` in that folder) is a general measure and **has not been tried directly with this kit** | The same command runs without a dependency error |
 | A message about a port conflict flashes by during verification | Another program is already using that port | **No action needed** — this kit is designed to automatically find and use the next available port | Verification proceeds without any manual intervention |
 | On Windows, passing an option like `--route /...` (starting with `/`) produces a strange result | A Git Bash (MSYS) environment quirk mangles values starting with `/` into file paths (not a defect in this kit's code — a note for developers) | Use PowerShell instead | Verification returns a correct result |
 | Korean text (or other non-Latin text) renders as broken boxes (□) | The project doesn't have a Korean font set up yet | Ask a developer to run the `font-pipeline` feature (auto-sets up Pretendard, etc.) — regular users only need to follow the normal setup/pipeline flow | Text displays correctly |
-| The dashboard (`/open`) won't start, or the page is blank | Another instance is already running, or `npm install` was never run in this kit's own repo | Run `/sodam-design-kit:open --stop` once to shut it down, then start it again. If that doesn't help, re-run `npm install` | The browser correctly shows your list of reports |
+| The dashboard (`/open`) won't start, or the page is blank | Another instance is already running, or you just installed or updated and the dependency installation hasn't finished yet | Run `/sodam-design-kit:open --stop` once to shut it down, then start it again. If that doesn't help, run it again after 1–2 minutes (see the "cannot find package" item right above) | The browser correctly shows your list of reports |
 | Double-clicking the `.mcpb` file in Claude Desktop opens a "How do you want to open this file?" window instead | This computer has no file association for `.mcpb` (unrelated to whether Claude Desktop itself is installed) | Click **Cancel** in that window → Claude Desktop Settings → **Extensions** → **Advanced settings** → **Install Extension** button, and pick the file directly (see the Section 3 addendum) | The confirmation screen shows the 5 tools and "All requirements met," and after install, Settings → Developer → Local MCP servers shows a `running` badge |
 | I'm not used to typing commands | Totally understandable if computers or chat-style tools are new to you | Read the [glossary in Section 0](#0-before-you-start-key-terms-in-5-minutes) first, then follow [Section 4, Quick Start](#4-quick-start-first-success-in-5-minutes) one line at a time, exactly as written | Each step's stated "success looks like" outcome appears as described |
 | Verification fails with "dev server did not become ready within N ms" | Your computer just started, or hasn't run this kit in a while, so the very first page takes longer than usual to get ready (not a real failure) | Just run the same command again — the second time is normally fast, since everything is already warmed up | Re-running proceeds normally to a PASS/FAIL verdict |
+| A new version is out, but the Claude Code I normally use still behaves like the old one | What is installed is a **copy**, so the old version keeps running until you update ([Section 3](#3-download--installation)) | Run `claude plugin marketplace update sodam` → `claude plugin update sodam-design-kit@sodam` in a terminal, then **fully restart** Claude Code | The `Version` in `claude plugin list` changes to the new version |
+| Registering the marketplace fails with a `Filename too long` error | The Windows path-length limit. Reproduced directly on 2026-10-12 in the case where **the Claude settings folder has been moved to a very long path** (it did not occur in a normal install during testing) | It was confirmed that shortening the Claude settings folder path makes the same command succeed | The message `Successfully added marketplace: sodam` |
+| `/plugin marketplace add sodam-ai/SoDam-Design-Kit` fails | Git may not be installed, or GitHub may be unreachable (**not tested directly on a PC without Git**) | Install [Git](https://git-scm.com/downloads) or check your internet connection, then try again. If that doesn't work, install with [Method B](#method-b--install-from-a-folder-on-your-computer-for-developers-who-edit-the-code) | The message `Successfully added marketplace: sodam` |
 
 ---
 
@@ -752,7 +849,7 @@ A. Running the commands themselves only requires knowing a few slash commands (`
 A. Read the [glossary in Section 0](#0-before-you-start-key-terms-in-5-minutes) first, then follow [Section 4, Quick Start](#4-quick-start-first-success-in-5-minutes) exactly as written. Being honest, though: this is a developer tool, so parts of it (installing Node.js, using a terminal) still require some basic computer familiarity — it will go a lot more smoothly with someone nearby who can help, rather than going it alone with zero technical background, especially for setting up the target project mentioned in prerequisite #3.
 
 **Q. Do I need a paid Figma plan?**
-A. No, the free (Starter) plan works. It's limited to 6 reads per month (see [Section 10](#10-security--data-flow)). This kit is built to cache what it reads and reuse it, so you can still run the pipeline multiple times within that limit.
+A. No, the free (Starter) plan works. It does have a limit that allows only a very small number of reads per month (the value confirmed directly when this was first written was 6 per month, and the official documentation's figure has since changed to 20 per month — check Figma for the exact current value) (see [Section 10](#10-security--data-flow)). This kit is built to cache what it reads and reuse it, so you can still run the pipeline multiple times within that limit.
 
 **Q. If verification fails (FAIL), does that mean my code is broken?**
 A. Not necessarily. It could be an accessibility rule violation, a console error, a rendering failure, or something else — and the report will state the specific reason. A failure is also evidence that this kit is checking things correctly.
@@ -767,10 +864,19 @@ A. **Yes, under the terms of the Apache License 2.0** (finalized 2026-08-09) —
 A. This kit's own license doesn't stop you from doing that. But the **copyright of the original Figma design**, **the source of any product data**, and **the legal status of AI-generated code/copy** are separate questions from this kit's license, and are entirely your own responsibility — each is explained in detail in [Section 13](#13-legal-copyright-license--commercial-use).
 
 **Q. Does this work on Windows/Mac/Linux?**
-A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed.
+A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed. The manifest (`manifest.json`) of the Claude Desktop extension (`.mcpb`) states **only Windows and macOS** as supported operating systems and does not include Linux. Node.js must be **20.9 or newer** on any operating system ([Section 2](#2-prerequisites--required-software-with-download-instructions)).
 
 **Q. Is this a stable, finished release?**
-A. No. The current version is **0.5.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [CHECKPOINT.md](./CHECKPOINT.md) and [Section 7](#7-update-summary) for the latest status.
+A. No. The current version is **0.5.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [Section 7](#7-update-summary) and GitHub's [Releases page](https://github.com/sodam-ai/SoDam-Design-Kit/releases) for the latest status.
+
+**Q. How do I get a new version? Does it update automatically?**
+A. Within the scope confirmed at the time of writing, **I could not confirm that it changes automatically.** What is installed is a copy, so you have to run the two lines under ["How to update" in Section 3](#3-download--installation) (`claude plugin marketplace update sodam` → `claude plugin update sodam-design-kit@sodam`) and **fully restart** Claude Code.
+
+**Q. Are my designs and code sent externally?**
+A. This kit's code does not send usage statistics or remote logs (confirmed by searching the entire code). However, **Claude Code itself sending the conversation content, the files the AI reads, and Figma data to Anthropic's servers** happens separately from this kit. It was also confirmed that the dev server briefly opened during verification was in a state where it could be reached from other devices on the same network — please be sure to read [Section 10](#10-security--data-flow) for the details and the caution.
+
+**Q. Can I use it with other AI tools such as Codex?**
+A. Only partly. `AGENTS.md` is a summary document meant to make other tools follow this kit's core rules. However, the `/sodam-design-kit:...` slash commands and the **hook that "blocks completion on FAIL" are Claude Code only**, so they do not work in other tools. This kit's scripts are ordinary Node programs, so in theory they can be run from a terminal in other tools too, but **this document has no record of having actually tried them in other tools.** If you use it with such a tool, a person must open the verification result (the latest report in `.design-kit/reports/`) directly and confirm the PASS.
 
 ---
 
@@ -807,23 +913,38 @@ Separately from this kit's own license, the open-source libraries it uses intern
 
 These licenses are granted independently by their respective projects and are unrelated to this kit's own license. If you want to use these components directly yourself, check their original license text.
 
-### Full audit of all 126 packages, including transitive dependencies (2026-08-21)
-The table above only covers the 8 packages this kit installs directly. Counting the transitive dependencies those 8 pull in, **126 packages** are actually installed — this was the first time all 126 were checked. We initially tried `ScanCode Toolkit` (a standard license scanner), but it only supports Python 3.12 or earlier and is incompatible with this environment's Python 3.14, so we achieved the same goal with a small Node.js script that reads the `license` field from every installed package's `package.json`.
+### Re-tally of the licenses of all packages, including transitive dependencies (2026-10-12)
+The table above only covers the 8 packages this kit installs directly (their licenses were checked again on 2026-10-12 against the `license` field in `package-lock.json` and confirmed to match the table). Counting the transitive dependencies those 8 pull in, **`package-lock.json` records 153 packages** (the 2026-08-21 audit found 126; the number has grown since, as dependencies were updated). This time, without a separate scanner, the `license` field of **all 153 was tallied with a script**.
 
 | License | Package count |
 |---|---|
-| MIT | 103 |
+| MIT | 106 |
+| Apache-2.0 | 16 |
+| LGPL-3.0-or-later | 10 |
 | ISC | 10 |
-| Apache-2.0 | 4 |
 | MPL-2.0 | 3 |
+| Apache-2.0 AND LGPL-3.0-or-later | 3 |
 | BSD-3-Clause | 2 |
-| Apache-2.0 AND LGPL-3.0-or-later (some also MIT) | 2 |
+| Apache-2.0 AND LGPL-3.0-or-later AND MIT | 1 |
 | BSD-2-Clause | 1 |
 | 0BSD | 1 |
+| **Total** | **153** |
 
-- **Packages with no license field**: 0
-- **Strong copyleft licenses (GPL, AGPL, etc.)**: 0
-- **One finding worth flagging separately**: two platform-specific native binary packages that `sharp` (in the table above) installs alongside itself — `@img/sharp-win32-x64` and `@img/sharp-wasm32` — include **LGPL-3.0-or-later** (because they dynamically link the `libvips` library internally). **This is not a legal problem** — LGPL explicitly permits dynamic linking (without copying or modifying the code directly) without that license propagating to the linking program as a whole, and this kit uses `sharp` unmodified, as an installed dependency only, which satisfies that condition.
+- **Packages with no `license` field**: 0 · **Strong copyleft licenses (GPL, AGPL, etc.)**: 0.
+- **The number actually installed on your computer is smaller than this**: 29 of the 153 are "optional per-operating-system" dependencies, so even though the builds for every operating system are listed, only the ones matching your own operating system are installed on your computer.
+- **A finding noted separately because it needs attention — the 14 that include LGPL-3.0-or-later**: all of them are native components that the image-processing dependency `sharp` brings in per operating system (the 10 `@img/sharp-libvips-*` are for macOS and Linux, the 3 `@img/sharp-win32-*` are for Windows, and 1 is `@img/sharp-wasm32`). Only 1–2 of them are installed on your computer (on 64-bit Windows, `@img/sharp-win32-x64`). This is because they bundle a library called `libvips`. **Because this kit does not modify them and uses them only as installed dependencies**, this falls under the common way of using them in which LGPL does not spread to the kit as a whole (this is an explanation for reference and carries no legal guarantee).
+- **3 are MPL-2.0** (`axe-core`, `@axe-core/playwright`, `satori`): "file-level" copyleft. This kit uses them unmodified, but **if you modify the files of these components yourself and distribute them, you must publish the source of the modified files under MPL-2.0**.
+- **These components are bundled whole inside the installed copy and the `.mcpb` file.** When the inside of the `.mcpb` was opened on 2026-10-12, it contained 128 `LICENSE`-type files. You **must not delete or obscure these files (especially the `LICENSE` of the LGPL and MPL components above) when redistributing.**
+
+### Programs not included in this kit that you download separately (each one's own license and terms apply)
+- **Chromium browser**: the roughly 690MB of browser files that Playwright downloads with the step 4 command in Section 3. **They are not files of this kit**, and they follow the licenses of the Chromium project and of each third-party component inside it. Check that project's official guidance for the exact terms (this document does not vouch for those terms on its behalf).
+- **Node.js, Git, Claude Code, Claude Desktop, Figma (the service)**: each one's own license or terms of service applies. In particular, Claude Code and Figma have **terms of service**, and complying with them is the user's responsibility; this kit does not vouch for them.
+
+### Trademark notice
+Names such as Figma, Claude, Claude Code, Anthropic, shadcn/ui, Next.js, Tailwind CSS, Playwright, Node.js, and GitHub are trademarks or service names of their respective owners. This document uses the names only to explain which tools this kit is used with; it does not claim any affiliation with, endorsement by, or sponsorship from those companies.
+
+### Where the license is stated (a part that is easy to confuse)
+The **authoritative statement of this kit's license is the `LICENSE` file at the top level of the repository** (`Copyright 2026 SoDam AI Studio` on line 203). `Apache-2.0` is also written in the Claude Desktop extension manifest `manifest.json`. By contrast, `package.json` and `.claude-plugin/plugin.json` **have no license field** (confirmed 2026-10-12), so an automated tool that reads only those files may show the license as "none" — base your judgment on the `LICENSE` file.
 
 ### Licenses of fonts this kit downloads automatically
 The "Korean font automation" feature described in [Section 7](#7-update-summary) only auto-downloads fonts from a pre-approved whitelist under the open-source **OFL (SIL Open Font License)** — currently Pretendard and Noto Sans KR. OFL permits modifying, redistributing, and commercially using the font, but **prohibits selling the font file itself as a standalone product**. The license basis for each downloaded font is automatically recorded in the target project's `ASSET-LEDGER.csv`.
@@ -852,6 +973,10 @@ The code and copy this kit generates are produced by Claude (an AI). **Copyright
 | Taking someone else's Figma design without authorization and using it commercially | ❌ Regardless of this kit's license, this can infringe the original designer's rights (your responsibility) |
 | Using the open-source components this kit relies on (Playwright, axe-core, pixelmatch, pngjs, satori, sharp, @modelcontextprotocol/sdk, zod) directly, on your own | ✅ Allowed, under each project's own license (Apache-2.0 / MPL-2.0 / ISC / MIT) |
 | Reselling a font this kit auto-downloads (e.g. Pretendard) as a standalone font product | ❌ Prohibited (violates the OFL license) |
+| Handing the installed copy or the `.mcpb` file to someone else as-is | ⚠️ Allowed, but the conditions stack — on top of this kit's Apache-2.0 conditions, you must not delete the `LICENSE` files of the components inside (especially the LGPL and MPL ones). For commercial redistribution, consulting an attorney is recommended |
+| Distributing the Chromium browser files that Playwright downloads together with this kit, as if they were part of it | ❓ This kit does not include Chromium — you must check that separate project's license (this document does not vouch for it) |
+| Promoting it as an "official product / partner product" using names such as Claude or Figma | ❌ Prohibited — trademark infringement and risk of misleading people (see "Trademark notice" above) |
+| Having the AI (Claude Code) read Figma data to work with this kit | ⚠️ Allowed, but you must assume Claude Code sends that content to Anthropic's servers ([Section 10](#10-security--data-flow)) — if the design contains secrets or personal information, check your company's policy |
 
 **No warranty, limited liability**: this kit and its documentation are provided "as-is," with no guarantee of fitness for a particular purpose or freedom from defects. All outcomes from using it are your own responsibility.
 
@@ -865,4 +990,4 @@ More detailed specifications, decision rationale, and development history than t
 - [`03_PHASES.md`](./.PRD/03_PHASES.md) — the phased (1/2/3) development plan and current progress
 - [`04_PROJECT_SPEC.md`](./.PRD/04_PROJECT_SPEC.md) — tech stack, absolute rules (do-not / always-do)
 - [`.PRD/README.md`](./.PRD/README.md) — the full audit log of the development process
-- [`CHECKPOINT.md`](./CHECKPOINT.md) — the list of tasks to pick up next (for developers)
+- (Note) The developer's personal work-notes file `CHECKPOINT.md` is a local-only file that is intentionally not pushed to GitHub, so it is not in this repository. The authoritative record of the development history is `.PRD/README.md` above.

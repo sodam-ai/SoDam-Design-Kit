@@ -19,6 +19,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findAvailablePort, startDevServer, verifyPage, judge } from './verify-runner.mjs';
 import { checkTypeScript } from './typecheck-gate.mjs';
+import { compareRunToBaseline } from './visual-regression.mjs';
+import { checkFontGate } from './font-pipeline.mjs';
+import { checkAssetGate } from './asset-ledger.mjs';
 import { writeReport } from './report-writer.mjs';
 import { acquireLock, releaseLock, isProcessAlive } from './execution-lock.mjs';
 
@@ -347,17 +350,22 @@ export async function readReportContent(designKitDir, runId) {
  * 범위 밖, 01 §3). route가 저장돼 있지 않은 오래된 판정서(2026-08-09 이전)는 재검증을
  * 명확히 거부한다(경로를 추측해서 땜질하지 않음 — 02 결정 기록).
  *
- * 원래 실행이 --typeCheck로 돌았다면(runs/*.json의 `typeCheck: true`) 재검증도 같은 기준을
- * 이어받는다(2026-10-11 스파이크: 이어받지 않던 시절, 타입 오류로 FAIL한 기록을 재검증하면
- * 파일이 그대로인데 PASS가 나와 Stop 훅이 열렸다 — 01 §3 Parity "같은 입력 → 같은 판정").
- * `deps`는 테스트가 실제 dev 서버·tsc 없이 이 계약을 검증하도록 의존 함수를 주입하는 통로다
- * (기본값은 진짜 구현이라 기존 호출부는 전부 그대로 동작).
+ * 원래 실행이 옵션 게이트(--typeCheck·--fontGate·--assetGate·--visualRegression)로 돌았다면
+ * (runs/*.json의 같은 이름 필드 `true`) 재검증도 같은 기준을 이어받는다(2026-10-11 스파이크:
+ * 이어받지 않던 시절, 타입 오류/미등록 폰트·이미지로 FAIL한 기록을 재검증하면 파일이 그대로인데
+ * PASS가 나와 Stop 훅이 열렸다 — 01 §3 Parity "같은 입력 → 같은 판정"). 시각 회귀는 기준본과
+ * "비교"만 하고 기준본 "승격"은 절대 하지 않는다(승격은 사람의 명시 승인 — verify-runner
+ * --promoteBaseline). `deps`는 테스트가 실제 dev 서버·tsc·파일 스캔 없이 이 계약을 검증하도록
+ * 의존 함수를 주입하는 통로다(기본값은 진짜 구현이라 기존 호출부는 전부 그대로 동작).
  */
 export async function reverifyRun(projectDir, designKitDir, runId, deps = {}) {
   const {
     startDevServer: startServer = startDevServer,
     verifyPage: verify = verifyPage,
     checkTypeScript: checkTypes = checkTypeScript,
+    checkFontGate: checkFonts = checkFontGate,
+    checkAssetGate: checkAssets = checkAssetGate,
+    compareRunToBaseline: compareBaseline = compareRunToBaseline,
   } = deps;
   if (!RUN_ID_PATTERN.test(String(runId))) {
     throw Object.assign(new Error('잘못된 runId 형식'), { statusCode: 400 });
@@ -392,7 +400,24 @@ export async function reverifyRun(projectDir, designKitDir, runId, deps = {}) {
       route: originalRun.route,
       screenshotDir: path.join(designKitDir, 'reports', 'screenshots', `reverify-${runId}-${Date.now()}`),
     });
-    const judgement = judge(result, { typeCheck });
+    // verify-runner main()과 같은 조건·순서로 나머지 옵션 게이트를 이어받는다.
+    const projectRoot = path.resolve(projectDir);
+    let visualRegression = null;
+    if (originalRun.visualRegression === true) {
+      visualRegression = [];
+      if (result.screenshots.length > 0) {
+        visualRegression = await compareBaseline({ designKitDir, route: originalRun.route, screenshots: result.screenshots });
+      }
+    }
+    const fontGate = originalRun.fontGate === true ? await checkFonts({ projectDir: projectRoot, designKitDir }) : null;
+    const assetGate = originalRun.assetGate === true ? await checkAssets({ projectDir: projectRoot, designKitDir }) : null;
+
+    const judgement = judge(result, {
+      visualRegressions: visualRegression || [],
+      fontGateViolations: fontGate ? fontGate.violations : [],
+      assetGateViolations: assetGate ? assetGate.violations : [],
+      typeCheck,
+    });
     const report = await writeReport({
       designKitDir,
       target: `${originalRun.target} (대시보드 재검증)`,
@@ -402,6 +427,9 @@ export async function reverifyRun(projectDir, designKitDir, runId, deps = {}) {
       verifyRunnerOutput: {
         devServer: { port: devServer.port, autoStarted: true },
         ...result,
+        ...(visualRegression ? { visualRegression } : {}),
+        ...(fontGate ? { fontGate } : {}),
+        ...(assetGate ? { assetGate } : {}),
         ...(typeCheck ? { typeCheck } : {}),
         ...judgement,
       },

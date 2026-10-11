@@ -308,8 +308,19 @@ async function main() {
   // **이 정규화를 다시 프로젝트 루트 기준으로 낮추지 말 것** — 그 순간 이 결함이 그대로 재현된다.
   if (screenshotDir && projectDir && !path.isAbsolute(screenshotDir)) {
     const designKitDir = path.join(path.resolve(projectDir), '.design-kit');
-    const dedupedRel = screenshotDir.replace(/^[./\\]*\.design-kit[/\\]+/, '');
-    screenshotDir = path.join(designKitDir, dedupedRel);
+    // `\`와 `/`를 둘 다 구분자로 취급한다(아래 접두 제거도 원래 그랬다) — POSIX에서 `..\..\x`가 "이름에 역슬래시가
+    // 들어간 파일"로 해석돼 검사를 피해가는 플랫폼 차이를 없앤다.
+    const dedupedRel = screenshotDir.replace(/\\/g, '/').replace(/^[./]*\.design-kit\/+/, '');
+    const resolved = path.resolve(designKitDir, dedupedRel);
+    // 2026-10-11 검증 라운드 실측·수정: 예전엔 path.join만 해서 `../../ESCAPED`가 프로젝트 밖에 스크린샷을 썼다
+    // (exit 0). 합친 결과가 `.design-kit/` 안(자기 자신 포함)인지 확인하고 아니면 아무것도 만들기 전에 거부한다.
+    // 구분자를 붙여 비교해야 이름 접두만 같은 형제 폴더(`.design-kit-evil`)를 막는다.
+    // **이 검사를 빼지 말 것** — 빼면 `..`가 섞인 상대경로 하나로 판정 근거가 프로젝트 밖으로 새어나간다.
+    if (resolved !== designKitDir && !resolved.startsWith(designKitDir + path.sep)) {
+      console.error(`--screenshotDir은 .design-kit/ 안쪽 경로여야 합니다 ('..'로 바깥으로 나갈 수 없습니다): ${getArg('screenshotDir')}`);
+      process.exit(2);
+    }
+    screenshotDir = resolved;
   }
   // --target이 주어지면 검증 후 판정서(runs/*.json + reports/*.md)까지 이 명령 하나로 기록한다.
   // commands/pipeline.md 4~5단계("검증"과 "판정서 기록")가 문서상 별개 스크립트처럼 서술돼 있었지만

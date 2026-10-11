@@ -120,8 +120,9 @@ img { max-width: 100%; }
 <p>Figma 디자인을 shadcn/ui 코드로 만들고, <strong>실제 브라우저 검증(Playwright + axe-core + 3개 화면 크기)을 통과해야만 "완료"로 인정되는</strong> Claude Code 디자인 자동화 킷입니다.</p>
 <p><a href="./README.md">한국어(현재 문서)</a> | <a href="./README.en.md">English</a></p>
 <blockquote>
-<p>✅ <strong>현재 상태 (2026-10-11 기준, 실측 확인)</strong>: <strong>Phase 1(MVP)</strong>과 <strong>Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)</strong>가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트 <strong>361개 전부 통과</strong>, 알려진 보안 취약점 <strong>0건</strong>(<code>npm audit</code> 기준 — 2026-09-11의 4건과 2026-10-11에 새로 보고된 5건 모두 즉시 패치 완료), 간접 의존성까지 포함한 <strong>126개 패키지 라이선스 전수 감사 완료</strong>(카피레프트 0건). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
-<p>⚠️ 이 킷은 아직 **버전 0.5.0(정식 출시 전, 개발 진행 중)**입니다. 명령어 이름·동작 방식·파일 구조가 앞으로 바뀔 수 있습니다 — 바뀔 때마다 이 문서도 함께 갱신됩니다.</p>
+<p>✅ <strong>현재 상태 (2026-10-12 기준, 직접 실행해 확인)</strong>: <strong>Phase 1(MVP)</strong>과 <strong>Phase 2(대시보드 · 화면 변경 자동 감지 · 한글 폰트 자동화)</strong>가 공식 완료되었고, <strong>Phase 3(고도화)도 상세페이지 · AI 생성 이력 기록 · 마케팅 이미지 생성(OG·포스터·배너·명함) · 라이선스 게이트 확장 · Claude Desktop용 MCP 확장(검증 이력 열람)까지 완료</strong>되었습니다(남은 항목은 베타 공개 여부뿐, 사용자 결정 사항). 자동 테스트는 정식 공개된 v0.5.0 기준 <strong>361개</strong>, 아직 공개 전인 수정 2건까지 담긴 현재 작업본 기준 <strong>374개</strong>가 전부 통과하고, 알려진 보안 취약점은 <strong>0건</strong>입니다(<code>npm audit</code>을 2026-10-12에 다시 실행해 확인 — 2026-09-11의 4건과 2026-10-11에 새로 보고된 5건은 모두 패치 완료). 간접 의존성까지 포함한 전체 패키지의 라이선스를 <code>package-lock.json</code> 기준 <strong>153개</strong>로 2026-10-12에 다시 집계했고, 강한 카피레프트(GPL·AGPL)는 0건입니다(<a href="#13-법률--저작권--라이선스--상업적-용도">13장</a>). 사용 가능한 명령은 총 <strong>5개</strong>(<code>setup</code> · <code>pipeline</code> · <code>open</code> · <code>detail-page</code> · <code>marketing-asset</code>)이며, 전부 실제 프로젝트를 대상으로 왕복 검증(PASS 확인)까지 마쳤습니다. 자세한 이력은 <a href="#7-업데이트-내용-요약">7장</a>을 참고하세요.</p>
+<p>⚠️ 이 킷은 아직 <strong>버전 0.5.0(정식 출시 전, 개발 진행 중)</strong>입니다. 명령어 이름·동작 방식·파일 구조가 앞으로 바뀔 수 있습니다 — 바뀔 때마다 이 문서도 함께 갱신됩니다.</p>
+<p>📌 <strong>이 문서를 읽는 법</strong>: 문서 안에서 "(공개 전)"이라고 적힌 내용은 이 문서가 쓰인 시점에 코드에는 들어 있지만 아직 GitHub에서 받을 수 있는 정식 버전(v0.5.0)에는 <strong>포함되지 않은</strong> 수정입니다. 정식 버전과 현재 작업본이 다른 곳은 그렇게 표시했습니다.</p>
 </blockquote>
 <hr />
 <h2 id="목차">목차</h2>
@@ -171,6 +172,18 @@ img { max-width: 100%; }
 <tr>
 <td><strong>플러그인</strong></td>
 <td>원래 프로그램(Claude Code)에 나중에 끼워 넣는 "추가 기능 묶음". 스마트폰에 새 앱을 설치하는 것과 비슷합니다 — 이 킷 자체가 하나의 플러그인입니다.</td>
+</tr>
+<tr>
+<td><strong>마켓플레이스</strong></td>
+<td>플러그인을 모아 놓고 "이름으로 골라 설치"할 수 있게 해 주는 목록(앱스토어와 비슷). 이 킷은 <code>sodam</code>이라는 이름의 작은 마켓플레이스 하나를 가지고 있고, 그 안에 <code>sodam-design-kit</code> 플러그인이 들어 있습니다.</td>
+</tr>
+<tr>
+<td><strong>의존성</strong></td>
+<td>이 킷이 일하는 데 필요해서 <strong>다른 사람이 만들어 둔 부품 프로그램들</strong>(예: 브라우저를 조종하는 Playwright). 이 킷에 직접 들어 있지 않고 설치할 때 인터넷에서 받아옵니다. 어떤 부품이 있는지, 각각의 사용 조건(라이선스)은 <a href="#13-법률--저작권--라이선스--상업적-용도">13장</a>에 있습니다.</td>
+</tr>
+<tr>
+<td><strong>복사본 (설치된 사본)</strong></td>
+<td>플러그인을 설치하면 Claude Code가 원본을 자기 전용 폴더에 <strong>복사해 두고 그 복사본을 실행</strong>합니다. 그래서 원본을 나중에 고치거나 새 버전을 받아도, 업데이트하기 전까지는 복사본이 그대로입니다(<a href="#3-다운로드-및-설치-방법">3장</a>).</td>
 </tr>
 <tr>
 <td><strong>폴더 / 경로</strong></td>
@@ -232,15 +245,15 @@ img { max-width: 100%; }
 <li>Figma에 그려진 화면(예: 버튼 하나)을 읽습니다.</li>
 <li>그 화면과 같은 모양의 코드를 <a href="https://ui.shadcn.com">shadcn/ui</a>(React 컴포넌트 모음) 스타일로 만듭니다.</li>
 <li>만든 코드를 눈에 보이지 않는 자동화된 브라우저에 띄우고, 화면이 깨지지 않았는지 · 장애인 접근성(스크린 리더 등)에 문제가 없는지 · 휴대폰(360px) · 태블릿(768px) · PC(1440px) 3가지 화면 크기에서 다 괜찮은지 자동으로 검사합니다.</li>
-<li>검사를 통과하면 "판정서"라는 기록을 남기고, 실패하면 "완료"라고 보고하는 것 자체를 시스템이 기계적으로 막습니다(사람이 깜빡 잊거나, AI가 눈속임하려 해도 소용없습니다).</li>
+<li>검사 결과(통과/실패)를 "판정서"라는 기록으로 남기고, <strong>실패(FAIL)가 기록되면</strong> "완료"라고 보고하는 것 자체를 시스템(훅)이 기계적으로 막습니다(AI가 실패를 못 본 척하거나 눈속임하려 해도 소용없습니다). 단, 검증을 아예 돌리지 않은 경우까지 이 장치가 막지는 못한다는 한계가 있습니다 — 정확한 조건은 <a href="#8-워크플로우">8장</a>에 적었습니다.</li>
 </ul>
 <pre><code>Figma 디자인 ──▶ 코드 생성 ──▶ 실제 브라우저에서 검사 ──▶ 통과해야만 &quot;완료&quot;</code></pre>
-<p><strong>왜 이런 도구가 필요한가</strong>: AI에게 "이 디자인대로 코드 만들어줘"라고만 시키면, AI는 코드를 만들고 "다 됐습니다"라고 말할 수 있습니다. 하지만 그 코드가 <strong>실제로 화면에 정상적으로 나오는지, 글자가 깨지지는 않는지, 스크린 리더 사용자도 쓸 수 있는지</strong>는 AI 혼자 "말로만" 확인한 것일 수 있습니다. 이 킷은 그 마지막 확인을 사람이 아니라 <strong>진짜 브라우저 프로그램</strong>이 기계적으로 하게 만들어서, "말로는 됐다는데 실제로는 안 됐다"는 상황 자체를 원천적으로 막습니다.</p>
+<p><strong>왜 이런 도구가 필요한가</strong>: AI에게 "이 디자인대로 코드 만들어줘"라고만 시키면, AI는 코드를 만들고 "다 됐습니다"라고 말할 수 있습니다. 하지만 그 코드가 <strong>실제로 화면에 정상적으로 나오는지, 글자가 깨지지는 않는지, 스크린 리더 사용자도 쓸 수 있는지</strong>는 AI 혼자 "말로만" 확인한 것일 수 있습니다. 이 킷은 그 마지막 확인을 사람이 아니라 <strong>진짜 브라우저 프로그램</strong>이 기계적으로 하게 만들어서, "말로는 됐다는데 실제로는 안 됐다"는 상황을 크게 줄입니다(검증을 돌린 경우에 한해, 위 한계 참고).</p>
 <p><strong>누구를 위한 도구인가</strong>: Figma로 디자인을 만드는 사람과, Claude Code로 그 디자인을 코드로 옮기는 사람(1인이어도 무방) — 특히 "AI가 코드는 만들었다는데, 실제로 화면이 제대로 나오는지는 안 봤다"는 불안을 없애고 싶은 사람.</p>
 <p><strong>누구를 위한 도구가 아닌가(정직한 한계 고지)</strong>: 코딩을 전혀 모르는 채로 "완성된 웹사이트"를 통째로 만들어주는 도구는 아닙니다. 이 킷이 만드는 것은 이미 존재하는 프로젝트(Next.js + Tailwind + shadcn/ui) 안의 <strong>화면 부품 하나하나</strong>입니다 — <a href="#2-사전-준비물--필요-프로그램-다운로드-방법-포함">2장</a>에서 이 전제를 자세히 설명합니다.</p>
 <hr />
 <h2 id="2-사전-준비물--필요-프로그램-다운로드-방법-포함">2. 사전 준비물 · 필요 프로그램 (다운로드 방법 포함)</h2>
-<p>이 4가지가 <strong>전부</strong> 준비되어 있어야 합니다. 하나라도 없으면 3장(설치)부터 진행할 수 없습니다.</p>
+<p>이 5가지가 <strong>전부</strong> 준비되어 있어야 합니다. 하나라도 없으면 3장(설치)부터 진행할 수 없습니다.</p>
 <table>
 <thead>
 <tr>
@@ -255,13 +268,13 @@ img { max-width: 100%; }
 <td>1</td>
 <td><strong>Claude Code</strong></td>
 <td>이 킷 자체가 Claude Code의 "플러그인"이라 Claude Code가 없으면 실행할 수 없음</td>
-<td><a href="https://claude.com/claude-code">claude.com/claude-code</a> 공식 안내에 따라 설치</td>
+<td><a href="https://claude.com/claude-code">claude.com/claude-code</a> 공식 안내에 따라 설치. 설치 후 터미널에 <code>claude --version</code>을 입력해 버전이 나오면 성공 (이 문서의 설치 · 업데이트 절차는 <strong>2.1.296 버전</strong>에서 직접 실행해 확인했습니다)</td>
 </tr>
 <tr>
 <td>2</td>
-<td><strong>Node.js 18 이상</strong></td>
-<td>이 킷의 모든 검증 스크립트가 Node.js(자바스크립트 실행기)로 작성됨</td>
-<td><a href="https://nodejs.org">nodejs.org</a>에서 "LTS" 버전 다운로드 · 설치. 설치 후 터미널(명령 입력 창)에 <code>node -v</code> 입력 → 버전 번호가 나오면 성공 (이 킷의 개발 · 검증 환경은 v22.19.0)</td>
+<td><strong>Node.js 20.9 이상</strong> (현재 LTS 권장)</td>
+<td>이 킷의 모든 검증 스크립트가 Node.js(자바스크립트 실행기)로 작성됨. <strong>최소 버전이 20.9인 이유</strong>: 이 킷이 이미지 처리에 쓰는 부품 <code>sharp</code>가 Node 20.9 이상을 요구합니다(<code>package-lock.json</code>에 적힌 값을 직접 확인). 이전 문서에는 "18 이상"이라고 적혀 있었으나 이는 틀린 안내였습니다</td>
+<td><a href="https://nodejs.org">nodejs.org</a>에서 "LTS" 버전 다운로드 · 설치. 설치 후 터미널(명령 입력 창)에 <code>node -v</code> 입력 → <code>v20.9.0</code> 이상의 번호가 나오면 성공 (이 문서의 절차를 마지막으로 확인한 PC는 v26.7.0)</td>
 </tr>
 <tr>
 <td>3</td>
@@ -273,7 +286,13 @@ img { max-width: 100%; }
 <td>4</td>
 <td><strong>Figma 파일 접근 권한</strong></td>
 <td>코드로 옮길 디자인 원본이 Figma에 있어야 함</td>
-<td>claude.ai에 이미 연결된 <strong>Figma 커넥터</strong>를 쓰거나, 공식 <strong>Figma MCP</strong>(<code>https://mcp.figma.com/mcp</code>)로 로그인. Figma 계정 자체는 무료(Starter) 플랜도 가능하나 <strong>한 달에 6회</strong>만 읽기 가능(뒤 <a href="#10-보안--데이터-흐름">10장</a> 참고)</td>
+<td>claude.ai에 이미 연결된 <strong>Figma 커넥터</strong>를 쓰거나, 공식 <strong>Figma MCP</strong>(<code>https://mcp.figma.com/mcp</code>)로 로그인. Figma 계정 자체는 무료(Starter) 플랜도 가능하나 <strong>읽기 횟수 제한</strong>이 있습니다(제작 당시 실측은 월 6회, 이후 Figma 공식 문서 표기가 바뀐 것이 확인됨 — 정확한 현재 한도는 Figma 공식 안내에서 확인하세요. 뒤 <a href="#10-보안--데이터-흐름">10장</a> 참고)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>인터넷 연결 · 여유 저장공간 약 1GB</strong></td>
+<td>설치할 때 부품(의존성)과 검증용 브라우저 파일을 내려받아야 함</td>
+<td>이 개발 PC에서 직접 잰 값: 설치된 킷 복사본 <strong>약 76MB</strong>(그중 부품 <code>node_modules</code>가 75MB) + 검증용 브라우저(Chromium) <strong>약 690MB</strong>(415 + 269 + 3MB). 킷 버전을 올릴 때마다 복사본이 새로 생기므로(옛 버전 폴더가 남음) 조금씩 늘어납니다. 용량은 PC · 버전마다 다를 수 있습니다. <strong>Git</strong>이 필요한 경우는 <a href="#3-다운로드-및-설치-방법">3장</a>의 "방법 A"를 참고하세요</td>
 </tr>
 </tbody>
 </table>
@@ -286,35 +305,61 @@ img { max-width: 100%; }
 <hr />
 <h2 id="3-다운로드-및-설치-방법">3. 다운로드 및 설치 방법</h2>
 <blockquote>
-<p>아래 절차는 이 킷이 <strong>GitHub 마켓플레이스가 아니라, 내 컴퓨터의 폴더 경로를 직접 지정해서 설치하는 "로컬 폴더 방식"</strong> 기준입니다(2026-07-20 실측 확정, 현재도 동일). 나중에 별도 GitHub 마켓플레이스 방식으로 전환되면 1번 명령의 주소가 폴더 경로 대신 다른 주소로 바뀔 수 있습니다 — 그때는 이 절이 다시 갱신됩니다.</p>
+<p>✅ 이 절의 설치 · 업데이트 명령은 <strong>2026-10-12에 Windows + Claude Code 2.1.296에서 직접 실행</strong>해 결과를 확인한 것입니다. 시험은 평소 쓰는 설정을 건드리지 않도록 <strong>일회용 임시 설정 폴더</strong>에서 했고, 깨끗한 상태에서 처음 설치하는 상황을 그대로 재현했습니다. 한계: ① 검증용 브라우저 파일(약 690MB)을 인터넷에서 처음 받는 과정은 이 PC에 이미 설치돼 있어 처음부터 재현하지 못했습니다(명령이 오류 없이 끝나는 것까지만 확인). ② 시험한 PC는 GitHub에 로그인돼 있었습니다 — 이 저장소는 공개(PUBLIC)라 원칙적으로 로그인이 필요 없지만, 로그인하지 않은 PC에서는 확인하지 못했습니다. ③ macOS · Linux는 시험하지 않았습니다.</p>
+</blockquote>
+<h3 id="먼저-알아둘-3가지-직접-확인한-동작">먼저 알아둘 3가지 (직접 확인한 동작)</h3>
+<ol type="1">
+<li><strong>설치하면 "복사본"이 만들어집니다.</strong> 플러그인을 설치하면 Claude Code가 원본을 자기 전용 폴더에 복사해 두고 그 <strong>복사본</strong>을 실행합니다. 위치는 Claude 설정 폴더 안의 <code>plugins\cache\sodam\sodam-design-kit\&lt;버전&gt;</code>입니다(설정 폴더는 보통 <code>C:\Users\&lt;내 이름&gt;\.claude</code>이며, 위치를 바꿔 쓰는 PC는 다릅니다). 그래서 원본 폴더를 고치거나 새 버전을 받아도 <strong>아래 "업데이트 방법"을 실행하기 전에는 복사본이 그대로</strong>입니다. (이전 문서에는 "복사본이 만들어지지 않는다"고 적혀 있었으나 이는 틀린 설명이었습니다.)</li>
+<li><strong>부품(의존성)은 자동으로 설치됩니다.</strong> 깨끗한 상태에서 설치했을 때 Claude Code가 복사본 안에 부품(Playwright · axe-core · sharp 등)을 스스로 설치했습니다. 따라서 <strong><code>npm install</code>을 직접 칠 필요가 없습니다.</strong> 다만 설치나 업데이트 <strong>직후 바로</strong> 쓰면 부품이 아직 준비 중일 수 있으니, 처음 명령이 부품 관련 오류로 실패하면 1~2분 기다린 뒤 다시 실행하세요(정확한 소요 시간은 측정하지 못했습니다).</li>
+<li><strong>검증용 브라우저는 자동으로 설치되지 않습니다.</strong> 이 킷이 화면을 실제로 열어 보는 브라우저(Chromium)는 별도로 한 번 받아야 합니다 — 아래 방법의 <strong>4번 단계</strong>입니다. 이걸 빼먹으면 검증할 때 <code>Executable doesn't exist ...</code>라는 오류가 납니다(<a href="#11-문제오류-대처-트러블슈팅">11장</a>).</li>
+</ol>
+<h3 id="방법-a-권장--github-주소로-바로-설치-저장소를-따로-내려받지-않음">방법 A (권장) — GitHub 주소로 바로 설치 (저장소를 따로 내려받지 않음)</h3>
+<blockquote>
+<p><strong>필요한 것</strong>: <a href="https://git-scm.com/downloads">Git</a>(Claude Code가 내부적으로 Git으로 내려받습니다).</p>
 </blockquote>
 <ol type="1">
-<li><p><strong>마켓플레이스 등록</strong> — Claude Code 채팅창 안에서 아래 명령을 그대로 입력합니다(주소 부분만 여러분 컴퓨터의 실제 경로로 바꿉니다):</p>
-<pre><code>/plugin marketplace add &lt;이 저장소 폴더의 전체 경로&gt;</code></pre>
-<p>(예: <code>D:\AI_Dev_Work\2026y\26y_07m_26d_SoDam-Design-Kit</code>)</p></li>
-<li><p><strong>플러그인 설치</strong> — 이어서 아래 명령을 입력합니다:</p>
+<li><p><strong>마켓플레이스 등록</strong> — Claude Code 채팅창에서 입력합니다:</p>
+<pre><code>/plugin marketplace add sodam-ai/SoDam-Design-Kit</code></pre>
+<p>(전체 주소 <code>https://github.com/sodam-ai/SoDam-Design-Kit.git</code>을 써도 됩니다. 두 가지 모두 2026-10-12에 성공을 확인했습니다. 터미널에서 같은 일을 하려면 <code>claude plugin marketplace add sodam-ai/SoDam-Design-Kit</code>.)</p></li>
+<li><p><strong>플러그인 설치</strong>:</p>
 <pre><code>/plugin install sodam-design-kit@sodam</code></pre></li>
-<li><p><strong>Claude Code 완전 재시작</strong> — 창을 완전히 닫고 다시 엽니다. (이유는 <a href="#11-문제오류-대처-트러블슈팅">11장 트러블슈팅</a> "설치했는데 명령이 안 보여요" 참고 — 단순 새로고침이 아니라 <strong>완전히 닫았다가 다시 켜야</strong> 합니다.)</p></li>
-<li><p><strong>의존성 설치 (최초 1회만)</strong> — <strong>이 플러그인 저장소 폴더 자체</strong>(지금 이 <code>README.md</code>가 있는 위치)에서 터미널에 아래를 입력합니다:</p>
-<pre><code>npm install</code></pre>
-<p>검증 게이트가 사용하는 브라우저 자동화 도구(Playwright)와 접근성 검사 도구(axe-core)는 킷 코드에 같이 들어있지 않고 이 명령으로 직접 받아야 합니다.</p>
+<li><p><strong>Claude Code 완전 재시작</strong> — 창을 완전히 닫았다가 다시 엽니다. 새로고침이 아니라 <strong>완전 종료 후 재시작</strong>이어야 합니다(<a href="#11-문제오류-대처-트러블슈팅">11장</a> 첫 항목).</p></li>
+<li><p><strong>검증용 브라우저 설치 (최초 1회)</strong> — 터미널(Windows는 PowerShell)에 입력합니다:</p>
+<pre><code>npx playwright@1.61.1 install chromium</code></pre>
 <blockquote>
-<p><strong>중요(실측 확인된 함정)</strong>: 이 플러그인은 "로컬 폴더 방식"이라서 설치해도 별도의 복사본이 다른 곳에 만들어지지 않습니다. Claude Code는 1번에서 지정한 원본 폴더를 그대로 사용합니다. 그래서 <code>npm install</code>도 <strong>반드시 이 원본 폴더 안</strong>에서 실행해야 하며, 별도의 "설치된 위치"를 찾아다닐 필요가 없습니다.</p>
+<p>숫자 <code>1.61.1</code>은 정식 버전 v0.5.0이 쓰는 Playwright 버전(이 킷의 <code>package-lock.json</code>에 적힌 값)입니다. <strong>킷 버전이 바뀌면 이 숫자도 바뀔 수 있으니</strong>, 나중에 검증이 <code>Executable doesn't exist</code>로 실패하면 그 오류 화면이 알려주는 명령(<code>npx playwright install</code>)을 따르거나 Claude Code에게 "Playwright 브라우저를 설치해 줘"라고 요청하세요. 버전이 다른 브라우저를 받으면 이 킷이 찾지 못합니다.</p>
 </blockquote></li>
-<li><p><strong>설치 확인</strong> — 코드로 옮기고 싶은 <strong>대상 프로젝트</strong>(2장 준비물의 Next.js 프로젝트) 안에서 아래 명령을 입력합니다:</p>
+<li><p><strong>설치 확인</strong> — 코드로 옮길 <strong>대상 프로젝트</strong>(2장 준비물 3번) 안에서 입력합니다:</p>
 <pre><code>/sodam-design-kit:setup</code></pre>
-<p>이 명령이 자동완성 목록에 뜨고 정상 실행되면 설치 성공입니다.</p></li>
+<p>명령이 자동완성 목록에 뜨고 실행되면 성공입니다. 터미널에서 <code>claude plugin list</code>를 입력해 <code>sodam-design-kit@sodam</code>의 <code>Status</code>가 <code>enabled</code>로 나오는 것으로도 확인할 수 있습니다.</p></li>
 </ol>
-<p><strong>설치가 안 됐다는 걸 어떻게 아나요?</strong>: 4번째 글자까지 입력했는데(<code>/sod</code>) 자동완성 목록에 아무것도 안 뜨면 설치가 안 된 것입니다. <a href="#11-문제오류-대처-트러블슈팅">11장</a>의 첫 번째 항목을 확인하세요.</p>
+<h3 id="방법-b--내-컴퓨터의-폴더로-설치-코드를-직접-고쳐-쓰는-개발자용">방법 B — 내 컴퓨터의 폴더로 설치 (코드를 직접 고쳐 쓰는 개발자용)</h3>
+<ol type="1">
+<li>저장소를 내려받습니다: <code>git clone https://github.com/sodam-ai/SoDam-Design-Kit.git</code></li>
+<li>마켓플레이스 등록에 <strong>폴더의 전체 경로</strong>를 줍니다(예: <code>/plugin marketplace add D:\내폴더\SoDam-Design-Kit</code>).</li>
+<li>이후는 방법 A의 2~5번과 같습니다(<code>/plugin install sodam-design-kit@sodam</code> → 완전 재시작 → 브라우저 설치 → 확인).</li>
+<li>이 방법도 <strong>복사본이 만들어집니다</strong>(방법 A와 동일하게 확인). 원본 폴더의 코드를 고쳤다면 반드시 <strong>커밋한 뒤</strong> 아래 "업데이트 방법"을 실행하세요 — 커밋하지 않은 수정이 복사본에 반영되는지는 확인하지 못했습니다.</li>
+<li>이 킷의 자동 테스트(<code>npm test</code>)를 돌리거나 스크립트를 플러그인 없이 직접 실행하려면 <strong>그 폴더 안에서</strong> <code>npm ci</code>(또는 <code>npm install</code>)를 한 번 해야 합니다. 플러그인으로만 쓸 때는 필요 없습니다.</li>
+</ol>
+<h3 id="업데이트-방법-새-버전이-나왔을-때">업데이트 방법 (새 버전이 나왔을 때)</h3>
+<p>터미널에서 아래 두 줄을 차례로 입력합니다(2026-10-12에 실제로 0.5.0 → 0.5.1로 올려 보며 확인한 순서입니다):</p>
+<pre><code>claude plugin marketplace update sodam
+claude plugin update sodam-design-kit@sodam</code></pre>
+<p>→ "Restart to apply changes"가 나오면 <strong>Claude Code를 완전히 재시작</strong>해야 새 버전이 적용됩니다. <code>claude plugin list</code>의 <code>Version</code>으로 확인하세요. 새 버전 폴더가 <code>plugins\cache\...\&lt;새 버전&gt;</code>으로 따로 생기고 <strong>옛 버전 폴더는 그대로 남습니다</strong>(동작에는 영향이 없음을 확인한 범위입니다).</p>
+<blockquote>
+<p><strong>중요</strong>: 업데이트를 하지 않으면 평소 쓰는 Claude Code에는 <strong>옛 버전의 복사본이 계속 실행됩니다.</strong> 예를 들어 이 킷에 새 안전장치가 추가됐어도 업데이트 전에는 적용되지 않습니다.</p>
+</blockquote>
+<h3 id="설치가-안-됐다는-걸-어떻게-아나요">설치가 안 됐다는 걸 어떻게 아나요?</h3>
+<p>채팅창에 <code>/sod</code>까지 입력했는데 자동완성 목록에 아무것도 안 뜨면 설치(또는 재시작)가 덜 된 것입니다. <a href="#11-문제오류-대처-트러블슈팅">11장</a>의 첫 번째 항목을 확인하세요.</p>
 <h3 id="3장-보충--claude-desktop에서도-검증-이력을-보고-싶다면-선택-2026-08-20-추가">3장 보충 — Claude Desktop에서도 검증 이력을 보고 싶다면 (선택, 2026-08-20 추가)</h3>
 <blockquote>
 <p>위 1~5번은 <strong>Claude Code</strong>(터미널형 채팅) 전용입니다. <strong>Claude Desktop</strong>(일반 데스크톱 앱)에서도 이 킷이 만든 검증 이력·판정서·스크린샷을 보고 재검증을 실행하고 싶다면 아래 확장을 추가로 설치할 수 있습니다 — 둘은 서로 다른 앱이고, 이 확장은 선택 사항입니다.</p>
 </blockquote>
 <ol type="1">
-<li>이 저장소 폴더에서 다음 명령으로 확장 파일(<code>.mcpb</code>)을 만듭니다(터미널, 이 저장소 폴더 안에서):
+<li><p>먼저 방법 B(위)처럼 저장소를 내려받고 그 폴더에서 <code>npm ci</code>를 한 번 실행합니다(확장 파일 안에 부품이 이 폴더의 <code>node_modules</code>에서 함께 담기기 때문 — 2026-10-12에 만들어진 <code>.mcpb</code>의 내부에 <code>node_modules</code>가 들어 있는 것을 직접 열어 확인했습니다). 그다음 다음 명령으로 확장 파일(<code>.mcpb</code>)을 만듭니다(터미널, 이 저장소 폴더 안에서):</p>
 <pre><code>npx @anthropic-ai/mcpb pack .</code></pre>
-이 저장소 폴더 이름을 딴 <code>.mcpb</code> 파일이 폴더 안에 새로 생깁니다(방금 만들어진 파일이니 폴더에서 바로 확인 가능합니다). 크기는 약 20MB입니다(2026-08-21 기준 — 실제 브라우저로 재검증하는 기능이 들어있어 다른 확장보다 큰 편입니다. 이전엔 실수로 무관한 파일까지 포함돼 약 70MB였으나, 불필요한 파일을 제외하도록 고쳐 지금 크기로 줄었습니다).</li>
-<li>생성된 <code>.mcpb</code> 파일을 <strong>더블클릭</strong>합니다. 정상이라면 Claude Desktop이 설치 화면을 띄웁니다 — 내용을 확인하고 설치를 승인하세요.
+<p>이 저장소 폴더 이름을 딴 <code>.mcpb</code> 파일이 폴더 안에 새로 생깁니다(방금 만들어진 파일이니 폴더에서 바로 확인 가능합니다). 크기는 약 20MB입니다(v0.5.0으로 만든 파일이 20.3MB — 실제 브라우저로 재검증하는 기능이 들어있어 다른 확장보다 큰 편입니다. 이전엔 실수로 무관한 파일까지 포함돼 약 70MB였으나, 불필요한 파일을 제외하도록 고쳐 지금 크기로 줄었습니다. 2026-10-12에 파일 내부를 열어 개발 메모·세션 상태·설계 문서가 들어 있지 않은 것을 다시 확인했습니다).</p></li>
+<li><p>생성된 <code>.mcpb</code> 파일을 <strong>더블클릭</strong>합니다. 정상이라면 Claude Desktop이 설치 화면을 띄웁니다 — 내용을 확인하고 설치를 승인하세요.</p>
 <blockquote>
 <p><strong>더블클릭했는데 "이 파일을 열 프로그램을 선택하세요" 같은 Windows 창이 뜨나요?</strong> 설치 실패가 아니라 이 컴퓨터에 <code>.mcpb</code> 파일 형식에 대한 연결이 아직 없어서 생기는 별개의 문제입니다(Claude Desktop이 이미 설치돼 있어도 발생할 수 있습니다 — 2026-09-01 실측 확인). 그 창에서 <strong>취소</strong>를 누르고, 아래 방법으로 설치하세요:</p>
 <ol type="1">
@@ -326,22 +371,21 @@ img { max-width: 100%; }
 <li>확인 화면(이름·설명, 도구 5개 이름, "모든 요구 사항 충족됨", 제작사 SoDam AI Studio, 라이선스 Apache-2.0, 버전 표시)이 뜨면 <strong>설치</strong>를 클릭</li>
 </ol>
 </blockquote></li>
-<li><strong>설치 확인 (아래 둘 중 하나로 확인하면 됩니다)</strong>:
+<li><p><strong>설치 확인 (아래 둘 중 하나로 확인하면 됩니다)</strong>:</p>
 <ul>
 <li>Claude Desktop에서 "최근 검증 이력을 보여줘"처럼 물어봤을 때 이 킷의 도구(<code>list_runs</code> 등)가 호출되면 성공입니다.</li>
 <li>또는 설정 → <strong>"개발자"</strong> → <strong>"로컬 MCP 서버"</strong> 목록에서 <code>SoDam Design Kit</code>이 <strong><code>running</code></strong> 배지로 표시되면 성공입니다.</li>
-</ul>
-</li>
+</ul></li>
 </ol>
 <p><strong>이 확장으로 할 수 있는 것 / 못 하는 것 (정직 고지)</strong>:</p>
 <ul>
 <li>할 수 있음: 검증 이력 열람, 판정서·스크린샷 확인, 재검증 실행 — Claude Code의 <code>/sodam-design-kit:open</code> 대시보드와 같은 데이터입니다. <strong>(2026-08-20 추가)</strong> <code>component-map.json</code>에 이미 등록된 컴포넌트를 검증용 프리뷰 화면에 다시 연결하는 것도 가능합니다(Figma를 새로 읽거나 새 코드를 쓰지는 않습니다 — 이미 있는 매핑을 재사용할 뿐입니다).</li>
 <li>못 함: <strong>완료를 기계적으로 차단하는 것</strong>은 Claude Code 훅 전용 기능입니다. Claude Desktop에서는 재검증 결과(PASS/FAIL)를 보여줄 뿐, FAIL이어도 작업을 강제로 멈추지 않습니다. 또한 <strong>새 컴포넌트를 위한 실제 코드를 Claude Desktop이 대신 만들어 프로젝트에 넣어주지는 않습니다</strong> — 검증 없이 실제 코드가 조용히 들어갈 수 있는 위험이 있다고 판단해 이번엔 의도적으로 포함하지 않았습니다.</li>
-<li>이 확장의 재검증 기능은 내부적으로 실제 브라우저(Playwright)를 실행합니다 — 이 저장소에서 <code>npm install</code>을 이미 한 번 했다면 준비가 끝난 상태입니다. 이 확장만 단독으로 받은 경우라면 별도로 <code>npx playwright install</code>이 필요할 수 있습니다.</li>
+<li>이 확장의 재검증 기능은 내부적으로 실제 브라우저(Playwright)를 실행합니다. 확장 파일 안에는 부품(Playwright 프로그램 자체)이 들어 있지만 <strong>브라우저 파일(Chromium, 약 690MB)은 들어 있지 않습니다</strong> — 위 <a href="#방법-a-권장--github-주소로-바로-설치-저장소를-따로-내려받지-않음">방법 A의 4번</a> 명령(<code>npx playwright@1.61.1 install chromium</code>)을 PC에서 한 번 실행해야 재검증이 동작합니다. (검증 이력 열람 · 판정서 · 스크린샷 보기는 브라우저 없이도 됩니다 — 브라우저가 필요한 것은 재검증뿐입니다.)</li>
 </ul>
 <hr />
 <h2 id="4-빠른-시작-5분-안에-첫-성공-보기">4. 빠른 시작 (5분 안에 첫 성공 보기)</h2>
-<p>준비물이 다 있고 설치까지 마쳤다면, 아래 순서로 첫 결과를 5분 안에 볼 수 있습니다.</p>
+<p>준비물이 다 있고 설치까지 마쳤다면(<strong>검증용 브라우저 설치 — 3장 방법 A의 4번 — 까지 포함</strong>), 아래 순서로 첫 결과를 5분 안에 볼 수 있습니다. 브라우저를 아직 안 받았다면 2단계에서 <code>Executable doesn't exist</code> 오류가 납니다.</p>
 <p><strong>1단계 — 초기 설정 (최초 1회, 대상 프로젝트당)</strong></p>
 <pre><code>/sodam-design-kit:setup</code></pre>
 <p>→ 성공 기준: <code>.design-kit/config.json</code>과 <code>.design-kit/component-map.json</code>이 생성되었다는 메시지가 나옴.</p>
@@ -363,7 +407,7 @@ img { max-width: 100%; }
 <h3 id="sodam-design-kitsetup--초기-설정"><code>/sodam-design-kit:setup</code> — 초기 설정</h3>
 <ul>
 <li><strong>입력</strong>: 없음(현재 프로젝트 폴더를 자동으로 사용) / 선택: Figma 파일 링크</li>
-<li><strong>하는 일</strong>: <code>components.json</code>(shadcn 설정)을 읽어 실제 컴포넌트 폴더를 찾고, 그 안의 <code>.tsx</code> 파일을 스캔해 <code>.design-kit/component-map.json</code>을 만듭니다. <code>.design-kit/config.json</code>(화면 크기 3종 · 자동재시도 3회 등 기본값)도 함께 생성합니다.</li>
+<li><strong>하는 일</strong>: <code>components.json</code>(shadcn 설정)을 읽어 실제 컴포넌트 폴더를 찾고, 그 안의 <code>.tsx</code> 파일을 스캔해 <code>.design-kit/component-map.json</code>을 만듭니다. <code>.design-kit/config.json</code>(화면 크기 3종 · 자동재시도 3회 등 기본값)도 함께 생성합니다. <strong>알아둘 점(코드로 확인)</strong>: 이 <code>config.json</code>은 현재 <strong>기록용 기본값</strong>일 뿐이고, 어떤 프로그램도 이 값을 읽어서 동작을 바꾸지 않습니다. 화면 크기 3종(360 · 768 · 1440px)은 코드에 고정돼 있어서 이 파일을 고쳐도 검사 방식은 달라지지 않습니다.</li>
 <li><strong>작동 방법</strong>: 프로젝트당 <strong>1회만</strong> 실행하면 됩니다. 이미 설정이 있으면 자동으로 건너뛰고, 다시 스캔하려면 <code>--force</code>를 붙입니다(이때도 이미 확보한 Figma 매핑 정보는 보존되고 새 컴포넌트만 추가됩니다).</li>
 <li><strong>성공 기준</strong>: "완료" 메시지 + <code>.design-kit/</code> 폴더 생성.</li>
 </ul>
@@ -371,7 +415,7 @@ img { max-width: 100%; }
 <ul>
 <li><strong>입력</strong>: Figma 공유 링크(페이지/노드 단위 직접 링크, 파일 전체 링크 아님 — <a href="#10-보안--데이터-흐름">10장</a> 참고)</li>
 <li><strong>하는 일</strong>: Figma 읽기 → <code>component-map.json</code>에 매핑 기록 → shadcn/ui 코드 생성 → 미리보기 화면(<code>/design-kit-preview/{컴포넌트}</code>) 자동 생성 → 개발 서버 자동 실행 → 실제 브라우저 검증(Playwright+axe-core+3뷰포트) → 판정서 기록.</li>
-<li><strong>작동 방법</strong>: 실패(FAIL)하면 최대 3회까지 자동으로 다시 시도합니다(연속 2회 실패해야 최종 FAIL로 확정). **이미 매핑된 컴포넌트를 재사용하는 경로와, 매핑이 없는 완전히 새로운 컴포넌트를 처음부터 만드는 경로 둘 다 실제로 검증 완료(PASS)**되었습니다. 신규 컴포넌트를 배치하기 전에는 색상 · 간격 같은 값이 하드코딩(예: <code>#ff0000</code>)되어 있지 않은지 자동으로 검사해서, 걸리면 배치 자체를 거부합니다.</li>
+<li><strong>작동 방법</strong>: 실패(FAIL)하면 AI가 판정서의 실패 사유를 읽고 코드를 고쳐 다시 검증합니다. 재시도는 최대 3회로 <strong>절차 문서(<code>commands/pipeline.md</code>)가 AI에게 지시</strong>하는 것이고, 프로그램이 횟수를 강제로 세지는 않습니다. 또 "연속 2회 실패해야 최종 FAIL"이라는 규칙은 <strong>코드에 없습니다</strong> — 실제로는 <strong>가장 최근 판정 기록 1건이 FAIL이면 그 즉시 완료가 차단</strong>됩니다(<a href="#8-워크플로우">8장</a>). 표준 검증 명령에는 TypeScript 타입 검사(<code>--typeCheck</code>)도 함께 들어 있습니다(<code>tsconfig.json</code>이 있는 프로젝트). <strong>이미 매핑된 컴포넌트를 재사용하는 경로와, 매핑이 없는 완전히 새로운 컴포넌트를 처음부터 만드는 경로 둘 다 실제로 검증 완료(PASS)</strong>되었습니다. 신규 컴포넌트를 배치하기 전에는 색상 · 간격 같은 값이 하드코딩(예: <code>#ff0000</code>)되어 있지 않은지 자동으로 검사해서, 걸리면 배치 자체를 거부합니다.</li>
 <li><strong>성공 기준</strong>: <code>.design-kit/reports/</code>에 <code>**PASS**</code>가 적힌 판정서 파일 생성.</li>
 </ul>
 <h3 id="sodam-design-kitopen--검증-이력-대시보드-열람"><code>/sodam-design-kit:open</code> — 검증 이력 대시보드 열람</h3>
@@ -400,9 +444,9 @@ img { max-width: 100%; }
 <p>이건 일반 사용마다 할 일이 아니라, <strong>이 킷이 "새 대화(세션)에서도 처음부터 똑같이 작동하는지"를 최종 확인하는 절차</strong>입니다(<a href="./.PRD/01_PRD.md"><code>.PRD/01_PRD.md</code></a> §9 성공 기준 5·6번). 새 Claude Code 세션에서 아래 순서대로 하면 이 문서만 보고도 그대로 재현할 수 있습니다.</p>
 </blockquote>
 <ol type="1">
-<li><strong>대상 프로젝트를 정합니다</strong> — 이미 <code>/sodam-design-kit:setup</code>을 마치고 Figma 매핑도 있는 프로젝트가 이상적입니다(Figma를 다시 호출하지 않아도 되어 무료 월 6회 한도를 쓰지 않습니다).</li>
+<li><strong>대상 프로젝트를 정합니다</strong> — 이미 <code>/sodam-design-kit:setup</code>을 마치고 Figma 매핑도 있는 프로젝트가 이상적입니다(Figma를 다시 호출하지 않아도 되어 무료 플랜의 월 읽기 한도를 쓰지 않습니다).</li>
 <li><strong>실행 직전, 판정서 폴더의 현재 상태를 먼저 확인해 기준으로 삼습니다</strong> (PowerShell):
-<div class="sourceCode" id="cb11"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;대상 프로젝트 경로&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Get-ChildItem</span> <span class="st">&quot;&lt;대상 프로젝트 경로&gt;\.design-kit\runs&quot;</span> <span class="op">|</span> <span class="fu">Sort-Object</span> Name <span class="op">|</span> <span class="fu">Select-Object</span> <span class="op">-</span>Last <span class="dv">3</span></span></code></pre></div>
 여기 나온 파일 목록을 잠깐 기억해둡니다 — 나중에 "기존 파일이 안 지워졌는지" 비교할 기준입니다.</li>
 <li>Claude Code에서 아래를 실행합니다.
 <pre><code>/sodam-design-kit:pipeline</code></pre>
@@ -477,29 +521,92 @@ img { max-width: 100%; }
 </thead>
 <tbody>
 <tr>
-<td><code>npm install</code></td>
-<td>검증용 브라우저 · 접근성 도구 설치(최초 1회)</td>
+<td><code>npm ci</code> (또는 <code>npm install</code>)</td>
+<td>부품(Playwright · axe-core 등) 설치 — <strong>플러그인으로만 쓸 때는 필요 없고</strong>(3장), 자동 테스트나 스크립트를 직접 돌릴 때만 필요. 검증용 <strong>브라우저 파일은 이 명령으로 설치되지 않습니다</strong>(<code>npx playwright install chromium</code>이 따로 필요)</td>
 <td>이 킷 저장소 폴더</td>
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>킷 자체의 자동 테스트 실행(2026-10-11 기준 361개, 실행 시점에 따라 늘어날 수 있음)</td>
+<td>킷 자체의 자동 테스트 실행(2026-10-12 기준 정식 v0.5.0은 361개, 공개 전 수정까지 담긴 작업본은 374개 — 늘어날 수 있음)</td>
 <td>이 킷 저장소 폴더</td>
 </tr>
 <tr>
-<td><code>npm run selftest</code> (= <code>node scripts/e2e-selftest.mjs</code>)</td>
-<td>전체 파이프라인 왕복(PASS/FAIL/재검증) 자체 점검</td>
+<td><code>node scripts/e2e-selftest.mjs --fixture &lt;시험 프로젝트 경로&gt;</code></td>
+<td>전체 파이프라인 왕복(PASS/FAIL/재검증) 자체 점검. <code>--fixture</code>로 <strong>검증 대상이 되는 별도의 Next.js 시험 프로젝트</strong>를 줘야 하는데(경로 없이 실행하면 사용법만 출력하고 종료), 그 시험 프로젝트는 이 저장소에 들어 있지 않습니다(처음 쓰는 분은 건너뛰어도 됩니다). <code>package.json</code>의 <code>npm run selftest</code>는 같은 명령의 줄임말이라 <code>npm run selftest -- --fixture &lt;경로&gt;</code>처럼 인자를 줘야 합니다</td>
 <td>이 킷 저장소 폴더</td>
 </tr>
 </tbody>
 </table>
+<h3 id="검증-옵션-선택-기능-5개--기본-검사-위에-더하는-스위치">검증 옵션 (선택 기능 5개) — 기본 검사 위에 더하는 스위치</h3>
+<p>기본 검증은 "화면이 그려지는가 · 콘솔 에러가 없는가 · 접근성 위반(심각/높음)이 없는가 · 3가지 화면 크기 스크린샷이 있는가" 4가지입니다. 아래 옵션은 거기에 <strong>검사를 더 얹는</strong> 스위치로, 검증 실행기(<code>scripts/verify-runner.mjs</code>) 명령 끝에 붙여서 씁니다. 슬래시 명령 <code>pipeline</code> · <code>detail-page</code>는 이 중 <code>--typeCheck</code>만 표준으로 붙여 실행하고, 나머지 4개는 <strong>꺼져 있는 것이 기본</strong>입니다(기존 프로젝트가 예고 없이 갑자기 FAIL로 바뀌지 않게 하려는 설계). 켜고 싶으면 Claude Code에게 "폰트 검사도 켜서 검증해 줘"처럼 요청하거나, 터미널에서 직접 붙입니다.</p>
+<table>
+<thead>
+<tr>
+<th>옵션</th>
+<th>켜면 하는 일</th>
+<th>이럴 때 FAIL</th>
+<th>알아둘 점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--typeCheck</code></td>
+<td>TypeScript 타입 검사(<code>tsc --noEmit</code>)를 화면 검증보다 먼저 실행</td>
+<td>타입 오류가 있을 때, 또는 검사를 실행하지 못했을 때(조용히 통과시키지 않음)</td>
+<td><code>--project</code>를 같이 줘야 합니다(없으면 거부). 개발 서버가 만드는 <code>.next/</code> 안 파일의 오류는 제외. 이 옵션이 없으면 타입 오류가 있어도 화면만 뜨면 PASS가 나옵니다(직접 실험으로 확인)</td>
+</tr>
+<tr>
+<td><code>--fontGate</code></td>
+<td>프로젝트에서 찾은 폰트 파일이 <code>.design-kit/ASSET-LEDGER.csv</code>(자산 대장)에 등록돼 있는지 확인</td>
+<td>대장에 없는 폰트 파일이 있을 때</td>
+<td>이 킷이 자동으로 받은 Pretendard 등은 이미 등록되어 걸리지 않습니다</td>
+</tr>
+<tr>
+<td><code>--assetGate</code></td>
+<td>이미지 · 아이콘 파일도 같은 방식으로 대장 등록 여부 확인</td>
+<td>대장에 없는 이미지가 있을 때</td>
+<td><code>public/design-kit-assets/</code>(마케팅 이미지 산출물)와 <code>.design-kit/</code>(검증 스크린샷)은 검사에서 제외됩니다. 출처 정리 문서 <code>.design-kit/ATTRIBUTION.md</code>는 이 옵션과 별개의 명령 <code>node scripts/asset-ledger.mjs --project &lt;대상 프로젝트&gt; --generateAttribution</code>으로 대장에서 만들어집니다</td>
+</tr>
+<tr>
+<td><code>--visualRegression</code></td>
+<td>사람이 "이 화면이 맞다"고 승인해 둔 기준 화면과 지금 화면을 픽셀 단위로 비교</td>
+<td>기준 화면과 달라졌을 때(차이를 보여주는 이미지가 생성됨)</td>
+<td>승인된 기준 화면이 아직 없으면 비교하지 않고 넘어갑니다(FAIL 아님)</td>
+</tr>
+<tr>
+<td><code>--promoteBaseline</code></td>
+<td>지금 화면을 새 <strong>기준 화면으로 승인</strong></td>
+<td>(FAIL을 만드는 옵션이 아님)</td>
+<td><strong>검증이 PASS인 화면만</strong> 승인되고, 반드시 사람이 직접 요청해야 합니다. 자동으로 승인되는 경로는 없습니다</td>
+</tr>
+</tbody>
+</table>
+<p>예시(PowerShell, <code>&lt;킷 폴더&gt;</code>는 3장 방법 B로 내려받은 폴더 또는 설치된 복사본 폴더):</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>node <span class="st">&quot;&lt;킷 폴더&gt;\scripts\verify-runner.mjs&quot;</span> <span class="op">--</span>project <span class="st">&quot;&lt;대상 프로젝트 폴더&gt;&quot;</span> <span class="op">--</span>route <span class="op">/</span>design-kit-preview<span class="op">/</span>button <span class="op">--</span>target <span class="st">&quot;버튼 검증&quot;</span> <span class="op">--</span>typeCheck <span class="op">--</span>fontGate</span></code></pre></div>
+<ul>
+<li><strong>"다시 검증"(대시보드 버튼 · Claude Desktop의 재검증)은 처음 실행에서 켠 옵션을 그대로 이어받습니다.</strong> <code>--typeCheck</code>는 정식 v0.5.0부터이고, <code>--fontGate</code> · <code>--assetGate</code> · <code>--visualRegression</code>은 <strong>(공개 전)</strong>입니다. 이어받지 않던 시절에는 옵션 검사로 FAIL한 기록을 "다시 검증"하면 파일이 그대로인데 PASS가 나와 완료 차단이 풀리는 우회로가 있었고, 직접 재현해 확인한 뒤 막았습니다. 다시 검증할 때 시각 회귀는 <strong>비교만</strong> 하고 기준 화면 승인은 하지 않습니다.</li>
+<li><code>--screenshotDir</code>(스크린샷 저장 위치)는 <code>.design-kit/</code> 안쪽 경로만 허용합니다. <code>..</code>로 바깥으로 나가는 값(예: <code>../../다른곳</code>)은 아무것도 만들지 않고 오류(종료 코드 2)로 거부합니다 <strong>(공개 전)</strong> — 이전에는 이런 값을 주면 스크린샷이 프로젝트 밖에 저장되는 결함이 있었습니다.</li>
+</ul>
 <hr />
 <h2 id="7-업데이트-내용-요약">7. 업데이트 내용 요약</h2>
 <blockquote>
 <p>아래 항목들은 접었다 펼 수 있는 "토글" 형태입니다 — 제목(▶ 표시가 있는 줄)을 클릭하면 자세한 내용이 펼쳐집니다. 가장 최근 것이 맨 위에 있습니다.</p>
 </blockquote>
 <details open>
-<summary><b>▶ 2026-10-11 — 릴리즈 v0.5.0 — 타입 검사를 표준 절차에 넣고, 재검증 우회로를 막음 (클릭해서 접기)</b></summary>
+<summary><b>▶ 2026-10-12 — (공개 전) "다시 검증"이 모든 옵션 검사를 이어받도록 수정 + 스크린샷 저장 경로 탈출 차단 + 설치 안내 정정 (클릭해서 접기)</b></summary>
+
+<ul>
+<li><strong>상태 구분</strong>: 아래 ①②는 코드에는 들어 있고 자동 테스트도 통과했지만, 이 문서를 쓴 시점에 <strong>아직 GitHub 병합 · 릴리스 전</strong>이라 GitHub에서 받을 수 있는 정식 버전(v0.5.0)에는 <strong>들어 있지 않습니다</strong>. ③은 이 README 자체의 정정입니다.</li>
+<li><strong>① 다시 검증의 우회로 나머지 3개를 막음</strong>: 바로 아래 v0.5.0 항목은 <code>--typeCheck</code>로 FAIL한 기록의 "다시 검증" 우회로만 막았습니다. 같은 구멍이 <code>--fontGate</code> · <code>--assetGate</code> · <code>--visualRegression</code>에도 있었습니다(옵션으로 FAIL한 기록을 다시 검증하면 파일이 그대로인데도 PASS — 폰트 · 자산 옵션은 직접 재현해 확인했고, 시각 회귀는 같은 구조라 함께 고쳤습니다). 이제 처음 실행에서 켠 옵션이 기록에 남고, 다시 검증이 그 옵션을 이어받습니다. 시각 회귀는 기준 화면과 <strong>비교만</strong> 하고, 기준 화면 승인은 사람이 직접 요청해야만 하도록 그대로 유지했습니다.</li>
+<li><strong>② 스크린샷 저장 경로가 프로젝트 밖으로 새던 결함을 막음</strong>: <code>--screenshotDir ../../ESCAPED</code>처럼 <code>..</code>로 바깥을 가리키면, 스크린샷이 프로젝트 밖에 저장되고도 성공(종료 코드 0)으로 끝나는 것을 직접 재현했습니다. 이제 <code>.design-kit/</code> 안쪽이 아니면 아무것도 만들기 전에 거부하고(종료 코드 2), <code>\</code> 구분자와 <code>.design-kit-evil</code> 같은 이름만 비슷한 옆 폴더도 막습니다. <code>.design-kit/</code> 안에 머무는 <code>..</code>(예: <code>reports/../shots/x</code>)는 막지 않습니다.</li>
+<li><strong>③ README 정정</strong>: 설치하면 복사본이 만들어지고 부품이 자동 설치된다는 점(이전 문서는 반대로 적혀 있었음), Node 최소 버전이 18이 아니라 20.9라는 점, 검증용 브라우저를 따로 받아야 한다는 점(이전 문서엔 단계가 없었음), 업데이트 방법, 재시도 횟수와 "연속 2회 실패" 규칙은 코드에 없다는 점, <code>config.json</code> 값을 프로그램이 읽지 않는다는 점, 검증 옵션 표, 라이선스 패키지 수 재집계(153개), 저장소에 없는 파일로 연결된 깨진 링크 제거.</li>
+<li><strong>자동 테스트</strong>: 361개 → 374개(13개 추가, 테스트 파일 1개 신설) 전부 통과, <code>npm audit</code> 0건. 새 부품(의존성) 추가 없음.</li>
+<li><strong>정직한 한계</strong>: ①은 실제 개발 서버 · 폰트 스캔 · 기준 화면 비교를 거친 <strong>실제 프로젝트 대상 종단 확인을 아직 하지 않았고</strong>(가짜 부품으로 바꿔 끼운 자동 테스트까지만 확인), 병합 · 릴리스 후에도 평소 쓰는 Claude Code에는 <a href="#3-다운로드-및-설치-방법">3장의 업데이트</a>를 해야 반영됩니다.</li>
+</ul>
+</details>
+
+<details>
+<summary><b>▶ 2026-10-11 — 릴리즈 v0.5.0 — 타입 검사를 표준 절차에 넣고, 재검증 우회로를 막음 (클릭해서 펼치기)</b></summary>
 
 <ul>
 <li>지난번에 만든 선택형 검사 <code>--typeCheck</code>는 표준 절차의 실제 명령에는 들어 있지 않아, 평소 흐름에서는 한 번도 실행되지 않았습니다. 이제 <code>pipeline</code>·<code>detail-page</code>의 표준 검증 명령에 <code>--typeCheck</code>가 들어 있습니다(<code>tsconfig.json</code>이 있는 TypeScript 프로젝트).</li>
@@ -507,9 +614,8 @@ img { max-width: 100%; }
 <li>직접 실험으로 우회로를 하나 찾아 막았습니다: <code>--typeCheck</code>로 실패한 기록을 대시보드의 '재검증' 버튼이나 MCP <code>reverify</code>로 다시 돌리면, 파일이 그대로인데도 PASS가 나와 완료 차단이 풀렸습니다. 이제 재검증이 원래 실행의 타입 검사 설정을 이어받습니다(수정 전 PASS → 수정 후 FAIL, 파일을 원래대로 되돌리면 다시 PASS로 오탐 없음).</li>
 <li>이 릴리즈에는 지난 릴리즈(v0.4.1) 이후 반영된 보안 취약점 5건 패치(sharp · MCP SDK 등)와 MCP 버전 표기 정정이 처음으로 함께 들어 있습니다. Claude Desktop 확장(<code>.mcpb</code>)과 설치된 플러그인에 반영하려면 다시 만들고 재설치(완전 재시작)해야 합니다.</li>
 <li>자동 테스트 361개 전부 통과, <code>npm audit</code> 0건, 실제 화면 검증(정상/오류 판정과 완료 차단)도 다시 확인했습니다.</li>
-<li>아직 안 한 것: 시각 회귀·폰트·자산 선택 옵션은 재검증이 이어받지 않습니다(별도 작업). lint·build는 여전히 검사하지 않습니다.</li>
+<li>이 릴리스 시점에 아직 안 한 것: 시각 회귀·폰트·자산 선택 옵션은 재검증이 이어받지 않습니다(→ 바로 위 2026-10-12 항목에서 해결, 공개 전). lint·build는 여전히 검사하지 않습니다.</li>
 </ul>
-
 </details>
 
 <details>
@@ -521,7 +627,6 @@ img { max-width: 100%; }
 <li>lint(코드 스타일 검사)와 build(빌드)는 여전히 게이트가 실행하지 않습니다.</li>
 <li>실제 프로젝트로 3가지를 확인했습니다: 일부러 넣은 오류 → FAIL, 원래 남아 있던 잔여 오류 → FAIL, 깨끗한 상태 → PASS. 자동 테스트 350개 전부 통과합니다.</li>
 </ul>
-
 </details>
 
 <details>
@@ -534,7 +639,6 @@ img { max-width: 100%; }
 <li>자동 테스트 334개 전부 통과, <code>npm audit</code> 0건, 실제 화면 검증(정상/오류 판정과 완료 차단)과 실제 MCP 연결도 다시 확인했습니다.</li>
 <li>이미 만들어 둔 <code>.mcpb</code> 파일과 설치된 플러그인에는 아직 반영되지 않았습니다(다시 만들고 재설치해야 반영됩니다).</li>
 </ul>
-
 </details>
 
 <details>
@@ -545,7 +649,6 @@ img { max-width: 100%; }
 <li>코드나 문서를 새로 바꾼 것은 없고, 버전 번호만 0.4.0 → 0.4.1로 올리고 GitHub에 새 릴리즈로 등록했습니다(패치 버전 — 기능 추가가 아니라 이미 만든 수정사항을 정식 릴리즈에 포함시키는 작업입니다).</li>
 <li>자동 테스트 333개 그대로 통과합니다.</li>
 </ul>
-
 </details>
 
 <details>
@@ -557,7 +660,6 @@ img { max-width: 100%; }
 <li>기다리는 시간을 30초에서 60초로 늘려서 해결했습니다. 판정 로직 자체는 전혀 바꾸지 않았습니다. 자동 테스트 333개 전부 그대로 통과합니다.</li>
 <li><a href="#11-문제오류-대처-트러블슈팅">11장 트러블슈팅</a>에도 이 증상과 대처법을 추가했습니다.</li>
 </ul>
-
 </details>
 
 <details>
@@ -569,7 +671,6 @@ img { max-width: 100%; }
 <li>고친 뒤 자동 테스트 333개 전부 통과, 실제 화면 검증(정상/오류 판정과 완료 차단)도 다시 돌려 문제없음을 확인했습니다. 새 프로그램을 추가한 게 아니라 기존 프로그램들의 버전만 올린 것이라 동작 방식은 그대로입니다.</li>
 <li>지난 릴리즈(0.3.0, 8월 19일)를 낸 뒤로 마케팅 이미지 3종 추가·라이선스 게이트 확장·AI 생성 이력 기록·Claude Desktop 확장·이번 보안 수정까지 반영되지 않고 있어, 버전을 <strong>0.4.0</strong>으로 올렸습니다.</li>
 </ul>
-
 </details>
 
 <details>
@@ -907,11 +1008,19 @@ img { max-width: 100%; }
   │   ┌───── PASS ─────┐   │  판정서(runs/·reports/) 기록       │
   │   │ &quot;완료&quot; 보고 가능  │◀──┤                             │
   │   └───────────────┘   │                             │
-  │   ┌───── FAIL ─────┐   │  최대 3회 자동 재시도               │
-  │   │ 완료 보고가       │◀──┤  (2연속 FAIL이면 최종 FAIL)        │
+  │   ┌───── FAIL ─────┐   │  AI가 사유 읽고 고쳐 재검증          │
+  │   │ 완료 보고가       │◀──┤  (권장 최대 3회 — 문서 지시)        │
   │   │ 훅으로 차단됨     │   │                             │
   │   └───────────────┘   │                             │</code></pre>
-<p>핵심은 마지막 갈림길입니다: <strong>PASS 판정서 없이는 "완료"라고 말하는 것 자체를 <code>hooks/verify-gate.mjs</code>가 기계적으로 막습니다.</strong> AI가 실수로 잊거나 눈속임하려 해도 소용없습니다.</p>
+<p>핵심은 마지막 갈림길입니다: <strong>검증 결과가 FAIL로 기록되면 "완료"라고 말하는 것 자체를 <code>hooks/verify-gate.mjs</code>가 기계적으로 막습니다.</strong> AI가 FAIL을 못 본 척하거나 눈속임하려 해도 소용없습니다.</p>
+<p>이 차단이 <strong>정확히 어떤 조건에서 걸리는지</strong>(코드 <code>hooks/verify-gate.mjs</code>로 확인):</p>
+<ul>
+<li><code>.design-kit/runs/</code>의 <strong>가장 최근 실행 기록 1건이 FAIL이면</strong> 차단합니다. "연속 2회 실패" 같은 조건은 없습니다 — FAIL 한 번이면 그 기록이 최신인 동안 막힙니다. 이후 새 PASS 기록이 생기면 풀립니다.</li>
+<li>실행 기록 폴더를 읽을 수 없거나 가장 최근 기록 파일이 손상돼 있어도 차단합니다(원인을 따로 안내).</li>
+<li><code>.design-kit/runs/</code> 폴더 자체가 없거나 기록이 하나도 없으면 막지 않습니다(이 킷을 쓰지 않은 프로젝트에서 방해하지 않기 위함). <strong>즉 검증을 아예 돌리지 않고 "완료"라고 말하는 것은 이 훅이 막지 못합니다.</strong> 그 경우를 막는 것은 절차 문서(<code>commands/pipeline.md</code>)와 <code>AGENTS.md</code>의 "PASS 판정서 없이 완료 보고 금지" 지시이고, 이는 AI가 따르도록 한 <strong>지시일 뿐 기계적 강제가 아닙니다.</strong> 그래서 "완료"라는 말을 믿기 전에 <code>.design-kit/reports/</code>에 최신 PASS 판정서가 있는지 직접 열어 확인하는 습관을 권합니다.</li>
+<li>훅은 <strong>Claude Code가 열려 있는 폴더</strong>의 <code>.design-kit/runs/</code>만 봅니다. 대상 프로젝트가 아닌 다른 폴더에서 Claude Code를 열고 작업하면 그 프로젝트의 FAIL 기록은 보지 못합니다.</li>
+<li>이 훅은 <strong>Claude Code 전용</strong>입니다. Claude Desktop 확장이나 다른 도구에는 없어서, 거기서는 결과를 보여줄 뿐 막지는 못합니다(<a href="#3장-보충--claude-desktop에서도-검증-이력을-보고-싶다면-선택-2026-08-20-추가">3장 보충</a> 참고).</li>
+</ul>
 <hr />
 <h2 id="9-아키텍처--파일문서-위치">9. 아키텍처 · 파일/문서 위치</h2>
 <h3 id="이-킷-저장소-자체의-구조">이 킷 저장소 자체의 구조</h3>
@@ -928,12 +1037,19 @@ img { max-width: 100%; }
 │   └── marketing-asset.md            ← /sodam-design-kit:marketing-asset 명령의 실제 정의 (Phase 3, og·포스터·배너·명함)
 ├── hooks/
 │   └── verify-gate.mjs               ← 완료 차단 로직(FAIL이면 차단)
-├── scripts/                          ← 실제 동작하는 엔진(전부 Node.js, 목록은 대표 예시 — 전체는 scripts/ 폴더 참조)
+├── skills/
+│   └── design-pipeline/SKILL.md      ← Claude Code에게 &quot;언제 이 킷을 쓰는지&quot;(Figma · 디자인 같은 말)와 핵심 규칙을 알려 주는 스킬 파일
+├── scripts/                          ← 실제 동작하는 엔진(전부 Node.js, 2026-10-12 기준 `scripts/` 폴더의 실제 파일 17개 + 화면 폴더 1개)
 │   ├── setup-wizard.mjs
 │   ├── pipeline-codegen.mjs
 │   ├── detail-page-pipeline.mjs      ← 상세페이지 파이프라인 엔진 (Phase 3)
 │   ├── preview-route.mjs
-│   ├── verify-runner.mjs
+│   ├── verify-runner.mjs             ← 검증 실행기(개발 서버 기동 · 렌더 · 접근성 · 3화면 · 선택 옵션 5개)
+│   ├── typecheck-gate.mjs            ← 타입 검사 옵션(--typeCheck) 엔진
+│   ├── execution-lock.mjs            ← 같은 프로젝트에서 검증이 동시에 두 번 돌지 않게 하는 잠금 장치
+│   ├── dashboard-server.mjs          ← /open 대시보드 서버(127.0.0.1 전용) + 다시 검증 기능
+│   ├── dashboard-web/                ← 대시보드 화면(index.html · dashboard.js)
+│   ├── e2e-selftest.mjs              ← 전체 왕복 자체 점검(시험 프로젝트 경로 필요)
 │   ├── report-writer.mjs
 │   ├── asset-downloader.mjs          ← Figma 이미지·아이콘 자동 다운로드 엔진(7일 만료 URL 문제 해결)
 │   ├── font-pipeline.mjs             ← 한글 폰트 자동 다운로드/설정 엔진
@@ -942,11 +1058,15 @@ img { max-width: 100%; }
 │   ├── marketing-asset-pipeline.mjs  ← 마케팅 이미지 자동 생성 엔진 (Phase 3, og·포스터·배너·명함)
 │   ├── asset-ledger.mjs              ← 라이선스 게이트 확장(이미지·아이콘 자산) + 출처 정리 문서 자동 생성 (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop용 확장 엔진 — 검증 이력 열람 · 재검증 (Phase 3)
-├── tests/                            ← 자동 테스트(2026-10-11 기준 361개)
+├── tests/                            ← 자동 테스트(2026-10-12 기준 정식 v0.5.0은 361개, 공개 전 수정까지 담긴 작업본은 374개)
 ├── .PRD/                             ← 이 킷의 설계 문서 정본(가장 상세한 근거 자료)
-├── CHECKPOINT.md                     ← 다음에 이어서 할 작업 목록(개발자용, git에는 올라가지 않음)
-├── README.md / README.en.md          ← 지금 이 문서
-└── package.json</code></pre>
+├── AGENTS.md                         ← Codex 등 Claude Code 밖의 도구를 위한 규칙 요약
+├── LICENSE                           ← Apache License 2.0 전문
+├── .mcpbignore                       ← Claude Desktop 확장 파일을 만들 때 넣지 않을 파일 목록(내부 메모 유출 방지)
+├── README.md / README.en.md          ← 지금 이 문서(한국어/영어, 마크다운)
+├── README.html / README.en.html      ← 같은 내용의 웹페이지 형식(브라우저로 열어 보기)
+├── package.json / package-lock.json  ← 부품 목록과 정확한 버전 고정
+└── (저장소에 없음) CHECKPOINT.md      ← 개발자 개인 작업 메모. 의도적으로 GitHub에 올리지 않는 로컬 전용 파일이라 받은 폴더에는 없습니다</code></pre>
 <h3 id="대상-프로젝트코드를-옮겨-넣는-쪽-안에-생기는-것">대상 프로젝트(코드를 옮겨 넣는 쪽) 안에 생기는 것</h3>
 <p><code>/sodam-design-kit:setup</code>을 실행한 <strong>대상 프로젝트</strong> 폴더 안에는 <code>.design-kit/</code> 폴더 하나만 새로 생깁니다:</p>
 <pre><code>(대상 프로젝트)/.design-kit/
@@ -957,16 +1077,26 @@ img { max-width: 100%; }
 ├── reports/*.md                ← 판정서(사람이 읽는 결과) — git 커밋 대상
 └── reports/screenshots/       ← 검증 스크린샷 — 최근 10개 실행분만 자동 보관(오래된 것은 자동 삭제)</code></pre>
 <blockquote>
-<p>위 목록은 대표 예시입니다(Phase 2가 추가한 <code>fonts/</code> · <code>ASSET-LEDGER.csv</code> · <code>.api-token</code> · <code>.lock</code> · <code>.dashboard.json</code> · <code>reports/baseline/</code> 등은 <a href="./.PRD/02_DATA_MODEL.md"><code>.PRD/02_DATA_MODEL.md</code></a>가 정본입니다). <strong>지워도 되는 것</strong>: <code>reports/screenshots/</code>(자동 재생성됨). <strong>지우면 안 되는 것</strong>: <code>component-map.json</code>(다시 만들려면 Figma를 또 읽어야 하는데, Figma 무료 플랜은 한 달 6회 제한이 있습니다 — <a href="#10-보안--데이터-흐름">10장</a> 참고).</p>
+<p>위 목록은 대표 예시입니다(Phase 2가 추가한 <code>fonts/</code> · <code>ASSET-LEDGER.csv</code> · <code>.api-token</code> · <code>.lock</code> · <code>.dashboard.json</code> · <code>reports/baseline/</code> 등, Phase 3가 추가한 <code>AI-GENERATION-LOG.md</code> · <code>ATTRIBUTION.md</code> 등은 <a href="./.PRD/02_DATA_MODEL.md"><code>.PRD/02_DATA_MODEL.md</code></a>가 정본입니다). 마케팅 이미지는 대상 프로젝트의 <code>public/design-kit-assets/</code>에 저장됩니다.</p>
+<p><strong>내 컴퓨터에는 이 두 곳이 따로 있다는 점을 기억하세요</strong>: ① 위쪽의 "이 킷 저장소" 구조는 GitHub에서 받은 원본과 같고, ② 실제로 실행되는 것은 Claude Code가 만든 <strong>복사본</strong>(<code>&lt;Claude 설정 폴더&gt;\plugins\cache\sodam\sodam-design-kit\&lt;버전&gt;</code>)입니다(<a href="#3-다운로드-및-설치-방법">3장</a>). 검증 결과(<code>.design-kit/</code>)는 복사본이 아니라 <strong>대상 프로젝트 폴더</strong>에 쌓입니다. <strong>지워도 되는 것</strong>: <code>reports/screenshots/</code>(자동 재생성됨). <strong>지우면 안 되는 것</strong>: <code>component-map.json</code>(다시 만들려면 Figma를 또 읽어야 하는데, Figma 무료 플랜은 한 달 읽기 횟수 제한이 있습니다 — <a href="#10-보안--데이터-흐름">10장</a> 참고).</p>
 </blockquote>
 <hr />
 <h2 id="10-보안--데이터-흐름">10. 보안 · 데이터 흐름</h2>
 <p><strong>과장 없이, 사실만 적습니다.</strong></p>
 <ul>
-<li><strong>외부로 나가는 것</strong>: Figma 서버로의 읽기 요청(사용자 본인의 Figma 로그인 정보로, 사용자가 지정한 디자인 페이지만). 그 외에는 이 킷이 어떤 서버로도 데이터를 전송하지 않습니다. 로그인 정보(토큰 등)는 킷 코드가 직접 저장하지 않고, Claude Code에 이미 연결된 Figma 커넥터/공식 MCP의 기존 로그인을 그대로 사용합니다.</li>
+<li><strong>외부와 통신하는 경우를 전부 적습니다</strong> (2026-10-12에 이 킷의 코드 전체에서 네트워크 호출을 찾아 확인):
+<ol type="1">
+<li><strong>Claude Code ↔︎ Anthropic 서버 (이 킷의 코드가 보내는 것이 아니라, Claude Code 자체의 기본 동작)</strong>: 이 킷은 Claude Code 안에서 돌아가므로, 평소 Claude Code를 쓸 때와 똑같이 <strong>대화 내용과 AI가 읽은 파일 · Figma 디자인 데이터의 일부가 Anthropic의 서버로 전송</strong>됩니다. 그 처리 방침은 Anthropic의 공식 안내를 확인하세요. 그래서 개인정보나 실제 고객 데이터가 든 파일은 AI가 읽는 범위에 두지 마세요.</li>
+<li><strong>Figma 서버</strong>: 사용자 본인의 Figma 로그인 정보로, 사용자가 지정한 디자인 페이지만 읽습니다. 로그인 정보(토큰 등)는 킷 코드가 직접 저장하지 않고, Claude Code에 이미 연결된 Figma 커넥터/공식 MCP의 기존 로그인을 그대로 사용합니다.</li>
+<li><strong>설치할 때만</strong>: 플러그인을 GitHub에서 내려받고, 부품을 npm 저장소에서 받고, 검증용 브라우저(Chromium)를 Playwright 배포 서버에서 받습니다(<a href="#3-다운로드-및-설치-방법">3장</a>).</li>
+<li><strong>한글 폰트 자동 설정 기능을 쓸 때만</strong>: 코드에 고정된 허용 목록의 주소(<code>raw.githubusercontent.com</code>의 Pretendard v1.3.9 · Noto Sans KR 폰트와 각 라이선스 파일)에서만 내려받습니다. 목록에 없는 폰트는 거부합니다.</li>
+<li><strong>Figma 이미지 · 아이콘 다운로드 기능을 쓸 때만</strong>: Figma가 알려준 <code>https://</code> 주소에서만 받습니다(<code>http://</code>는 거부, 주소가 중간에 <code>http://</code>로 바뀌어도 저장하지 않음, 10MB 초과 · 이미지가 아닌 파일은 저장하지 않음).</li>
+<li>위 외에 <strong>사용 통계 · 원격 로그 · 오류 보고 등을 보내는 코드는 이 킷에 없습니다</strong>(관련 단어와 네트워크 호출을 코드 전체에서 검색해 확인).</li>
+<li><strong>⚠️ 검증하는 동안 잠깐 열리는 개발 서버는 "이 컴퓨터 전용"이 아닙니다 (2026-10-12 직접 측정)</strong>: 이 킷은 개발 서버를 켤 때 <code>127.0.0.1</code>(이 컴퓨터 자신)에서만 열리도록 요청하지만, 실제로 같은 방식으로 띄워 확인해 보니 서버가 <strong>모든 네트워크 주소(<code>::</code>)에서 접속을 받는 상태</strong>였습니다. 즉 검증이 도는 수십 초 동안, 같은 네트워크에 있는 다른 기기가 그 임시 화면(만들고 있는 화면의 코드 · 개발용 정보)에 접속할 <strong>가능성</strong>이 있습니다. Windows 방화벽이 이를 막는지는 확인하지 못했습니다. <strong>안전하게 쓰려면 카페 · 공용 Wi-Fi처럼 믿을 수 없는 네트워크에서는 검증을 돌리지 마세요.</strong> (이 사실은 개발자에게 개선 과제로 전달되어야 할 항목입니다 — 아직 고치지 않았습니다.) 반면 <code>/sodam-design-kit:open</code> 대시보드는 코드상 <code>127.0.0.1</code>에만 열리도록 되어 있습니다.</li>
+</ol></li>
 <li><strong>로컬(내 컴퓨터)에만 남는 것</strong>: 생성된 코드, <code>.design-kit/</code> 안의 설정 · 매핑 · 판정 기록 · 스크린샷 전부. 전부 내 컴퓨터 디스크에만 저장되고 외부로 전송되지 않습니다.</li>
 <li><strong>Figma 이미지 주소는 7일 후 만료</strong>: Figma가 돌려주는 이미지 · 아이콘 등의 파일 주소는 임시 주소라 7일이 지나면 깨집니다. 이 킷은 코드에 그 임시 주소를 그대로 박아넣지 않고, 즉시 로컬로 내려받아 저장하도록 설계되어 있습니다.</li>
-<li><strong>Figma 무료 플랜 읽기 한도</strong>: 사용자 본인 계정이 무료(Starter/View) 플랜이면 <strong>한 달에 6회</strong>만 Figma 읽기가 허용됩니다(유료 Dev/Full 플랜은 하루 200~600회). 이 킷은 한 번 읽은 정보를 <code>component-map.json</code>에 저장해두고 재사용하는 방식으로 이 한도를 아끼도록 설계되어 있습니다.</li>
+<li><strong>Figma 무료 플랜 읽기 한도 (수치가 바뀐 적이 있어 정확한 현재 값은 확정하지 못했습니다)</strong>: 사용자 본인 계정이 무료(Starter/View) 플랜이면 Figma 읽기 횟수에 <strong>월 단위 제한</strong>이 있습니다. 이 킷을 만들 때 직접 확인한 값은 <strong>월 6회</strong>였고(유료 Dev/Full 플랜은 하루 200~600회), 2026-09-01에 Figma 공식 문서를 다시 보니 이 수치가 <strong>월 20회로 표기가 바뀐 것</strong>이 확인됐습니다(다만 그 수치가 내 계정 조건과 정확히 같은 값인지는 확정하지 못했습니다). 그래서 이 문서는 "월 6회~20회 사이로 매우 적다"는 정도만 보증합니다 — <strong>정확한 한도는 Figma 공식 안내에서 직접 확인하세요.</strong> 이 킷은 한 번 읽은 정보를 <code>component-map.json</code>에 저장해두고 재사용하는 방식으로 이 한도를 아끼도록 설계되어 있습니다.</li>
 <li><strong>개인정보 · 실제 데이터 금지</strong>: 이 킷의 규칙(<a href="./.PRD/04_PROJECT_SPEC.md"><code>.PRD/04_PROJECT_SPEC.md</code></a> "절대 하지 마" 목록)은 개인정보나 실제 고객 데이터가 담긴 Figma 파일 · 상품 데이터를 연결하는 것을 금지합니다. 디자인 시안 · 상품 데이터 예시는 더미(가짜) 데이터로 만든 것만 사용해야 합니다.</li>
 <li><strong>외부 명령 실행 방식</strong>: 개발 서버 실행 등 컴퓨터 명령을 실행할 때, 문자열을 이어붙이는 방식(명령어 주입 위험)이 아니라 인자를 배열로 분리해 실행하는 안전한 방식만 사용합니다.</li>
 <li><strong>대시보드(<code>/open</code>)는 내 컴퓨터 안에서만 열림</strong>: <code>127.0.0.1</code>(이 컴퓨터 자신을 가리키는 주소)로만 접속되며, 다른 사람이 인터넷을 통해 접속할 수 없습니다. 경로 조작 시도 차단 · 잘못된 요청 차단 · 실행 중 잠금 장치가 함께 구현되어 있고, 실제로 흉내를 내 막히는지 확인했습니다.</li>
@@ -999,8 +1129,8 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td>게이트 FAIL이 계속 반복돼요</td>
-<td>자동 재시도(최대 3회)로도 못 고치는 문제일 수 있음</td>
-<td>판정서의 실패 사유(접근성 위반 항목 · 콘솔 에러 메시지)를 사람이 직접 읽고 원인 확인. <code>gateEnabled</code> 값은 사용자 본인이 <code>.design-kit/config.json</code>에서 직접 바꿀 때만 변경</td>
+<td>AI의 재시도(최대 3회 권장)로도 못 고치는 문제일 수 있음</td>
+<td>판정서의 실패 사유(접근성 위반 항목 · 콘솔 에러 메시지)를 사람이 직접 읽고 원인 확인. <strong><code>.design-kit/config.json</code>의 <code>gateEnabled</code> 값을 바꿔 게이트를 끄려는 시도는 동작하지 않습니다</strong> — 어떤 프로그램도 그 값을 읽지 않기 때문입니다(코드로 확인). 게이트를 끄려 하지 말고 FAIL 사유를 고치세요</td>
 <td>재시도 후 PASS로 바뀌거나, 사람이 원인을 파악함</td>
 </tr>
 <tr>
@@ -1016,10 +1146,22 @@ img { max-width: 100%; }
 <td>공유 링크로 정상 읽힘</td>
 </tr>
 <tr>
-<td>shadcn 또는 Playwright(검증용 자동화 브라우저)가 설치되어 있지 않다고 나와요</td>
-<td>대상 프로젝트에 shadcn/ui가 없거나, 이 킷 저장소에서 <code>npm install</code>을 안 함</td>
-<td>shadcn 미설치면 <code>npx shadcn init</code> 실행 여부를 물어보는 안내를 따르고, Playwright 문제면 이 킷 저장소 폴더에서 <code>npm install</code> 재실행</td>
+<td>shadcn/ui가 설치되어 있지 않다고 나와요</td>
+<td>대상 프로젝트에 shadcn/ui가 없음</td>
+<td><code>npx shadcn init</code> 실행 여부를 물어보는 안내를 따름</td>
 <td>안내된 설치가 끝난 뒤 명령이 정상 실행됨</td>
+</tr>
+<tr>
+<td>검증할 때 <code>browserType.launch: Executable doesn't exist at ...chromium_headless_shell...</code> 오류가 나고, 아래쪽에 "Looks like Playwright was just installed or updated. Please run the following command to download new browsers"라고 나와요</td>
+<td><strong>검증용 브라우저(Chromium) 파일이 이 컴퓨터에 아직 없음</strong> (2026-10-12에 브라우저 경로를 비워 놓고 그대로 재현한 실제 오류 문구입니다). 부품은 자동으로 설치되지만 브라우저는 자동으로 받지 않습니다</td>
+<td>터미널에서 <code>npx playwright@1.61.1 install chromium</code> 실행(<a href="#방법-a-권장--github-주소로-바로-설치-저장소를-따로-내려받지-않음">3장 방법 A의 4번</a>). 오류 화면이 안내하는 <code>npx playwright install</code>도 같은 목적입니다</td>
+<td>같은 검증 명령이 오류 없이 PASS/FAIL 판정까지 진행됨</td>
+</tr>
+<tr>
+<td><code>Cannot find package 'playwright'</code> 같은 "패키지를 찾을 수 없다" 오류가 나요</td>
+<td>방금 설치 · 업데이트해서 부품(의존성)이 아직 자동 설치 중일 수 있음</td>
+<td>1~2분 기다린 뒤 같은 명령을 다시 실행. 계속되면 <code>claude plugin list</code>로 버전을 확인하고, 설치된 복사본 폴더(<a href="#9-아키텍처--파일문서-위치">9장</a> 끝 참고)에 <code>node_modules</code> 폴더가 있는지 확인합니다. 없을 때의 복구(그 폴더에서 <code>npm ci</code>)는 일반적인 조치이며 <strong>이 킷에서 직접 시험해 보지는 못했습니다</strong></td>
+<td>같은 명령이 부품 오류 없이 실행됨</td>
 </tr>
 <tr>
 <td>검증할 때 포트(주소)가 충돌한다고 나와요</td>
@@ -1041,8 +1183,8 @@ img { max-width: 100%; }
 </tr>
 <tr>
 <td>대시보드(<code>/open</code>)가 안 켜지거나 화면이 비어 있어요</td>
-<td>이미 다른 인스턴스가 열려 있거나, 이 킷 저장소에서 <code>npm install</code>을 안 함</td>
-<td><code>/sodam-design-kit:open --stop</code>으로 한 번 끈 뒤 다시 실행. 그래도 안 되면 <code>npm install</code> 재실행</td>
+<td>이미 다른 인스턴스가 열려 있거나, 방금 설치 · 업데이트해서 부품 설치가 아직 덜 끝남</td>
+<td><code>/sodam-design-kit:open --stop</code>으로 한 번 끈 뒤 다시 실행. 그래도 안 되면 1~2분 뒤 다시 실행(바로 위 "패키지를 찾을 수 없다" 항목 참고)</td>
 <td>브라우저에 판정서 목록이 정상적으로 보임</td>
 </tr>
 <tr>
@@ -1063,19 +1205,40 @@ img { max-width: 100%; }
 <td>같은 명령을 한 번 더 실행 — 두 번째부터는 이미 준비된 상태라 보통 바로 됩니다</td>
 <td>재실행 시 정상적으로 PASS/FAIL 판정까지 진행됨</td>
 </tr>
+<tr>
+<td>새 버전이 나왔다는데 평소 쓰는 Claude Code는 옛날 그대로 동작해요</td>
+<td>설치된 것은 <strong>복사본</strong>이라 업데이트하기 전에는 옛 버전이 계속 실행됨(<a href="#3-다운로드-및-설치-방법">3장</a>)</td>
+<td>터미널에서 <code>claude plugin marketplace update sodam</code> → <code>claude plugin update sodam-design-kit@sodam</code> 실행 후 Claude Code <strong>완전 재시작</strong></td>
+<td><code>claude plugin list</code>의 <code>Version</code>이 새 버전으로 바뀜</td>
+</tr>
+<tr>
+<td>마켓플레이스를 등록하는데 <code>Filename too long</code>(파일 이름이 너무 김) 오류와 함께 실패해요</td>
+<td>Windows의 경로 길이 제한. <strong>Claude 설정 폴더를 아주 긴 경로로 바꿔 쓰는 경우</strong>에 2026-10-12에 직접 재현됨(일반 설치에서는 시험 중 발생하지 않음)</td>
+<td>Claude 설정 폴더 경로를 짧게 하면 같은 명령이 성공함을 확인했습니다</td>
+<td><code>Successfully added marketplace: sodam</code> 메시지</td>
+</tr>
+<tr>
+<td><code>/plugin marketplace add sodam-ai/SoDam-Design-Kit</code>가 실패해요</td>
+<td>Git이 설치돼 있지 않거나 GitHub에 접속할 수 없을 수 있음 (<strong>Git이 없는 PC에서는 직접 시험하지 못했습니다</strong>)</td>
+<td><a href="https://git-scm.com/downloads">Git</a>을 설치하거나 인터넷 연결을 확인한 뒤 다시 시도. 안 되면 <a href="#방법-b--내-컴퓨터의-폴더로-설치-코드를-직접-고쳐-쓰는-개발자용">방법 B</a>로 설치</td>
+<td><code>Successfully added marketplace: sodam</code> 메시지</td>
+</tr>
 </tbody>
 </table>
 <hr />
 <h2 id="12-faq-자주-묻는-질문">12. FAQ (자주 묻는 질문)</h2>
 <p><strong>Q. 코딩을 전혀 몰라도 쓸 수 있나요?</strong> A. 명령을 실행하는 것 자체는 슬래시 명령 몇 개(<code>/sodam-design-kit:setup</code>, <code>/sodam-design-kit:pipeline</code> 등)만 알면 됩니다. 다만 "대상 프로젝트"(Next.js+Tailwind+shadcn/ui)는 누군가 미리 준비되어 있어야 합니다. 나머지는 전부 자연어로 AI에게 요청하면 됩니다.</p>
 <p><strong>Q. 컴퓨터 · 메신저 · AI를 정말 처음 써보는데 시작할 수 있나요?</strong> A. <a href="#0-이-문서를-시작하기-전에-용어-5분-정리">0장 용어 사전</a>을 먼저 읽고 <a href="#4-빠른-시작-5분-안에-첫-성공-보기">4장 빠른 시작</a>을 그대로 따라 입력해보시길 권합니다. 다만 정직하게 말씀드리면, 이 킷은 "개발 도구"라서 Node.js 설치 · 터미널 사용처럼 컴퓨터를 어느 정도 다뤄야 하는 부분이 남아있습니다 — 완전한 비전공자 혼자보다는, 이미 준비된 프로젝트(2장 준비물 3번)를 옆에서 도와줄 사람이 한 명 있으면 훨씬 수월합니다.</p>
-<p><strong>Q. Figma 유료 플랜이 꼭 필요한가요?</strong> A. 아니요, 무료(Starter) 플랜으로도 됩니다. 다만 한 달에 6회만 읽을 수 있는 제한이 있습니다(<a href="#10-보안--데이터-흐름">10장</a> 참고). 이 킷은 한 번 읽은 내용을 저장해두고 재사용하도록 만들어져 있어 이 한도 안에서도 여러 번 파이프라인을 돌릴 수 있습니다.</p>
+<p><strong>Q. Figma 유료 플랜이 꼭 필요한가요?</strong> A. 아니요, 무료(Starter) 플랜으로도 됩니다. 다만 한 달에 읽을 수 있는 횟수가 매우 적은 제한(제작 당시 직접 확인한 값은 월 6회, 이후 공식 문서 표기는 월 20회로 바뀜 — 정확한 현재 값은 Figma에서 확인)이 있습니다(<a href="#10-보안--데이터-흐름">10장</a> 참고). 이 킷은 한 번 읽은 내용을 저장해두고 재사용하도록 만들어져 있어 이 한도 안에서도 여러 번 파이프라인을 돌릴 수 있습니다.</p>
 <p><strong>Q. 검증이 실패(FAIL)하면 제 코드가 잘못된 건가요?</strong> A. 꼭 그런 건 아닙니다. 접근성 규칙 위반, 콘솔 에러, 화면 렌더링 실패 등 여러 이유가 있을 수 있고, 판정서에 구체적인 이유가 남습니다. 실패도 "이 킷이 정상적으로 검사하고 있다"는 증거입니다.</p>
 <p><strong>Q. 생성된 코드를 제가 마음대로 고쳐도 되나요?</strong> A. 네, 생성된 코드는 사용자의 프로젝트 파일이 되므로 자유롭게 수정할 수 있습니다. 단, 다시 파이프라인을 돌리면 재검증이 이루어집니다.</p>
 <p><strong>Q. 이 킷을 상업적으로 써도 되나요? 다른 사람에게 나눠줘도 되나요?</strong> A. <strong>네, Apache License 2.0 조건을 지키면 가능합니다</strong>(2026-08-09 확정) — 라이선스 사본 동봉, 수정 사실 표시, 원저작물 고지 유지가 조건입니다. 단 "SoDam-Design-Kit" 이름 · 상표 자체를 쓸 권리는 포함되지 않습니다. 자세한 내용은 <a href="#13-법률--저작권--라이선스--상업적-용도">13장</a>을 반드시 읽어보세요.</p>
 <p><strong>Q. 이 킷으로 만든 결과물(상세페이지 · 코드)을 팔거나 고객사에 납품해도 되나요?</strong> A. 이 킷 자체의 라이선스는 그것을 막지 않습니다. 다만 <strong>원본 Figma 디자인의 저작권</strong>, <strong>상품 데이터의 출처</strong>, <strong>AI 생성 코드/문구의 법적 지위</strong>는 이 킷과 별개의 문제이며 전적으로 사용자 책임입니다 — <a href="#13-법률--저작권--라이선스--상업적-용도">13장</a>에서 각각 자세히 설명합니다.</p>
-<p><strong>Q. Windows/Mac/Linux 다 되나요?</strong> A. 이 킷은 Node.js 스크립트로 만들어져 있어 이론적으로 셋 다 실행 가능하지만, 지금까지 실제로 상세하게 검증된 환경은 <strong>Windows</strong>입니다(개발 · 테스트 환경). Mac/Linux에서의 실측 검증은 아직 이루어지지 않았습니다.</p>
-<p><strong>Q. 이 킷은 안정적인 정식 버전인가요?</strong> A. 아니요. 현재 버전은 **0.5.0(정식 출시 전)**입니다. 핵심 기능(Phase 1 · Phase 2 · Phase 3 대부분)은 실제 프로젝트로 왕복 검증까지 마쳤지만, 명령어 이름이나 세부 동작이 앞으로 바뀔 수 있습니다. 중요한 프로젝트에 쓰기 전에는 <a href="./CHECKPOINT.md">CHECKPOINT.md</a>와 <a href="#7-업데이트-내용-요약">7장</a>에서 최신 상태를 먼저 확인하는 것을 권장합니다.</p>
+<p><strong>Q. Windows/Mac/Linux 다 되나요?</strong> A. 이 킷은 Node.js 스크립트로 만들어져 있어 이론적으로 셋 다 실행 가능하지만, 지금까지 실제로 상세하게 검증된 환경은 <strong>Windows</strong>입니다(개발 · 테스트 환경). Mac/Linux에서의 실측 검증은 아직 이루어지지 않았습니다. Claude Desktop 확장(<code>.mcpb</code>)의 설명서(<code>manifest.json</code>)는 지원 운영체제로 <strong>Windows와 macOS만</strong> 명시해 두었고 Linux는 포함하지 않습니다. Node.js는 어느 운영체제에서든 <strong>20.9 이상</strong>이어야 합니다(<a href="#2-사전-준비물--필요-프로그램-다운로드-방법-포함">2장</a>).</p>
+<p><strong>Q. 이 킷은 안정적인 정식 버전인가요?</strong> A. 아니요. 현재 버전은 <strong>0.5.0(정식 출시 전)</strong>입니다. 핵심 기능(Phase 1 · Phase 2 · Phase 3 대부분)은 실제 프로젝트로 왕복 검증까지 마쳤지만, 명령어 이름이나 세부 동작이 앞으로 바뀔 수 있습니다. 중요한 프로젝트에 쓰기 전에는 <a href="#7-업데이트-내용-요약">7장</a>과 GitHub의 <a href="https://github.com/sodam-ai/SoDam-Design-Kit/releases">Releases 페이지</a>에서 최신 상태를 먼저 확인하는 것을 권장합니다.</p>
+<p><strong>Q. 새 버전은 어떻게 받나요? 자동으로 업데이트되나요?</strong> A. 이 문서를 쓴 시점에 확인한 범위에서는 <strong>자동으로 바뀐다고 확인하지 못했습니다.</strong> 설치된 것은 복사본이라, <a href="#3-다운로드-및-설치-방법">3장의 "업데이트 방법"</a> 두 줄(<code>claude plugin marketplace update sodam</code> → <code>claude plugin update sodam-design-kit@sodam</code>)을 실행하고 Claude Code를 <strong>완전히 재시작</strong>해야 합니다.</p>
+<p><strong>Q. 제 디자인 · 코드가 외부로 전송되나요?</strong> A. 이 킷의 코드는 사용 통계나 원격 로그를 보내지 않습니다(코드 전체를 검색해 확인). 다만 <strong>Claude Code 자체가 대화 내용과 AI가 읽은 파일 · Figma 데이터를 Anthropic 서버로 전송</strong>하는 것은 이 킷과 별개로 일어납니다. 또 검증하는 동안 잠깐 열리는 개발 서버가 같은 네트워크의 다른 기기에서 접속 가능한 상태였던 것을 확인했습니다 — 자세한 내용과 주의는 <a href="#10-보안--데이터-흐름">10장</a>을 꼭 읽어보세요.</p>
+<p><strong>Q. Codex 같은 다른 AI 도구에서도 쓸 수 있나요?</strong> A. 일부만 가능합니다. <code>AGENTS.md</code>는 다른 도구가 이 킷의 핵심 규칙을 따르게 하려는 요약 문서입니다. 하지만 <code>/sodam-design-kit:...</code> 슬래시 명령과 <strong>"FAIL이면 완료를 막는" 훅은 Claude Code 전용</strong>이라 다른 도구에서는 작동하지 않습니다. 이 킷의 스크립트는 일반 Node 프로그램이라 이론상 다른 도구에서도 터미널로 실행할 수 있지만, <strong>다른 도구에서 실제로 시험한 기록은 이 문서에 없습니다.</strong> 그런 도구로 쓴다면 검증 결과(<code>.design-kit/reports/</code>의 최신 판정서)를 사람이 직접 열어 PASS를 확인해야 합니다.</p>
 <hr />
 <h2 id="13-법률--저작권--라이선스--상업적-용도">13. 법률 · 저작권 · 라이선스 · 상업적 용도</h2>
 <blockquote>
@@ -1150,8 +1313,8 @@ img { max-width: 100%; }
 </tbody>
 </table>
 <p>이 라이선스들은 이 킷의 라이선스와 무관하게 각 프로젝트가 독자적으로 부여한 것이며, 각 구성요소를 직접 사용하고 싶다면 해당 프로젝트의 원문 라이선스를 확인해야 합니다.</p>
-<h3 id="간접-의존성까지-포함한-전체-126개-패키지-라이선스-전수-감사-2026-08-21">간접 의존성까지 포함한 전체 126개 패키지 라이선스 전수 감사 (2026-08-21)</h3>
-<p>위 표는 이 킷이 직접 설치하는 8개 패키지만 다룹니다. 이 8개가 각자 데려오는 <strong>간접 의존성까지 포함하면 실제로는 126개 패키지</strong>가 설치되는데, 이 126개 전체를 확인한 적은 이번이 처음입니다. <code>ScanCode Toolkit</code>(표준 라이선스 스캐너)을 쓰려 했으나 이 도구는 Python 3.12 이하만 지원해 이 환경의 Python 3.14와 호환되지 않았고, 같은 목적을 Node.js로 직접 구현해(모든 패키지의 <code>package.json</code>의 <code>license</code> 필드 전수 대조) 확인했습니다.</p>
+<h3 id="간접-의존성까지-포함한-전체-패키지-라이선스-재집계-2026-10-12">간접 의존성까지 포함한 전체 패키지 라이선스 재집계 (2026-10-12)</h3>
+<p>위 표는 이 킷이 직접 설치하는 8개 패키지만 다룹니다(그 8개의 라이선스는 2026-10-12에 <code>package-lock.json</code>의 <code>license</code> 필드와 다시 대조해 표와 일치함을 확인했습니다). 이 8개가 각자 데려오는 <strong>간접 의존성까지 포함하면 <code>package-lock.json</code>에 153개 패키지</strong>가 기록되어 있습니다(2026-08-21 감사 때는 126개였고, 이후 부품이 갱신되며 늘었습니다). 이번에는 별도의 스캐너 없이, <strong>153개 전부의 <code>license</code> 필드를 스크립트로 집계</strong>했습니다.</p>
 <table>
 <thead>
 <tr>
@@ -1162,18 +1325,26 @@ img { max-width: 100%; }
 <tbody>
 <tr>
 <td>MIT</td>
-<td>103</td>
+<td>106</td>
+</tr>
+<tr>
+<td>Apache-2.0</td>
+<td>16</td>
+</tr>
+<tr>
+<td>LGPL-3.0-or-later</td>
+<td>10</td>
 </tr>
 <tr>
 <td>ISC</td>
 <td>10</td>
 </tr>
 <tr>
-<td>Apache-2.0</td>
-<td>4</td>
+<td>MPL-2.0</td>
+<td>3</td>
 </tr>
 <tr>
-<td>MPL-2.0</td>
+<td>Apache-2.0 AND LGPL-3.0-or-later</td>
 <td>3</td>
 </tr>
 <tr>
@@ -1181,8 +1352,8 @@ img { max-width: 100%; }
 <td>2</td>
 </tr>
 <tr>
-<td>Apache-2.0 AND LGPL-3.0-or-later (일부 MIT 포함)</td>
-<td>2</td>
+<td>Apache-2.0 AND LGPL-3.0-or-later AND MIT</td>
+<td>1</td>
 </tr>
 <tr>
 <td>BSD-2-Clause</td>
@@ -1192,15 +1363,30 @@ img { max-width: 100%; }
 <td>0BSD</td>
 <td>1</td>
 </tr>
+<tr>
+<td><strong>합계</strong></td>
+<td><strong>153</strong></td>
+</tr>
 </tbody>
 </table>
 <ul>
-<li><strong>license 필드가 없는 패키지</strong>: 0개</li>
-<li><strong>GPL · AGPL 등 강한 카피레프트 라이선스</strong>: 0개</li>
-<li><strong>주의가 필요해 별도로 기록하는 발견 1건</strong>: 위 표의 <code>sharp</code>가 함께 설치하는 플랫폼별 네이티브 바이너리 패키지 2개(<code>@img/sharp-win32-x64</code>, <code>@img/sharp-wasm32</code>)가 <strong>LGPL-3.0-or-later</strong>를 포함합니다(내부적으로 <code>libvips</code> 라이브러리를 동적으로 링크하기 때문). <strong>법적으로 문제는 없습니다</strong> — LGPL은 코드를 직접 복사·수정하지 않고 "동적으로 링크"만 하는 경우 그 라이선스가 링크하는 프로그램 전체로 전이되지 않는 것을 명시적으로 허용하며, 이 킷은 <code>sharp</code>를 수정 없이 설치 의존성으로만 사용하므로 이 조건에 해당합니다.</li>
+<li><strong><code>license</code> 필드가 없는 패키지</strong>: 0개 · <strong>GPL · AGPL 등 강한 카피레프트</strong>: 0개.</li>
+<li><strong>실제로 내 컴퓨터에 설치되는 수는 이보다 적습니다</strong>: 153개 중 29개는 "운영체제별 선택 설치" 부품이라, 모든 운영체제용이 목록에 적혀 있어도 내 컴퓨터에는 내 운영체제에 맞는 것만 설치됩니다.</li>
+<li><strong>주의가 필요해 따로 적는 발견 — LGPL-3.0-or-later를 포함하는 14개</strong>: 전부 이미지 처리 부품 <code>sharp</code>가 운영체제별로 데려오는 네이티브 부품입니다(<code>@img/sharp-libvips-*</code> 10개는 macOS · Linux용, <code>@img/sharp-win32-*</code> 3개는 Windows용, <code>@img/sharp-wasm32</code> 1개). 내 컴퓨터에는 그중 1~2개만 설치됩니다(Windows 64비트는 <code>@img/sharp-win32-x64</code>). 이는 <code>libvips</code>라는 라이브러리를 함께 담고 있기 때문입니다. <strong>이 킷은 이들을 수정하지 않고 설치 의존성으로만 쓰므로</strong>, LGPL이 이 킷 전체로 번지지 않는 일반적인 사용 방식에 해당합니다(참고용 설명이며 법적 효력을 보장하지 않습니다).</li>
+<li><strong>MPL-2.0 3개</strong>(<code>axe-core</code> · <code>@axe-core/playwright</code> · <code>satori</code>): "파일 단위" 카피레프트입니다. 이 킷은 수정 없이 쓰지만, <strong>사용자가 이 부품들의 파일을 직접 고쳐서 배포한다면 고친 파일의 소스를 MPL-2.0으로 공개</strong>해야 합니다.</li>
+<li><strong>이 부품들은 설치된 복사본과 <code>.mcpb</code> 파일 안에 통째로 들어 있습니다.</strong> 2026-10-12에 <code>.mcpb</code> 내부를 열어 보니 <code>LICENSE</code> 류 파일이 128개 들어 있었습니다. 이 파일들(특히 위 LGPL · MPL 부품의 <code>LICENSE</code>)을 <strong>지우거나 가리고 재배포하면 안 됩니다.</strong></li>
 </ul>
+<h3 id="이-킷에-포함되지-않고-별도로-받아서-쓰는-프로그램-각자의-라이선스--약관이-적용됩니다">이 킷에 포함되지 않고, 별도로 받아서 쓰는 프로그램 (각자의 라이선스 · 약관이 적용됩니다)</h3>
+<ul>
+<li><strong>Chromium 브라우저</strong>: 3장 4번 명령으로 Playwright가 내려받는 약 690MB의 브라우저 파일입니다. <strong>이 킷의 파일이 아니며</strong>, Chromium 프로젝트와 그 안에 든 제3자 구성요소 각각의 라이선스를 따릅니다. 정확한 조건은 해당 프로젝트의 공식 안내를 확인하세요(이 문서는 그 조건을 대신 보증하지 않습니다).</li>
+<li><strong>Node.js · Git · Claude Code · Claude Desktop · Figma(서비스)</strong>: 각자의 라이선스 또는 이용약관이 적용됩니다. 특히 Claude Code · Figma는 <strong>서비스 이용약관</strong>이 있어, 그 약관을 지키는 것은 사용자의 책임이며 이 킷이 대신 보증하지 않습니다.</li>
+</ul>
+<h3 id="상표-고지">상표 고지</h3>
+<p>Figma, Claude, Claude Code, Anthropic, shadcn/ui, Next.js, Tailwind CSS, Playwright, Node.js, GitHub 등의 이름은 각 권리자의 상표 또는 서비스 이름입니다. 이 문서는 이 킷이 어떤 도구와 함께 쓰이는지 설명하려고 이름을 적었을 뿐, 해당 회사들과 제휴하거나 보증 · 후원을 받았다고 주장하지 않습니다.</p>
+<h3 id="라이선스-표기-위치-헷갈리기-쉬운-부분">라이선스 표기 위치 (헷갈리기 쉬운 부분)</h3>
+<p>이 킷의 라이선스의 <strong>정본은 저장소 최상위의 <code>LICENSE</code> 파일</strong>입니다(203행에 <code>Copyright 2026 SoDam AI Studio</code>). Claude Desktop 확장 설명서 <code>manifest.json</code>에도 <code>Apache-2.0</code>이 적혀 있습니다. 반면 <code>package.json</code>과 <code>.claude-plugin/plugin.json</code>에는 라이선스 필드가 <strong>없으므로</strong>(2026-10-12 확인), 자동 도구가 이 파일들만 읽으면 라이선스를 "없음"으로 표시할 수 있습니다 — 판단은 <code>LICENSE</code> 파일을 기준으로 하세요.</p>
 <h3 id="이-킷이-자동으로-다운로드하는-폰트의-라이선스">이 킷이 자동으로 다운로드하는 폰트의 라이선스</h3>
-<p><a href="#7-업데이트-내용-요약">7장</a>의 "한글 폰트 자동화" 기능은 오픈소스 폰트 라이선스인 **OFL(SIL Open Font License)**을 따르는 폰트(Pretendard, Noto Sans KR)만 화이트리스트로 미리 정해두고 자동으로 내려받습니다. OFL은 폰트를 수정 · 재배포 · 상업적 이용하는 것을 허용하지만, <strong>폰트 파일 자체를 단독으로 재판매하는 것은 금지</strong>합니다. 다운로드한 폰트 각각의 라이선스 근거는 대상 프로젝트의 <code>ASSET-LEDGER.csv</code>에 자동 기록됩니다.</p>
+<p><a href="#7-업데이트-내용-요약">7장</a>의 "한글 폰트 자동화" 기능은 오픈소스 폰트 라이선스인 <strong>OFL(SIL Open Font License)</strong>을 따르는 폰트(Pretendard, Noto Sans KR)만 화이트리스트로 미리 정해두고 자동으로 내려받습니다. OFL은 폰트를 수정 · 재배포 · 상업적 이용하는 것을 허용하지만, <strong>폰트 파일 자체를 단독으로 재판매하는 것은 금지</strong>합니다. 다운로드한 폰트 각각의 라이선스 근거는 대상 프로젝트의 <code>ASSET-LEDGER.csv</code>에 자동 기록됩니다.</p>
 <h3 id="figma-디자인-데이터에-대한-책임">Figma 디자인 데이터에 대한 책임</h3>
 <p>이 킷은 사용자 본인의 Figma 계정으로 사용자가 직접 접근 권한을 가진 디자인만 읽으며, Figma 디자인 데이터 자체를 재배포하거나 저장 · 전송하지 않습니다. 다만 <strong>읽어온 디자인을 코드로 옮겨서 사용할 권리(저작권)가 있는지는 전적으로 사용자의 책임</strong>입니다 — 디자인 원본의 저작권은 그 디자인을 만든 사람(또는 조직)에게 있으며, 이 킷이 그 권리 관계를 대신 확인하거나 보장하지 않습니다.</p>
 <h3 id="상품-데이터--ai가-작성한-카피문구에-대한-책임-phase-3-sodam-design-kitdetail-page">상품 데이터 · AI가 작성한 카피(문구)에 대한 책임 (Phase 3, <code>/sodam-design-kit:detail-page</code>)</h3>
@@ -1260,6 +1446,22 @@ img { max-width: 100%; }
 <td>이 킷이 자동 다운로드하는 폰트(Pretendard 등)를 폰트 파일 자체로 재판매</td>
 <td>❌ 금지 (OFL 라이선스 위반)</td>
 </tr>
+<tr>
+<td>설치된 복사본이나 <code>.mcpb</code> 파일을 다른 사람에게 그대로 나눠주기</td>
+<td>⚠️ 가능하지만 조건이 겹침 — 이 킷의 Apache-2.0 조건에 더해, 안에 든 부품들(특히 LGPL · MPL 부품)의 <code>LICENSE</code> 파일을 지우지 않아야 함. 상업적 재배포라면 변호사 확인 권장</td>
+</tr>
+<tr>
+<td>Playwright가 내려받는 Chromium 브라우저 파일을 이 킷의 일부인 것처럼 함께 배포</td>
+<td>❓ 이 킷은 Chromium을 포함하지 않음 — 별도 프로젝트의 라이선스를 확인해야 함(이 문서는 보증하지 않음)</td>
+</tr>
+<tr>
+<td>Claude · Figma 등의 이름을 써서 "공식 제품 · 제휴 제품"처럼 홍보</td>
+<td>❌ 금지 — 상표권 침해 · 오인 소지(위 "상표 고지")</td>
+</tr>
+<tr>
+<td>이 킷으로 Figma 데이터를 AI(Claude Code)에게 읽혀 작업하기</td>
+<td>⚠️ 가능하지만 Claude Code가 그 내용을 Anthropic 서버로 보내는 것을 전제로 해야 함(<a href="#10-보안--데이터-흐름">10장</a>) — 비밀 · 개인정보가 든 디자인이면 회사 정책 확인</td>
+</tr>
 </tbody>
 </table>
 <p><strong>책임 제한 · 보증 없음</strong>: 이 킷과 문서는 "있는 그대로(as-is)" 제공되며, 특정 목적에의 적합성이나 오류 없음을 보증하지 않습니다. 사용으로 인해 발생하는 모든 결과에 대한 책임은 사용자 본인에게 있습니다.</p>
@@ -1272,7 +1474,7 @@ img { max-width: 100%; }
 <li><a href="./.PRD/03_PHASES.md"><code>03_PHASES.md</code></a> — 단계별(Phase 1/2/3) 개발 계획과 현재 진행 상태</li>
 <li><a href="./.PRD/04_PROJECT_SPEC.md"><code>04_PROJECT_SPEC.md</code></a> — 기술 스택, 절대 규칙(하지 말 것/항상 할 것)</li>
 <li><a href="./.PRD/README.md"><code>.PRD/README.md</code></a> — 개발 과정 전체 감사(audit) 이력</li>
-<li><a href="./CHECKPOINT.md"><code>CHECKPOINT.md</code></a> — 다음에 이어서 해야 할 작업 목록(개발자용)</li>
+<li>(참고) 개발자 개인용 작업 메모 <code>CHECKPOINT.md</code>는 의도적으로 GitHub에 올리지 않는 로컬 전용 파일이라 이 저장소에는 없습니다. 개발 이력의 정본은 위 <code>.PRD/README.md</code>입니다.</li>
 </ul>
 </div>
 </body>

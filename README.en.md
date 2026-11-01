@@ -4,11 +4,11 @@ A Claude Code design-automation kit that turns Figma designs into shadcn/ui code
 
 [한국어 (Korean)](./README.md) | [English (current document)](./README.en.md)
 
-> ✅ **Current status (as of 2026-10-12, confirmed by running it directly)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). The automated tests all pass — **361** for the officially published v0.5.0, and **374** for the current working copy, which also contains 2 fixes that are not published yet. There are **0 known security vulnerabilities** (`npm audit` was re-run on 2026-10-12; the 4 found on 2026-09-11 and the 5 newly reported on 2026-10-11 were all patched). The licenses of all packages including transitive dependencies were re-tallied on 2026-10-12: **153 entries in `package-lock.json`**, with zero strong copyleft (GPL/AGPL) — see [Section 13](#13-legal-copyright-license--commercial-use). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
+> ✅ **Current status (as of 2026-11-02, confirmed by running it directly)**: **Phase 1 (MVP)** and **Phase 2 (dashboard, automatic visual-change detection, Korean font automation)** are officially complete, and **Phase 3 (advanced) is also complete through the detail-page pipeline, AI-generation history logging, marketing-image generation (OG/poster/banner/business-card), the license-gate extension, and a Claude Desktop MCP extension (verification-history browsing)** (only beta-release timing remains, a user decision). The automated tests all pass — **376** for v0.5.1. `npm audit` reports **1 remaining finding (moderate, `satori`)** (re-run on 2026-11-02; every high-severity finding is patched). That finding is an escaping flaw in how `satori` writes colour values into SVG; this kit's commands have no option to enter a colour, so it is not reachable on the normal usage path (reproduced and confirmed directly). The licenses of all packages including transitive dependencies were re-tallied on 2026-10-12: **153 entries in `package-lock.json`**, with zero strong copyleft (GPL/AGPL) — see [Section 13](#13-legal-copyright-license--commercial-use). There are **5 commands** in total (`setup`, `pipeline`, `open`, `detail-page`, `marketing-asset`), and every one of them has been round-trip verified (PASS) against a real project. See [Section 7](#7-update-summary) for the full history.
 >
-> ⚠️ This kit is still **version 0.5.0 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
+> ⚠️ This kit is still **version 0.5.1 (pre-release, actively under development)**. Command names, behavior, and file structure may still change — this document will be updated whenever they do.
 >
-> 📌 **How to read this document**: anything marked "(unpublished)" is a fix that is in the code at the time of writing but is **not** in the officially published version (v0.5.0) you can download from GitHub. Where the published version and the current working copy differ, it is marked that way.
+> 📌 **How to read this document**: this document describes v0.5.1. Where behavior differs from earlier versions (0.5.0 and below), it is marked that way.
 
 ---
 
@@ -132,7 +132,7 @@ All 5 of the following must be ready. If even one is missing, you cannot proceed
    ```
    npx playwright@1.61.1 install chromium
    ```
-   > The number `1.61.1` is the Playwright version used by the officially published v0.5.0 (the value written in this kit's `package-lock.json`). **This number may change when the kit version changes**, so if verification later fails with `Executable doesn't exist`, follow the command shown on that error screen (`npx playwright install`), or ask Claude Code to "install the Playwright browser for me". If you download a browser of a different version, this kit will not be able to find it.
+   > The number `1.61.1` is the Playwright version used by the officially published v0.5.1 (the value written in this kit's `package-lock.json`). **This number may change when the kit version changes**, so if verification later fails with `Executable doesn't exist`, follow the command shown on that error screen (`npx playwright install`), or ask Claude Code to "install the Playwright browser for me". If you download a browser of a different version, this kit will not be able to find it.
 
 5. **Verify the install** — type this inside the **target project** (prerequisite #3 in Section 2, the project you are porting code into):
    ```
@@ -170,7 +170,7 @@ If you type up to `/sod` in the chat window and nothing appears in the autocompl
    ```
    npx @anthropic-ai/mcpb pack .
    ```
-   A `.mcpb` file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (the file built with v0.5.0 is 20.3MB — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed by excluding unnecessary files, which brought it down to the current size. On 2026-10-12 the inside of the file was opened again, and it was re-confirmed that it contains no development notes, session state, or design documents).
+   A `.mcpb` file named after this repository folder appears in the folder (it was just created, so you can find it right there). It's about 20MB (the file built with v0.5.1 is 20.6MB — larger than most extensions because it includes real-browser re-verification. It used to be about 70MB because unrelated files were accidentally bundled in; that's been fixed by excluding unnecessary files, which brought it down to the current size. On 2026-11-02 the inside of the file was opened again, and it was re-confirmed that it contains no development notes, session state, or design documents).
 2. **Double-click** the generated `.mcpb` file. If all goes well, Claude Desktop shows an install screen — review the details and approve.
 
    > **Did double-clicking instead open a Windows "How do you want to open this file?" dialog?** That's not an install failure — it just means this computer has no file association for `.mcpb` yet (this can happen even if Claude Desktop is already installed — confirmed by hands-on testing on 2026-09-01). Click **Cancel** on that dialog and install this way instead:
@@ -298,7 +298,7 @@ Commands for kit developers only (end users don't need these):
 | Command | Description | Run from |
 |---|---|---|
 | `npm ci` (or `npm install`) | Installs the dependencies (Playwright, axe-core, etc.) — **not needed when you use the kit only as a plugin** (Section 3); only needed when you run the automated tests or the scripts directly. The **browser files used for verification are not installed by this command** (`npx playwright install chromium` is needed separately) | this kit's own repository folder |
-| `npm test` | Runs the kit's own automated tests (as of 2026-10-12: 361 for the officially published v0.5.0, and 374 for the working copy that includes the unpublished fixes — the count may grow) | this kit's own repository folder |
+| `npm test` | Runs the kit's own automated tests (as of 2026-11-02: 376 — the count may grow) | this kit's own repository folder |
 | `node scripts/e2e-selftest.mjs --fixture <path to a test project>` | Full self-check of the round-trip pipeline (PASS/FAIL/recheck). You must pass, via `--fixture`, **a separate Next.js test project to be verified** (run without a path, it only prints the usage and exits), and that test project is not included in this repository (first-time users can skip this). `npm run selftest` in `package.json` is shorthand for the same command, so you must pass arguments like `npm run selftest -- --fixture <path>` | this kit's own repository folder |
 
 ### Verification options (5 optional features) — switches that add checks on top of the basic check
@@ -317,8 +317,8 @@ Example (PowerShell; `<kit folder>` is the folder downloaded with Method B in Se
 ```powershell
 node "<kit folder>\scripts\verify-runner.mjs" --project "<target project folder>" --route /design-kit-preview/button --target "Button check" --typeCheck --fontGate
 ```
-- **"Re-verify" (the dashboard button, and re-verification in Claude Desktop) inherits the options that were turned on in the original run, as they were.** `--typeCheck` has done so since the officially published v0.5.0, while `--fontGate`, `--assetGate`, and `--visualRegression` are **(unpublished)**. In the time before they were inherited, there was a bypass: if you "re-verified" a record that had FAILed on an option check, it came out PASS with the files unchanged, which lifted the completion block; it was closed after being reproduced and confirmed directly. When re-verifying, visual regression **only compares** and does not approve a baseline screen.
-- `--screenshotDir` (where screenshots are saved) accepts only paths inside `.design-kit/`. A value that goes outside with `..` (e.g. `../../elsewhere`) is refused with an error (exit code 2) without creating anything **(unpublished)** — previously, giving such a value had a defect where screenshots were saved outside the project.
+- **"Re-verify" (the dashboard button, and re-verification in Claude Desktop) inherits the options that were turned on in the original run, as they were.** `--typeCheck` has done so since v0.5.0, while `--fontGate`, `--assetGate`, and `--visualRegression` do so since v0.5.1. In the time before they were inherited, there was a bypass: if you "re-verified" a record that had FAILed on an option check, it came out PASS with the files unchanged, which lifted the completion block; it was closed after being reproduced and confirmed directly. When re-verifying, visual regression **only compares** and does not approve a baseline screen.
+- `--screenshotDir` (where screenshots are saved) accepts only paths inside `.design-kit/`. A value that goes outside with `..` (e.g. `../../elsewhere`) is refused with an error (exit code 2) without creating anything (since v0.5.1) — previously, giving such a value had a defect where screenshots were saved outside the project.
 
 ---
 
@@ -327,14 +327,24 @@ node "<kit folder>\scripts\verify-runner.mjs" --project "<target project folder>
 > The items below are collapsible "toggles" — click a heading (the line starting with ▶) to expand it. The most recent entry is at the top.
 
 <details open>
-<summary><b>▶ 2026-10-12 — (unpublished) "Re-verify" now inherits every option check + screenshot save-path escape blocked + install guidance corrected (click to collapse)</b></summary>
+<summary><b>▶ 2026-11-02 — Release v0.5.1 — security patches + the dev server opened during verification is now locked to this computer + earlier fixes included (click to collapse)</b></summary>
 
-- **Status note**: items ① and ② below are in the code and the automated tests pass, but at the time of writing they are **not yet merged or released on GitHub**, so they are **not in** the officially published version (v0.5.0) that you can download from GitHub. Item ③ is a correction of this README itself.
+- **Dev-server exposure fixed (security)**: the dev server that is briefly opened during verification could also be reached from other devices on the same network. The kit now passes the option that means "this computer only" (`-H 127.0.0.1`) when it starts the server. Measured directly on the same PC with a real Next.js server: before the fix a connection to an external address succeeded, after the fix it is refused.
+- **Security patches**: 7 of the 8 `npm audit` findings are resolved — `zod` (high), `body-parser` (high) and others. The remaining one (`satori`) was confirmed not reachable on the normal usage path and was not upgraded this time (upgrading does not clear the warning and was measured to change text width slightly, so it was put on hold).
+- **Earlier fixes included**: the 2026-10-12 entry right below (re-verification now inherits the font, asset and visual-regression options; screenshot save-path escape blocked). The font and asset options were confirmed end to end against a real project (real dev server and font scan). The visual-regression option is confirmed by automated tests only.
+- **Automated tests**: 374 → 376 (2 added), all passing.
+- **How to update**: follow the update steps in [Section 3](#3-download--installation). The Claude Desktop extension takes effect only after you reinstall the `.mcpb`.
+</details>
+
+<details>
+<summary><b>▶ 2026-10-12 — "Re-verify" now inherits every option check + screenshot save-path escape blocked + install guidance corrected (click to expand)</b></summary>
+
+- **Status note**: items ① and ② below are included in v0.5.1 (2026-11-02); when this entry was written they were not yet merged or released. Item ③ is a correction of this README itself.
 - **① Closed the other 3 re-verification bypasses**: the v0.5.0 entry right below closed the "re-verify" bypass only for records that had FAILed on `--typeCheck`. The same hole existed for `--fontGate`, `--assetGate` and `--visualRegression` as well (re-verifying a record that had FAILed on an option gave PASS with the files unchanged — the font and asset options were reproduced and confirmed directly, and visual regression has the same structure so it was fixed together). Now the options turned on in the original run are kept in the record, and re-verification inherits them. Visual regression **only compares** against the baseline screen, and approving a baseline screen is still kept so that a person must explicitly ask for it.
 - **② Closed a defect where the screenshot save path leaked outside the project**: it was directly reproduced that pointing outside with `..`, as in `--screenshotDir ../../ESCAPED`, saved the screenshots outside the project and still finished as a success (exit code 0). Now anything not inside `.design-kit/` is refused before anything is created (exit code 2), and the `\` separator and look-alike sibling folders such as `.design-kit-evil` are blocked too. A `..` that stays inside `.design-kit/` (e.g. `reports/../shots/x`) is not blocked.
 - **③ README corrections**: that installing creates a copy and the dependencies are installed automatically (the previous document said the opposite), that the minimum Node version is 20.9, not 18, that the verification browser has to be downloaded separately (the previous document had no such step), how to update, that the retry count and the "2 consecutive failures" rule are not in the code, that no program reads the `config.json` values, the verification-options table, the re-tally of the license package count (153), and the removal of broken links that pointed to files not in the repository.
 - **Automated tests**: 361 → 374 (13 added, 1 new test file), all passing, `npm audit` 0. No new dependencies added.
-- **Honest limits**: for ①, **no end-to-end check against a real project** — going through a real dev server, font scan and baseline-screen comparison — has been done yet (only the automated tests that swap in fake components were confirmed), and even after merge and release, it takes effect in the Claude Code you normally use only after you do the [update in Section 3](#3-download--installation).
+- **Honest limits**: for ①, when this entry was written only the automated tests that swap in fake components had been confirmed; afterwards (2026-11-02) the font and asset options were confirmed end to end with a real dev server and font scan (the visual-regression option is still confirmed by automated tests only), and even after merge and release, it takes effect in the Claude Code you normally use only after you do the [update in Section 3](#3-download--installation).
 
 </details>
 
@@ -346,7 +356,7 @@ node "<kit folder>\scripts\verify-runner.mjs" --project "<target project folder>
 - A hands-on experiment found and closed a bypass: re-running a run that had failed with `--typeCheck` through the dashboard 're-verify' button or the MCP `reverify` tool gave PASS with the file unchanged, which unblocked completion. Re-verification now inherits the original run's type-check setting (before the fix PASS → after the fix FAIL; restoring the file gives PASS again, no false alarm).
 - This release is the first to ship the 5 security-vulnerability patches (sharp, the MCP SDK, etc.) and the MCP version-reporting fix that landed after the previous release (v0.4.1). To get them into the Claude Desktop extension (`.mcpb`) and the installed plugin you must rebuild and reinstall (full restart).
 - All 361 automated tests pass, `npm audit` reports 0, and the real-screen verification (normal/error verdicts and completion blocking) was re-checked.
-- Not done yet as of this release: the visual-regression, font and asset optional flags are not inherited by re-verification (→ solved in the 2026-10-12 entry right above, unpublished). Lint and build are still not checked.
+- Not done yet as of this release: the visual-regression, font and asset optional flags are not inherited by re-verification (→ solved in the 2026-10-12 entry right above, included in v0.5.1). Lint and build are still not checked.
 
 </details>
 
@@ -763,7 +773,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── marketing-asset-pipeline.mjs  ← marketing image auto-generation engine (Phase 3, og/poster/banner/business-card)
 │   ├── asset-ledger.mjs              ← license-gate extension (image/icon assets) + attribution-doc auto-generation (Phase 3)
 │   └── mcp-server.mjs                ← Claude Desktop extension engine — verification-history browsing + re-verify (Phase 3)
-├── tests/                            ← automated tests (as of 2026-10-12: 361 for the officially published v0.5.0, 374 for the working copy that includes the unpublished fixes)
+├── tests/                            ← automated tests (as of 2026-11-02: 376)
 ├── .PRD/                             ← this kit's authoritative design docs (most detailed source of truth)
 ├── AGENTS.md                         ← a summary of the rules for tools outside Claude Code, such as Codex
 ├── LICENSE                           ← the full text of the Apache License 2.0
@@ -867,7 +877,7 @@ A. This kit's own license doesn't stop you from doing that. But the **copyright 
 A. This kit is built with Node.js scripts, so in principle it should run on all three. However, the environment it has actually been thoroughly built and tested on so far is **Windows**. Real-world verification on Mac/Linux has not yet been performed. The manifest (`manifest.json`) of the Claude Desktop extension (`.mcpb`) states **only Windows and macOS** as supported operating systems and does not include Linux. Node.js must be **20.9 or newer** on any operating system ([Section 2](#2-prerequisites--required-software-with-download-instructions)).
 
 **Q. Is this a stable, finished release?**
-A. No. The current version is **0.5.0 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [Section 7](#7-update-summary) and GitHub's [Releases page](https://github.com/sodam-ai/SoDam-Design-Kit/releases) for the latest status.
+A. No. The current version is **0.5.1 (pre-release)**. The core features (Phase 1, Phase 2, and most of Phase 3) have all been round-trip verified against a real project, but command names and finer details may still change. Before relying on it for something important, check [Section 7](#7-update-summary) and GitHub's [Releases page](https://github.com/sodam-ai/SoDam-Design-Kit/releases) for the latest status.
 
 **Q. How do I get a new version? Does it update automatically?**
 A. Within the scope confirmed at the time of writing, **I could not confirm that it changes automatically.** What is installed is a copy, so you have to run the two lines under ["How to update" in Section 3](#3-download--installation) (`claude plugin marketplace update sodam` → `claude plugin update sodam-design-kit@sodam`) and **fully restart** Claude Code.

@@ -5,9 +5,10 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdtemp, mkdir, rm, readdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { findAvailablePort, judge, summarizeAxeViolations, VIEWPORTS } from '../scripts/verify-runner.mjs';
+import { mkdtemp, mkdir, rm, readdir, writeFile } from 'node:fs/promises';
+import { tmpdir, networkInterfaces } from 'node:os';
+import { Socket } from 'node:net';
+import { findAvailablePort, judge, summarizeAxeViolations, VIEWPORTS, startDevServer, buildDevServerArgs } from '../scripts/verify-runner.mjs';
 
 const CLI_PATH = fileURLToPath(new URL('../scripts/verify-runner.mjs', import.meta.url));
 
@@ -49,6 +50,62 @@ test('findAvailablePort: 다른 프로세스가 0.0.0.0으로 점유한 포트�
     assert.ok(port > 3000 && port <= 3020);
   } finally {
     await new Promise((resolve) => blocker.close(resolve));
+  }
+});
+
+// 2026-10-12 실측 발견 결함(89차 (라))의 회귀 테스트. 예전엔 dev 서버를 환경변수 HOSTNAME=127.0.0.1로만
+// 제한하려 했는데, 실제 `next dev`(Next 16.2.10)는 이 변수를 무시하고 `-H`를 안 주면 모든 주소(`::`)에서
+// 접속을 받았다 — 검증이 도는 동안 같은 네트워크의 다른 기기가 임시 화면에 접속할 수 있었다(01 §6 "127.0.0.1
+// 전용" 의도 위반). 수정: 실행 인자로 `-H 127.0.0.1`을 명시한다. **이 인자를 "환경변수와 중복"이라며 지우지 말 것.**
+test('buildDevServerArgs: dev 서버를 루프백(127.0.0.1)으로만 열도록 -H 인자를 명시한다', () => {
+  const args = buildDevServerArgs('/x/next', 3456);
+  const i = args.indexOf('-H');
+  assert.ok(i >= 0, '-H 인자가 있어야 함 (환경변수 HOSTNAME만으로는 next dev가 제한되지 않음)');
+  assert.equal(args[i + 1], '127.0.0.1');
+  assert.deepEqual(args.slice(0, 4), ['/x/next', 'dev', '-p', '3456'], '기존 인자(포트 지정)는 그대로여야 함');
+});
+
+function canConnect(host, port, timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    const socket = new Socket();
+    const done = (ok) => { socket.destroy(); resolve(ok); };
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => done(true));
+    socket.once('timeout', () => done(false));
+    socket.once('error', () => done(false));
+    socket.connect(port, host);
+  });
+}
+
+test('startDevServer: 같은 네트워크의 다른 주소(LAN IP)로는 접속되지 않는다 (실제 next dev처럼 HOSTNAME 환경변수는 무시하는 가짜 next 사용)', async (t) => {
+  const lanIps = Object.values(networkInterfaces()).flat().filter((n) => n && n.family === 'IPv4' && !n.internal).map((n) => n.address);
+  if (lanIps.length === 0) {
+    t.skip('이 PC에는 외부 IPv4 주소가 없어 LAN 접속 여부를 확인할 수 없음');
+    return;
+  }
+  const projectDir = await mkdtemp(path.join(tmpdir(), 'dk-bind-'));
+  const binDir = path.join(projectDir, 'node_modules', 'next', 'dist', 'bin');
+  await mkdir(binDir, { recursive: true });
+  // 실제 next dev의 측정된 동작을 그대로 흉내: -H가 없으면 `::`(모든 주소)로 열고, HOSTNAME 환경변수는 보지 않는다.
+  await writeFile(path.join(binDir, 'next'), [
+    "const http = require('node:http');",
+    'const a = process.argv.slice(2);',
+    "const port = Number(a[a.indexOf('-p') + 1]);",
+    "const hi = a.indexOf('-H');",
+    "const host = hi >= 0 ? a[hi + 1] : '::';",
+    "http.createServer((q, s) => s.end('ok')).listen(port, host);",
+  ].join('\n'));
+  let server;
+  try {
+    server = await startDevServer(projectDir);
+    assert.equal(await canConnect('127.0.0.1', server.port), true, '루프백으로는 접속돼야 함(검증이 실제로 이 경로를 씀)');
+    for (const ip of lanIps) {
+      // eslint-disable-next-line no-await-in-loop -- 주소별 순차 확인
+      assert.equal(await canConnect(ip, server.port), false, `LAN 주소 ${ip}로 접속되면 안 됨 — dev 서버가 모든 주소에서 열려 있다는 뜻`);
+    }
+  } finally {
+    if (server) await server.stop();
+    await rm(projectDir, { recursive: true, force: true });
   }
 });
 

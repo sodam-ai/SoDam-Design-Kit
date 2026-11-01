@@ -127,11 +127,24 @@ function killProcessTree(pid) {
   });
 }
 
+/**
+ * `next dev` 실행 인자를 만든다 (테스트가 실제 spawn 없이 인자를 검사할 수 있도록 분리).
+ *
+ * `-H 127.0.0.1`을 인자로 명시하는 이유 (2026-10-12 실측 발견·수정 — 89차 (라)): 예전엔 환경변수
+ * HOSTNAME=127.0.0.1만 넘겼는데, 실제 `next dev`(Next 16.2.10)는 이 변수를 무시하고 모든 주소(`::`)에서
+ * 접속을 받았다 — 검증이 도는 동안 같은 네트워크의 다른 기기가 만들고 있는 임시 화면에 접속할 수 있었다.
+ * 01 §6 "로컬 서버는 127.0.0.1 전용" 의도와 어긋난 상태. 인자로 지정하면 루프백으로만 열린다.
+ * **환경변수와 중복이라며 이 인자를 지우지 말 것.**
+ */
+export function buildDevServerArgs(nextBin, port) {
+  return [nextBin, 'dev', '-p', String(port), '-H', '127.0.0.1'];
+}
+
 /** Next.js dev server를 자동 기동 (포트 충돌 시 다음 포트로 자동 우회). spawn은 인자 배열만 사용, shell 문자열 조합 금지. */
 export async function startDevServer(projectDir) {
   const port = await findAvailablePort();
   const nextBin = path.join(projectDir, 'node_modules', 'next', 'dist', 'bin', 'next');
-  const child = spawn(process.execPath, [nextBin, 'dev', '-p', String(port)], {
+  const child = spawn(process.execPath, buildDevServerArgs(nextBin, port), {
     cwd: projectDir,
     stdio: 'pipe',
     env: { ...process.env, HOSTNAME: '127.0.0.1' },

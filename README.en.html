@@ -1052,6 +1052,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 │   ├── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
 │   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og/poster/banner/business-card)
 ├── hooks/
+│   ├── hooks.json                    ← the setting that makes Claude Code run verify-gate.mjs below when it is about to report "done"
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
 ├── skills/
 │   └── design-pipeline/SKILL.md      ← a skill file that tells Claude Code &quot;when to use this kit&quot; (on words like Figma or design) and the core rules
@@ -1117,7 +1118,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 <li><strong>How external commands are run</strong>: when running things like the dev server, this kit only spawns processes with an argument array — it never concatenates strings into a shell command (which would risk command injection).</li>
 <li><strong>The dashboard (<code>/open</code>) is only reachable from your own computer</strong>: it's bound to <code>127.0.0.1</code> (an address meaning "this computer, and only this computer"), so no one else can reach it over the internet. Path-traversal protection, rejection of malformed requests, and a lock that blocks concurrent access are all implemented, and each was confirmed by actually simulating an attack against it.</li>
 <li><strong>No sensitive data in reports</strong>: reports and run records are designed — and automated-tested — to never contain secrets (passwords, tokens) or absolute paths from your computer.</li>
-<li><strong>No API keys (currently)</strong>: the current version needs no separate API keys or environment variables. If a future feature adds paid image-generation APIs (later in Phase 3, still just a plan), those will be managed exclusively through a <code>.env</code> file.</li>
+<li><strong>No API keys (currently)</strong>: the current version needs no separate API keys or environment variables. If a future feature adds paid image-generation APIs (the design documents list this only as an optional item, and it has not been built), those will be managed exclusively through a <code>.env</code> file.</li>
 </ul>
 <hr />
 <h2 id="11-troubleshooting">11. Troubleshooting</h2>
@@ -1258,7 +1259,7 @@ Provide the target project's path and the Figma node (or let it use the existing
 <hr />
 <h2 id="13-legal-copyright-license--commercial-use">13. Legal, Copyright, License &amp; Commercial Use</h2>
 <blockquote>
-<p>⚠️ <strong>Read this summary first</strong>: this kit itself <strong>can</strong> be used commercially and redistributed (Apache License 2.0). But legal responsibility for what you <em>produce</em> with this kit — code, copy, images — is a separate matter, and is <strong>entirely your own responsibility</strong>. This section is <strong>not legal advice and carries no legal guarantee.</strong> Anything not yet finalized is clearly marked "undecided" below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.</p>
+<p>⚠️ <strong>Read this summary first</strong>: this kit itself <strong>can</strong> be used commercially and redistributed (Apache License 2.0). But legal responsibility for what you <em>produce</em> with this kit — code, copy, images — is a separate matter, and is <strong>entirely your own responsibility</strong>. This section is <strong>not legal advice and carries no legal guarantee.</strong> Anything I could not confirm is marked with ❓ in the summary table below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.</p>
 </blockquote>
 <h3 id="license-for-sodam-design-kit-itself--apache-license-20-finalized-2026-08-09">License for SoDam-Design-Kit itself — <strong>Apache License 2.0 (finalized 2026-08-09)</strong></h3>
 <ul>

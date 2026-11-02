@@ -751,6 +751,7 @@ SoDam-Design-Kit/                     ← this kit's repository (where this READ
 │   ├── detail-page.md                ← the actual definition of /sodam-design-kit:detail-page (Phase 3)
 │   └── marketing-asset.md            ← the actual definition of /sodam-design-kit:marketing-asset (Phase 3, og/poster/banner/business-card)
 ├── hooks/
+│   ├── hooks.json                    ← the setting that makes Claude Code run verify-gate.mjs below when it is about to report "done"
 │   └── verify-gate.mjs               ← completion-blocking logic (blocks on FAIL)
 ├── skills/
 │   └── design-pipeline/SKILL.md      ← a skill file that tells Claude Code "when to use this kit" (on words like Figma or design) and the core rules
@@ -821,7 +822,7 @@ Running `/sodam-design-kit:setup` inside your **target project** creates exactly
 - **How external commands are run**: when running things like the dev server, this kit only spawns processes with an argument array — it never concatenates strings into a shell command (which would risk command injection).
 - **The dashboard (`/open`) is only reachable from your own computer**: it's bound to `127.0.0.1` (an address meaning "this computer, and only this computer"), so no one else can reach it over the internet. Path-traversal protection, rejection of malformed requests, and a lock that blocks concurrent access are all implemented, and each was confirmed by actually simulating an attack against it.
 - **No sensitive data in reports**: reports and run records are designed — and automated-tested — to never contain secrets (passwords, tokens) or absolute paths from your computer.
-- **No API keys (currently)**: the current version needs no separate API keys or environment variables. If a future feature adds paid image-generation APIs (later in Phase 3, still just a plan), those will be managed exclusively through a `.env` file.
+- **No API keys (currently)**: the current version needs no separate API keys or environment variables. If a future feature adds paid image-generation APIs (the design documents list this only as an optional item, and it has not been built), those will be managed exclusively through a `.env` file.
 
 ---
 
@@ -892,7 +893,7 @@ A. Only partly. `AGENTS.md` is a summary document meant to make other tools foll
 
 ## 13. Legal, Copyright, License & Commercial Use
 
-> ⚠️ **Read this summary first**: this kit itself **can** be used commercially and redistributed (Apache License 2.0). But legal responsibility for what you *produce* with this kit — code, copy, images — is a separate matter, and is **entirely your own responsibility**. This section is **not legal advice and carries no legal guarantee.** Anything not yet finalized is clearly marked "undecided" below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.
+> ⚠️ **Read this summary first**: this kit itself **can** be used commercially and redistributed (Apache License 2.0). But legal responsibility for what you *produce* with this kit — code, copy, images — is a separate matter, and is **entirely your own responsibility**. This section is **not legal advice and carries no legal guarantee.** Anything I could not confirm is marked with ❓ in the summary table below. For commercial use, redistribution, or any decision requiring legal judgment, please consult a qualified attorney.
 
 ### License for SoDam-Design-Kit itself — **Apache License 2.0 (finalized 2026-08-09)**
 - **Current status (confirmed fact)**: a `LICENSE` file (full text of Apache License 2.0) exists at the repository root. The copyright holder is **SoDam AI Studio**, year 2026.

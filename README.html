@@ -1048,6 +1048,7 @@ claude plugin update sodam-design-kit@sodam</code></pre>
 │   ├── detail-page.md                ← /sodam-design-kit:detail-page 명령의 실제 정의 (Phase 3)
 │   └── marketing-asset.md            ← /sodam-design-kit:marketing-asset 명령의 실제 정의 (Phase 3, og·포스터·배너·명함)
 ├── hooks/
+│   ├── hooks.json                    ← Claude Code가 "완료" 시점에 아래 verify-gate.mjs를 실행하도록 등록하는 설정
 │   └── verify-gate.mjs               ← 완료 차단 로직(FAIL이면 차단)
 ├── skills/
 │   └── design-pipeline/SKILL.md      ← Claude Code에게 &quot;언제 이 킷을 쓰는지&quot;(Figma · 디자인 같은 말)와 핵심 규칙을 알려 주는 스킬 파일
@@ -1113,7 +1114,7 @@ claude plugin update sodam-design-kit@sodam</code></pre>
 <li><strong>외부 명령 실행 방식</strong>: 개발 서버 실행 등 컴퓨터 명령을 실행할 때, 문자열을 이어붙이는 방식(명령어 주입 위험)이 아니라 인자를 배열로 분리해 실행하는 안전한 방식만 사용합니다.</li>
 <li><strong>대시보드(<code>/open</code>)는 내 컴퓨터 안에서만 열림</strong>: <code>127.0.0.1</code>(이 컴퓨터 자신을 가리키는 주소)로만 접속되며, 다른 사람이 인터넷을 통해 접속할 수 없습니다. 경로 조작 시도 차단 · 잘못된 요청 차단 · 실행 중 잠금 장치가 함께 구현되어 있고, 실제로 흉내를 내 막히는지 확인했습니다.</li>
 <li><strong>판정서에 민감정보 없음</strong>: 판정서 · 실행 기록에는 시크릿(비밀번호 · 토큰)이나 내 컴퓨터의 절대경로가 기록되지 않도록 설계되어 있고, 자동 테스트로 이를 확인하고 있습니다.</li>
-<li><strong>API 키 없음(현재)</strong>: 이 킷의 현재 버전은 별도의 API 키 · 환경변수가 필요 없습니다. 나중에 유료 이미지 생성 API 등을 붙이는 기능이 추가되면(Phase 3 후반, 아직 계획 단계) 그때는 <code>.env</code> 파일로만 관리하도록 설계되어 있습니다.</li>
+<li><strong>API 키 없음(현재)</strong>: 이 킷의 현재 버전은 별도의 API 키 · 환경변수가 필요 없습니다. 나중에 유료 이미지 생성 API 등을 붙이는 기능이 추가되면(설계 문서에는 선택 항목으로만 적혀 있고 아직 만들지 않았습니다) 그때는 <code>.env</code> 파일로만 관리하도록 설계되어 있습니다.</li>
 </ul>
 <hr />
 <h2 id="11-문제오류-대처-트러블슈팅">11. 문제/오류 대처 (트러블슈팅)</h2>
@@ -1212,7 +1213,7 @@ claude plugin update sodam-design-kit@sodam</code></pre>
 <td>4장의 각 단계마다 적힌 "성공 기준"이 그대로 나타남</td>
 </tr>
 <tr>
-<td>검증할 때 "dev server가 OO초 안에 준비되지 않았습니다"라는 오류가 나요</td>
+<td>검증할 때 "dev server가 60000ms 안에 준비되지 않았습니다"(60000ms = 60초)라는 오류가 나요</td>
 <td>컴퓨터를 막 켰거나 오랜만에 실행해서, 화면을 처음 준비하는 데 평소보다 시간이 더 걸림(고장 아님)</td>
 <td>같은 명령을 한 번 더 실행 — 두 번째부터는 이미 준비된 상태라 보통 바로 됩니다</td>
 <td>재실행 시 정상적으로 PASS/FAIL 판정까지 진행됨</td>
@@ -1254,7 +1255,7 @@ claude plugin update sodam-design-kit@sodam</code></pre>
 <hr />
 <h2 id="13-법률--저작권--라이선스--상업적-용도">13. 법률 · 저작권 · 라이선스 · 상업적 용도</h2>
 <blockquote>
-<p>⚠️ <strong>가장 먼저 읽어야 할 요약</strong>: 이 킷 자체는 상업적 이용 · 재배포가 <strong>가능</strong>합니다(Apache License 2.0). 하지만 이 킷으로 "만들어낸 결과물"(코드 · 문구 · 이미지)에 대한 법적 책임은 별개이며, <strong>전적으로 사용자 본인의 책임</strong>입니다. 이 섹션은 <strong>법률 자문이 아니며 법적 효력을 보장하지 않습니다.</strong> 확정되지 않은 사항은 아래에 "미정"으로 명확히 구분해 표시했습니다. 상업적 이용 · 재배포 · 법적 판단이 필요한 경우 반드시 변호사 등 전문가의 확인을 받으시기 바랍니다.</p>
+<p>⚠️ <strong>가장 먼저 읽어야 할 요약</strong>: 이 킷 자체는 상업적 이용 · 재배포가 <strong>가능</strong>합니다(Apache License 2.0). 하지만 이 킷으로 "만들어낸 결과물"(코드 · 문구 · 이미지)에 대한 법적 책임은 별개이며, <strong>전적으로 사용자 본인의 책임</strong>입니다. 이 섹션은 <strong>법률 자문이 아니며 법적 효력을 보장하지 않습니다.</strong> 확정하지 못한 사항은 아래 요약 표에서 ❓로 구분해 표시했습니다. 상업적 이용 · 재배포 · 법적 판단이 필요한 경우 반드시 변호사 등 전문가의 확인을 받으시기 바랍니다.</p>
 </blockquote>
 <h3 id="이-킷sodam-design-kit-자체의-라이선스--apache-license-20-2026-08-09-확정">이 킷(SoDam-Design-Kit) 자체의 라이선스 — <strong>Apache License 2.0 (2026-08-09 확정)</strong></h3>
 <ul>
